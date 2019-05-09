@@ -1,0 +1,26 @@
+<html lang="en">
+<head>
+  <title>TrueScrub&trade; Leaderboard</title>
+</head>
+<body>
+<h1>TrueScrub&trade; Leaderboard</h1>
+<table>
+  <thead>
+  <tr>
+    <th>Name</th>
+    <th>MMR</th>
+    <th>Skill Group</th>
+  </tr>
+  </thead>
+  <tbody>
+  {% for player in leaderboard %}
+    <tr>
+    <td>{{ player.steam_name }}</td>
+    <td>{{ player.mmr }}</td>
+    <td>{{ player.skill_group }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</body>
+</html>

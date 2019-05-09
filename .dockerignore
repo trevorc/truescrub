@@ -1,0 +1,5 @@
+.git
+.gitignore
+venv
+skill.db
+logs
