@@ -1,0 +1,49 @@
+<html lang="en">
+<head>
+  <title>{{ steam_name }}'s Profile</title>
+</head>
+<body>
+<h1>{{ steam_name }}'s Profile</h1>
+
+<p>{{ skill_group }}</p>
+
+<h2>Record</h2>
+<p>{{ rounds_won }} : {{ rounds_lost }}</p>
+
+<h2>Team Records</h2>
+{% for record in team_records %}
+<h3>{{ record.rounds_won }} : {{ record.rounds_lost }}</h3>
+<ul>
+  {% for player in record.team %}
+  <li>{{ player }}</li>
+  {% endfor %}
+</ul>
+{% endfor %}
+
+<h2>Rounds</h2>
+{% for round in rounds %}
+<div>
+  <h3>{{ round.created_at }}</h3>
+  <div style="display: flex;">
+    <div>
+      <h4>Winners</h4>
+      <ul>
+        {% for player in round.winner %}
+        <li>{{ player }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    <div>
+      <h4>Losers</h4>
+      <ul>
+        {% for player in round.loser %}
+        <li>{{ player }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+</body>
+</html>

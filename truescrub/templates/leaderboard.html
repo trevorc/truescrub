@@ -16,10 +16,10 @@
   <tbody>
   {% for player in leaderboard %}
     <tr>
-    <td>{{ player.steam_name }}</td>
-    <td>{{ player.mmr }}</td>
-    <td>{{ player.skill_group }}</td>
-    <td>{{ player.skill_mean }} ± {{ player.skill_stdev }}σ</td>
+      <td><a href="profiles/{{ player.player_id }}">{{ player.steam_name }}</a></td>
+      <td>{{ player.mmr }}</td>
+      <td>{{ player.skill_group }}</td>
+      <td>{{ player.skill_mean }} ± {{ player.skill_stdev }}σ</td>
     </tr>
   {% endfor %}
   </tbody>

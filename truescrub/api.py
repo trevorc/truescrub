@@ -185,7 +185,7 @@ def rank_name(mmr: float) -> str:
     return SKILL_GROUPS[index - 1][1]
 
 
-@app.route('/leaderboard.html', methods={'GET'})
+@app.route('/leaderboard', methods={'GET'})
 def leaderboard():
     players = list(execute('''
     SELECT player_id
@@ -207,6 +207,105 @@ def leaderboard():
     } for player in players]
 
     return flask.render_template('leaderboard.html', leaderboard=leaders)
+
+
+@app.route('/profiles/<player_id>', methods={'GET'})
+def profile(player_id):
+    [(steam_name, mmr, rounds_won, rounds_lost)] = execute('''
+    SELECT p.steam_name
+         , p.skill_mean - 2 * skill_stdev AS mmr
+         , rounds_won.num_rounds
+         , rounds_lost.num_rounds
+    FROM players p
+    LEFT JOIN ( SELECT m.player_id, COUNT(*) AS num_rounds
+                FROM rounds r
+                JOIN team_membership m ON r.winner = m.team_id
+                GROUP BY m.player_id
+              ) rounds_won
+    ON p.player_id = rounds_won.player_id
+    LEFT JOIN ( SELECT m.player_id, COUNT(*) AS num_rounds
+                FROM rounds r
+                JOIN team_membership m ON r.loser = m.team_id
+                GROUP BY m.player_id
+              ) rounds_lost
+    ON p.player_id = rounds_lost.player_id
+    WHERE p.player_id = ?
+    ''', (player_id,))
+
+    skill_group = rank_name(mmr)
+
+    team_rows = execute('''
+    SELECT participants.team_id, players.steam_name
+    FROM ( SELECT winners.player_id
+                , rounds.winner AS team_id
+           FROM   rounds
+           JOIN   team_membership winners
+           ON     rounds.winner = winners.team_id
+           UNION
+           SELECT losers.player_id
+                , rounds.winner AS team_id
+           FROM   rounds
+           JOIN   team_membership losers
+           ON     rounds.loser = losers.team_id
+         ) m
+    JOIN team_membership participants
+    ON   participants.team_id = m.team_id
+    JOIN players
+    ON   players.player_id = participants.player_id
+    WHERE m.player_id = ?
+    ORDER BY participants.team_id
+    ''', (player_id,))
+
+    teams = {team_id: list(val[1] for val in group)
+             for team_id, group in itertools.groupby(team_rows, operator.itemgetter(0))}
+
+
+    team_record_rows = execute('''
+    SELECT m.team_id
+         , rounds_won.num_rounds
+         , rounds_lost.num_rounds
+    FROM team_membership m
+    LEFT JOIN ( SELECT r.winner AS team_id, COUNT(*) AS num_rounds
+                FROM rounds r
+                GROUP BY r.winner
+              ) rounds_won
+    ON m.team_id = rounds_won.team_id
+    LEFT JOIN ( SELECT r.loser AS team_id, COUNT(*) AS num_rounds
+                FROM rounds r
+                GROUP BY r.loser
+              ) rounds_lost
+    ON m.team_id = rounds_lost.team_id
+    WHERE m.player_id = ?
+    ''', (player_id,))
+
+    team_records = [{
+        'team': teams[row[0]],
+        'rounds_won': row[1],
+        'rounds_lost': row[2],
+    } for row in team_record_rows]
+
+    round_rows = execute('''
+    SELECT created_at, winner, loser
+    FROM rounds
+    JOIN team_membership m
+    ON m.team_id = rounds.winner OR m.team_id = rounds.loser
+    WHERE m.player_id = ?
+    ORDER BY created_at DESC
+    ''', (player_id,))
+
+    rounds = [{
+        'created_at': row[0],
+        'winner': teams[row[1]],
+        'loser': teams[row[2]],
+    } for row in round_rows]
+
+    return flask.render_template(
+        'profile.html',
+        steam_name=steam_name, skill_group=skill_group,
+        rounds_won=rounds_won, rounds_lost=rounds_lost,
+        team_records=team_records, rounds=rounds)
+
+    return json.dumps(list(rounds), indent=2)
 
 
 def initialize(db):
