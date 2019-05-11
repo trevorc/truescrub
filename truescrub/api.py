@@ -17,18 +17,23 @@ from flask import g, request
 
 DATABASE = os.environ.get('TRUESCRUB_DB', 'skill.db')
 SKILL_GROUPS = [
-    (float('-inf'), 'Silver I'),
-    (200, 'Silver II'),
-    (400, 'Silver III'),
-    (600, 'Gold I'),
-    (800, 'Gold II'),
-    (1000, 'Gold III'),
-    (1200, 'Platinum I'),
-    (1400, 'Platinum II'),
-    (1600, 'Platinum III'),
-    (1800, 'Elite'),
-    (2000, 'Elite Master'),
+    (float('-inf'), 'Paper I'),
+    (150, 'Paper II'),
+    (300, 'Paper III'),
+    (450, 'Paper IV'),
+    (600, 'Plastic I'),
+    (750, 'Plastic II'),
+    (900, 'Plastic III'),
+    (1050, 'Plastic IV'),
+    (1200, 'Wood I'),
+    (1350, 'Wood II'),
+    (1500, 'Wood III'),
+    (1650, 'Wood IV'),
+    (1800, 'Bronze'),
+    (1950, 'Bronze Master'),
+    (2100, 'Pistols Only'),
 ]
+
 SKILL_MEAN = 1000
 SKILL_STDEV = 200
 BETA = SKILL_STDEV / 2.0
@@ -375,6 +380,7 @@ def recalculate_teams(db):
           , skill_stdev = ?
         WHERE player_id = ?
         ''', (rating.mu, rating.sigma, player_id))
+
 
 def recalculate():
     with get_db() as db:
