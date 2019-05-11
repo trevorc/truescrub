@@ -10,6 +10,7 @@
     <th>Name</th>
     <th>MMR</th>
     <th>Skill Group</th>
+    <th>TrueSkill</th>
   </tr>
   </thead>
   <tbody>
@@ -18,6 +19,7 @@
     <td>{{ player.steam_name }}</td>
     <td>{{ player.mmr }}</td>
     <td>{{ player.skill_group }}</td>
+    <td>{{ player.skill_mean }} ± {{ player.skill_stdev }}σ</td>
     </tr>
   {% endfor %}
   </tbody>

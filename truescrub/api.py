@@ -17,7 +17,8 @@ from flask import g, request
 
 DATABASE = os.environ.get('TRUESCRUB_DB', 'skill.db')
 SKILL_GROUPS = [
-    (float('-inf'), 'Paper I'),
+    (float('-inf'), 'Scrub'),
+    (0, 'Paper I'),
     (150, 'Paper II'),
     (300, 'Paper III'),
     (450, 'Paper IV'),
@@ -51,17 +52,6 @@ def create_tables(cursor):
     , skill_stdev  DOUBLE  NOT NULL DEFAULT {skill_stdev}
     );
     '''.format(skill_mean=SKILL_MEAN, skill_stdev=SKILL_STDEV))
-
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS ratings_1v1(
-      rating_1v1 INTEGER  PRIMARY KEY
-    , created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    , winner     INTEGER  NOT NULL
-    , loser      INTEGER  NOT NULL
-    , FOREIGN KEY (winner) REFERENCES players (player_id)
-    , FOREIGN KEY (loser)  REFERENCES players (player_d)
-    );
-    ''')
 
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS teams(
@@ -198,7 +188,11 @@ def rank_name(mmr: float) -> str:
 @app.route('/leaderboard.html', methods={'GET'})
 def leaderboard():
     players = list(execute('''
-    SELECT player_id, steam_name, skill_mean - 2 * skill_stdev AS mmr
+    SELECT player_id
+         , steam_name
+         , skill_mean - 2 * skill_stdev AS mmr
+         , skill_mean
+         , skill_stdev
     FROM players
     ORDER BY skill_mean - 2 * skill_stdev DESC
     '''))
@@ -208,16 +202,25 @@ def leaderboard():
         'steam_name': player[1],
         'mmr': int(player[2]),
         'skill_group': rank_name(player[2]),
+        'skill_mean': int(player[3]),
+        'skill_stdev': int(player[4]),
     } for player in players]
 
     return flask.render_template('leaderboard.html', leaderboard=leaders)
 
 
-def initialize():
-    with get_db() as db:
-        cursor = db.cursor()
-        cursor.execute('PRAGMA foreign_keys = 1')
-        create_tables(cursor)
+def initialize(db):
+    cursor = db.cursor()
+    cursor.execute('PRAGMA foreign_keys = 1')
+    create_tables(cursor)
+
+
+def drop_tables(db):
+    cursor = db.cursor()
+    cursor.execute('DROP TABLE IF EXISTS team_membership')
+    cursor.execute('DROP TABLE IF EXISTS rounds')
+    cursor.execute('DROP TABLE IF EXISTS players')
+    cursor.execute('DROP TABLE IF EXISTS teams')
 
 
 def replace_teams(db, round_teams):
@@ -286,7 +289,7 @@ def compute_rounds(db):
     for (game_state_id, created_at, game_state_json) in enumerate_rows(cursor):
         state = json.loads(game_state_json)
         if not (state.get('round', {}).get('phase') == 'over' and \
-                state.get('previously', {}).get('round', {}).get('phase') == 'live'):
+                 state.get('previously', {}).get('round', {}).get('phase') == 'live'):
             continue
         win_team = state['round']['win_team']
         team_steamids = [(player['team'], int(steamid))
@@ -315,8 +318,10 @@ def compute_rounds(db):
                 # 'round_totaldmg': state['state']['round_totaldmg'],
             })
 
+        created_at = datetime.datetime.fromtimestamp(state['provider']['timestamp'])
+
         rounds.append({
-            'created_at': datetime.datetime.fromtimestamp(state['provider']['timestamp']),
+            'created_at': created_at,
             'winner': team_members[win_team],
             'loser': team_members[lose_team],
         })
@@ -330,16 +335,10 @@ def compute_rounds(db):
                     for rnd in rounds]
 
     cursor = db.cursor()
-    cursor.execute('DELETE FROM rounds')
-
     params = [value for rnd in fixed_rounds for value in (rnd['created_at'], rnd['winner'], rnd['loser'])]
     cursor.execute('INSERT INTO rounds (created_at, winner, loser) VALUES ' +
                    str.join(',', ['(?, ?, ?)'] * len(fixed_rounds)),
                    params)
-
-
-def recalculate_1v1(db):
-    pass
 
 
 def recalculate_teams(db):
@@ -384,8 +383,9 @@ def recalculate_teams(db):
 
 def recalculate():
     with get_db() as db:
+        drop_tables(db)
+        initialize(db)
         compute_rounds(db)
-        recalculate_1v1(db)
         recalculate_teams(db)
         db.commit()
 
@@ -408,9 +408,11 @@ def main():
     app.wsgi_app = werkzeug.SharedDataMiddleware(app.wsgi_app, {
         '/': (__name__, 'htdocs')
     })
+    with get_db() as db:
+        initialize(db)
+        db.commit()
     app.run(args.addr, args.port, app, use_reloader=args.use_reloader)
 
-initialize()
 if __name__ == '__main__':
     main()
 elif __name__.startswith('_mod_wsgi_'):
