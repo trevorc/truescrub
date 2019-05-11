@@ -179,7 +179,7 @@ def game_state():
     return '<h1>OK</h1>\n'
 
 
-def rank_name(mmr: float) -> str:
+def skill_group_name(mmr: float) -> str:
     group_ranks = [group[0] for group in SKILL_GROUPS]
     index = bisect.bisect(group_ranks, mmr)
     return SKILL_GROUPS[index - 1][1]
@@ -201,12 +201,45 @@ def leaderboard():
         'player_id': player[0],
         'steam_name': player[1],
         'mmr': int(player[2]),
-        'skill_group': rank_name(player[2]),
+        'skill_group': skill_group_name(player[2]),
         'skill_mean': int(player[3]),
         'skill_stdev': int(player[4]),
     } for player in players]
 
     return flask.render_template('leaderboard.html', leaderboard=leaders)
+
+
+def make_player(team_row):
+    return {'player_id': team_row[1], 'steam_name': team_row[2]}
+
+
+def get_player_teams(player_id):
+    team_rows = execute('''
+    SELECT participants.team_id
+         , players.player_id
+         , players.steam_name
+    FROM ( SELECT winners.player_id
+                , rounds.winner AS team_id
+           FROM   rounds
+           JOIN   team_membership winners
+           ON     rounds.winner = winners.team_id
+           UNION
+           SELECT losers.player_id
+                , rounds.winner AS team_id
+           FROM   rounds
+           JOIN   team_membership losers
+           ON     rounds.loser = losers.team_id
+         ) m
+    JOIN team_membership participants
+    ON   participants.team_id = m.team_id
+    JOIN players
+    ON   players.player_id = participants.player_id
+    WHERE m.player_id = ?
+    ORDER BY participants.team_id
+    ''', (player_id,))
+
+    return {team_id: list(make_player(val) for val in group)
+            for team_id, group in itertools.groupby(team_rows, operator.itemgetter(0))}
 
 
 @app.route('/profiles/<player_id>', methods={'GET'})
@@ -232,33 +265,9 @@ def profile(player_id):
     WHERE p.player_id = ?
     ''', (player_id,))
 
-    skill_group = rank_name(mmr)
+    skill_group = skill_group_name(mmr)
 
-    team_rows = execute('''
-    SELECT participants.team_id, players.steam_name
-    FROM ( SELECT winners.player_id
-                , rounds.winner AS team_id
-           FROM   rounds
-           JOIN   team_membership winners
-           ON     rounds.winner = winners.team_id
-           UNION
-           SELECT losers.player_id
-                , rounds.winner AS team_id
-           FROM   rounds
-           JOIN   team_membership losers
-           ON     rounds.loser = losers.team_id
-         ) m
-    JOIN team_membership participants
-    ON   participants.team_id = m.team_id
-    JOIN players
-    ON   players.player_id = participants.player_id
-    WHERE m.player_id = ?
-    ORDER BY participants.team_id
-    ''', (player_id,))
-
-    teams = {team_id: list(val[1] for val in group)
-             for team_id, group in itertools.groupby(team_rows, operator.itemgetter(0))}
-
+    teams = get_player_teams(player_id)
 
     team_record_rows = execute('''
     SELECT m.team_id
@@ -284,6 +293,41 @@ def profile(player_id):
         'rounds_lost': row[2],
     } for row in team_record_rows]
 
+    return flask.render_template(
+        'profile.html',
+        player_id=player_id, steam_name=steam_name,
+        skill_group=skill_group,
+        rounds_won=rounds_won, rounds_lost=rounds_lost,
+        team_records=team_records)
+
+
+def round_quality(player_skills, winner, loser):
+    teams = (
+        [player_skills[player['player_id']] for player in winner],
+        [player_skills[player['player_id']] for player in loser],
+    )
+    return trueskill.quality(teams)
+
+
+@app.route('/profiles/<player_id>/matches', methods={'GET'})
+def matches(player_id):
+    teams = get_player_teams(player_id)
+
+    (steam_name,) = execute_one('''
+    SELECT steam_name
+    FROM players
+    WHERE player_id = ?
+    ''', (player_id,))
+
+    player_skill_rows = execute('''
+    SELECT player_id
+         , skill_mean
+         , skill_stdev
+    FROM players
+    ''')
+    player_skills = {int(row[0]): trueskill.Rating(row[1], row[2])
+                     for row in player_skill_rows}
+
     round_rows = execute('''
     SELECT created_at, winner, loser
     FROM rounds
@@ -297,15 +341,11 @@ def profile(player_id):
         'created_at': row[0],
         'winner': teams[row[1]],
         'loser': teams[row[2]],
+        'quality': '%.2f' % (
+            round_quality(player_skills, teams[row[1]], teams[row[2]])),
     } for row in round_rows]
 
-    return flask.render_template(
-        'profile.html',
-        steam_name=steam_name, skill_group=skill_group,
-        rounds_won=rounds_won, rounds_lost=rounds_lost,
-        team_records=team_records, rounds=rounds)
-
-    return json.dumps(list(rounds), indent=2)
+    return flask.render_template('matches.html', steam_name=steam_name, rounds=rounds)
 
 
 def initialize(db):
