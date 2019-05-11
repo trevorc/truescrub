@@ -288,6 +288,7 @@ def profile(player_id):
     ''', (player_id,))
 
     team_records = [{
+        'team_id': row[0],
         'team': teams[row[0]],
         'rounds_won': row[1],
         'rounds_lost': row[2],
@@ -346,6 +347,105 @@ def matches(player_id):
     } for row in round_rows]
 
     return flask.render_template('matches.html', steam_name=steam_name, rounds=rounds)
+
+
+@app.route('/teams/<team_id>', methods={'GET'})
+def team_details(team_id):
+    member_rows = execute('''
+    SELECT players.player_id
+         , steam_name
+         , skill_mean - 2 * skill_stdev AS mmr
+         , skill_mean
+         , skill_stdev
+    FROM players
+    JOIN team_membership m
+    ON   players.player_id = m.player_id
+    WHERE m.team_id = ?
+    ''', (team_id,))
+
+    members = [{
+        'player_id': row[0],
+        'steam_name': row[1],
+        'skill_group': skill_group_name(row[2]),
+    } for row in member_rows]
+
+    member_names = str.join(', ', [member['steam_name'] for member in members])
+
+    opponent_rows = execute('''
+    SELECT m.team_id
+         , m.player_id
+         , p.steam_name
+    FROM team_membership m
+    JOIN ( SELECT winner AS team_id
+                , loser AS opponent
+           FROM   rounds
+           UNION
+           SELECT loser AS team_id
+                , winner AS opponent
+           FROM   rounds
+         ) matches
+    ON   m.team_id = matches.opponent
+    JOIN players p
+    ON   m.player_id = p.player_id
+    WHERE matches.team_id = ?
+    ORDER BY m.team_id
+    ''', (team_id,))
+
+    opponents = {
+        int(team_id): [{
+            'player_id': row[1],
+            'steam_name': row[2],
+        } for row in group]
+        for team_id, group in itertools.groupby(
+                opponent_rows, operator.itemgetter(0))
+    }
+
+    opponent_record_rows = execute('''
+    SELECT t.team_id
+         , opponent.team_id AS opponent_team_id
+         , IFNULL(rounds_won.num_rounds, 0) AS rounds_won
+         , IFNULL(rounds_lost.num_rounds, 0) AS rounds_lost
+    FROM teams t
+    CROSS JOIN teams opponent
+    LEFT JOIN ( SELECT winner
+                     , loser
+                     , COUNT(*) AS num_rounds
+                FROM rounds r
+                GROUP BY winner, loser
+              ) rounds_won
+    ON t.team_id = rounds_won.winner
+    AND opponent.team_id = rounds_won.loser
+    LEFT JOIN ( SELECT winner
+                     , loser
+                     , COUNT(*) AS num_rounds
+                FROM rounds r
+                GROUP BY winner, loser
+              ) rounds_lost
+    ON t.team_id = rounds_lost.loser
+    AND opponent.team_id = rounds_lost.winner
+    WHERE t.team_id = ?
+    AND   (rounds_won.num_rounds IS NOT NULL
+           OR rounds_lost.num_rounds IS NOT NULL)
+    ''', (team_id,))
+
+    opponent_records = [{
+        'opponent_team_id': row[1],
+        'opponent_team': opponents[row[1]],
+        'rounds_won': row[2],
+        'rounds_lost': row[3],
+    } for row in opponent_record_rows]
+
+    rounds_won = 0
+    rounds_lost = 0
+    for record in opponent_records:
+        rounds_won += record['rounds_won']
+        rounds_lost += record['rounds_lost']
+
+    return flask.render_template(
+        'team_details.html',
+        member_names=member_names, members=members,
+        rounds_won=rounds_won, rounds_lost=rounds_lost,
+        opponent_records=opponent_records)
 
 
 def initialize(db):
@@ -485,7 +585,7 @@ def recalculate_teams(db):
 
     cursor.execute('''
     SELECT team_id, player_id
-    FROM team_membership 
+    FROM team_membership
     ORDER BY team_id
     ''')
     memberships = list(enumerate_rows(cursor))

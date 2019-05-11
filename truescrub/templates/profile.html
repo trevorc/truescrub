@@ -16,6 +16,7 @@
 
 {% for record in team_records %}
 <h3>{{ record.rounds_won }} : {{ record.rounds_lost }}</h3>
+<p><a href="/teams/{{ record.team_id }}">Team details</a></p>
 <ul>
   {% for player in record.team %}
   <li>{{ player.steam_name }}</li>
