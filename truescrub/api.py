@@ -41,7 +41,6 @@ def create_tables(cursor):
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS players(
       player_id    INTEGER PRIMARY KEY
-    , steam_id     INTEGER NOT NULL UNIQUE
     , steam_name   TEXT    NOT NULL
     , skill_mean   DOUBLE  NOT NULL DEFAULT {skill_mean}
     , skill_stdev  DOUBLE  NOT NULL DEFAULT {skill_stdev}
@@ -55,7 +54,7 @@ def create_tables(cursor):
     , winner     INTEGER  NOT NULL
     , loser      INTEGER  NOT NULL
     , FOREIGN KEY (winner) REFERENCES players (player_id)
-    , FOREIGN KEY (loser)  REFERENCES players (player_id)
+    , FOREIGN KEY (loser)  REFERENCES players (player_d)
     );
     ''')
 
@@ -99,11 +98,11 @@ def create_tables(cursor):
     CREATE TABLE IF NOT EXISTS player_state(
       player_state_id INTEGER PRIMARY KEY
     , game_state_id   INTEGER NOT NULL
+    , round           INTEGER NOT NULL
     , steam_id        INTEGER NOT NULL
     , steam_name      TEXT NOT NULL
     , team            TEXT NOT NULL
-    , last_round_won  BOOLEAN
-    , round           INTEGER NOT NULL
+    , won_round       BOOLEAN NOT NULL
     , match_kills     INTEGER NOT NULL
     , match_assists   INTEGER NOT NULL
     , match_deaths    INTEGER NOT NULL
@@ -112,7 +111,7 @@ def create_tables(cursor):
     , round_kills     INTEGER NOT NULL
     , round_totaldmg  INTEGER NOT NULL
     , FOREIGN KEY (game_state_id) REFERENCES game_state (game_state_id)
-    , UNIQUE (game_state_id, steam_id)
+    , UNIQUE (game_state_id, round, steam_id)
     );
     ''')
 
@@ -123,7 +122,7 @@ def create_tables(cursor):
     , player_id       INTEGER NOT NULL
     , team_id         INTEGER NOT NULL
     , round           INTEGER NOT NULL
-    , round_won       BOOLEAN NOT NULL
+    , won_round       BOOLEAN NOT NULL
     , round_kills     INTEGER NOT NULL
     , round_assists   INTEGER NOT NULL
     , round_mvps      INTEGER NOT NULL
@@ -188,7 +187,7 @@ def game_state():
 def rank_name(mmr: float) -> str:
     group_ranks = [group[0] for group in SKILL_GROUPS]
     index = bisect.bisect(group_ranks, mmr)
-    return SKILL_GROUPS[index][1]
+    return SKILL_GROUPS[index - 1][1]
 
 
 @app.route('/leaderboard.html', methods={'GET'})
@@ -202,7 +201,7 @@ def leaderboard():
     leaders = [{
         'player_id': player[0],
         'steam_name': player[1],
-        'mmr': player[2],
+        'mmr': int(player[2]),
         'skill_group': rank_name(player[2]),
     } for player in players]
 
@@ -216,6 +215,58 @@ def initialize():
         create_tables(cursor)
 
 
+def replace_teams(db, round_teams):
+    cursor = db.cursor()
+    cursor.execute('''
+    SELECT team_id, player_id
+    FROM team_membership
+    ORDER BY team_id
+    ''')
+
+    rows = list(enumerate_rows(cursor))
+    memberships = {tuple(sorted(item[1] for item in group)): team
+                   for team, group in itertools.groupby(rows, operator.itemgetter(0))}
+    missing_teams = set()
+
+    for team in round_teams:
+        if team not in memberships:
+            missing_teams.add(team)
+
+    for team in missing_teams:
+        cursor.execute('INSERT INTO teams DEFAULT VALUES')
+        team_id = cursor.lastrowid
+
+        placeholders = str.join(',', ['(?, ?)'] * len(team))
+        params = [param
+                  for player_id in team
+                  for param in (team_id, player_id)]
+        cursor.execute('''
+        INSERT INTO team_membership (team_id, player_id)
+        VALUES {}
+        '''.format(placeholders), params)
+        memberships[team] = team_id
+
+    return memberships
+
+
+def insert_players(db, player_states):
+    cursor = db.cursor()
+
+    players = {}
+    for state in player_states:
+        players[int(state['steam_id'])] = state['steam_name']
+
+    placeholder = str.join(',', ['(?, ?)'] * len(players))
+    params = [value
+              for player in players.items()
+              for value in player]
+
+    cursor.execute('''
+    REPLACE INTO players (player_id, steam_name) 
+    VALUES {}
+    '''.format(placeholder), params)
+
+
 def compute_rounds(db):
     cursor = db.cursor()
 
@@ -223,15 +274,63 @@ def compute_rounds(db):
     SELECT game_state_id, created_at, game_state
     FROM game_state
     ''')
-    game = list({
-        'game_state_id': row[0],
-        'created_at': datetime.datetime.strptime(row[1], '%Y-%m-%d %H:%M:%S'),
-        'game_state': json.loads(row[2]),
-    } for row in enumerate_rows(cursor))
-    for gm in game:
-        if 'map' not in gm['game_state'] or gm['game_state']['map']['phase'] != 'live':
+
+    player_states = []
+    rounds = []
+
+    for (game_state_id, created_at, game_state_json) in enumerate_rows(cursor):
+        state = json.loads(game_state_json)
+        if not (state.get('round', {}).get('phase') == 'over' and \
+                state.get('previously', {}).get('round', {}).get('phase') == 'live'):
             continue
-        print(json.dumps(gm['game_state'], indent=2))
+        win_team = state['round']['win_team']
+        team_steamids = [(player['team'], int(steamid))
+                         for steamid, player in state['allplayers'].items()]
+        team_steamids.sort()
+        team_members = {team: tuple(sorted(item[1] for item in group))
+                        for team, group in itertools.groupby(team_steamids, operator.itemgetter(0))}
+        if len(team_members) != 2:
+            raise ValueError(team_members)
+        lose_team = next(iter(set(team_members.keys()) - {win_team}))
+
+        for steamid, player in state['allplayers'].items():
+            player_states.append({
+                'teammates': team_members[player['team']],
+                'round': state['map']['round'],
+                'team': player['team'],
+                'steam_id': steamid,
+                'steam_name': player['name'],
+                'round_won': player['team'] == win_team,
+                # 'match_kills': state['match_stats']['kills'],
+                # 'match_assists': state['match_stats']['assists'],
+                # 'match_deaths': state['match_stats']['deaths'],
+                # 'match_mvps': state['match_stats']['mvps'],
+                # 'match_score': state['match_stats']['score'],
+                # 'round_kills': state['state']['round_kills'],
+                # 'round_totaldmg': state['state']['round_totaldmg'],
+            })
+
+        rounds.append({
+            'created_at': datetime.datetime.fromtimestamp(state['provider']['timestamp']),
+            'winner': team_members[win_team],
+            'loser': team_members[lose_team],
+        })
+
+    insert_players(db, player_states)
+
+    round_teams = {player_state['teammates'] for player_state in player_states}
+    teams_to_ids = replace_teams(db, round_teams)
+    fixed_rounds = [dict(created_at=rnd['created_at'], winner=teams_to_ids[rnd['winner']],
+                         loser=teams_to_ids[rnd['loser']])
+                    for rnd in rounds]
+
+    cursor = db.cursor()
+    cursor.execute('DELETE FROM rounds')
+
+    params = [value for rnd in fixed_rounds for value in (rnd['created_at'], rnd['winner'], rnd['loser'])]
+    cursor.execute('INSERT INTO rounds (created_at, winner, loser) VALUES ' +
+                   str.join(',', ['(?, ?, ?)'] * len(fixed_rounds)),
+                   params)
 
 
 def recalculate_1v1(db):
@@ -246,13 +345,13 @@ def recalculate_teams(db):
     FROM team_membership 
     ORDER BY team_id
     ''')
-    memberships: [(int, int)] = list(enumerate_rows(cursor))
+    memberships = list(enumerate_rows(cursor))
 
     cursor.execute('''
     SELECT winner, loser
     FROM rounds
     ''')
-    rounds: [(int, int)] = list(enumerate_rows(cursor))
+    rounds = list(enumerate_rows(cursor))
 
     teams = {team_id: frozenset(team[1] for team in teams)
              for team_id, teams
@@ -277,12 +376,12 @@ def recalculate_teams(db):
         WHERE player_id = ?
         ''', (rating.mu, rating.sigma, player_id))
 
-
 def recalculate():
     with get_db() as db:
         compute_rounds(db)
         recalculate_1v1(db)
         recalculate_teams(db)
+        db.commit()
 
 
 arg_parser = argparse.ArgumentParser()
@@ -290,7 +389,7 @@ arg_parser.add_argument('-a', '--addr', metavar='HOST', default='0.0.0.0',
                         help='Bind to this address.')
 arg_parser.add_argument('-p', '--port', metavar='PORT', type=int,
                         default=9000, help='Listen on this TCP port.')
-arg_parser.add_argument('--calculate', action='store_true',
+arg_parser.add_argument('-c', '--recalculate', action='store_true',
                         help='Recalculate rankings.')
 arg_parser.add_argument('-r', '--use-reloader', action='store_true',
                         help='Use code reloader.')
@@ -298,7 +397,7 @@ arg_parser.add_argument('-r', '--use-reloader', action='store_true',
 
 def main():
     args = arg_parser.parse_args()
-    if args.calculate:
+    if args.recalculate:
         return recalculate()
     app.wsgi_app = werkzeug.SharedDataMiddleware(app.wsgi_app, {
         '/': (__name__, 'htdocs')
