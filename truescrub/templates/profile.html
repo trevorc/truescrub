@@ -1,18 +1,18 @@
 <html lang="en">
 <head>
-  <title>{{ steam_name }}'s Profile</title>
+  <title>{{ profile.steam_name }}'s Profile</title>
 </head>
 <body>
-<h1>{{ steam_name }}'s Profile</h1>
+<h1>{{ profile.steam_name }}'s Profile</h1>
 
-<p>{{ skill_group }}</p>
+<p>{{ profile.skill_group }}</p>
 
 <h2>Record</h2>
-<p>{{ rounds_won }} : {{ rounds_lost }}</p>
+<p>{{ profile.rounds_won }} : {{ profile.rounds_lost }}</p>
 
 <h2>Team Records</h2>
 
-<p><a href="/profiles/{{ player_id }}/matches">All matches</a></p>
+<p><a href="/profiles/{{ profile.player_id }}/matches">All matches</a></p>
 
 {% for record in team_records %}
 <h3>{{ record.rounds_won }} : {{ record.rounds_lost }}</h3>
