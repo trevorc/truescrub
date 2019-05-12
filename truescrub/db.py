@@ -5,7 +5,8 @@ import itertools
 
 from flask import g
 
-from .util import SKILL_MEAN, SKILL_STDEV, skill_group_name, round_quality
+from .matchmaking import SKILL_MEAN, SKILL_STDEV, \
+    skill_group_name, match_quality
 
 
 DATABASE = os.environ.get('TRUESCRUB_DB', 'skill.db')
@@ -127,7 +128,7 @@ def get_player_teams(player_id: int):
 
 
 def get_player_profile(player_id: int):
-    [(steam_name, mmr, rounds_won, rounds_lost)] = execute('''
+    steam_name, mmr, rounds_won, rounds_lost = execute_one('''
     SELECT p.steam_name
          , p.skill_mean - 2 * skill_stdev AS mmr
          , rounds_won.num_rounds
@@ -169,13 +170,14 @@ def get_player_rounds(player_skills, player_id):
     ORDER BY created_at DESC
     ''', (player_id,))
 
-    return [{
-        'created_at': row[0],
-        'winner': teams[row[1]],
-        'loser': teams[row[2]],
-        'quality': '%.2f' % (
-            round_quality(player_skills, teams[row[1]], teams[row[2]])),
-    } for row in round_rows]
+    for created_at, winner, loser in round_rows:
+        yield {
+            'created_at': created_at,
+            'winner': teams[winner],
+            'loser': teams[loser],
+            'quality': 100 * match_quality(
+                    player_skills, teams[winner], teams[loser]),
+        }
 
 
 def get_team_members(team_id: int):
@@ -203,6 +205,8 @@ def get_opponent_records(team_id: int):
     SELECT m.team_id
          , m.player_id
          , p.steam_name
+         , p.skill_mean
+         , p.skill_stdev
     FROM team_membership m
     JOIN ( SELECT winner AS team_id
                 , loser AS opponent
@@ -223,6 +227,8 @@ def get_opponent_records(team_id: int):
         int(team_id): [{
             'player_id': row[1],
             'steam_name': row[2],
+            'skill_mean': row[3],
+            'skill_stdev': row[4],
         } for row in group]
         for team_id, group in itertools.groupby(
             opponent_rows, operator.itemgetter(0))
@@ -256,12 +262,14 @@ def get_opponent_records(team_id: int):
            OR rounds_lost.num_rounds IS NOT NULL)
     ''', (team_id,))
 
-    return [{
-        'opponent_team_id': row[1],
-        'opponent_team': opponents[row[1]],
-        'rounds_won': row[2],
-        'rounds_lost': row[3],
-    } for row in opponent_record_rows]
+    for team_id, opponent_team_id, rounds_won, rounds_lost \
+            in opponent_record_rows:
+        yield {
+            'opponent_team_id': opponent_team_id,
+            'opponent_team': opponents[opponent_team_id],
+            'rounds_won': rounds_won,
+            'rounds_lost': rounds_lost,
+        }
 
 
 def create_tables(cursor):

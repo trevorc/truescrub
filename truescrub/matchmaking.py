@@ -38,7 +38,9 @@ def skill_group_name(mmr: float) -> str:
     return SKILL_GROUPS[index - 1][1]
 
 
-def round_quality(player_skills, team1, team2):
+def match_quality(
+        player_skills: {int: trueskill.TrueSkill},
+        team1: [dict], team2: [dict]) -> float:
     teams = (
         [player_skills[player['player_id']] for player in team1],
         [player_skills[player['player_id']] for player in team2],
@@ -61,8 +63,10 @@ def suggest_teams(player_skills):
 def make_player_skills(players):
     return {
         player['player_id']: trueskill.Rating(
-                player['skill_mean'], player['skill_stdev'])
-        for player in players}
+                player['skill_mean'],
+                player['skill_stdev'])
+        for player in players
+    }
 
 
 def compute_matches(players):

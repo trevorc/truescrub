@@ -6,7 +6,7 @@ import itertools
 import trueskill
 
 from .db import enumerate_rows, get_db, initialize
-from .util import SKILL_MEAN, SKILL_STDEV
+from .matchmaking import SKILL_MEAN, SKILL_STDEV
 
 
 def drop_tables(connection):

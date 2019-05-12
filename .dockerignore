@@ -3,3 +3,4 @@
 venv
 skill.db
 logs
+Makefile

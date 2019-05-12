@@ -7,6 +7,7 @@
 
 <p>{{ rounds_won }} : {{ rounds_lost }}</p>
 
+<h2>Team members</h2>
 <ul>
   {% for member in members %}
   <li>{{ member.steam_name }}: {{ member.skill_group }}</li>
@@ -16,13 +17,13 @@
 <h2>Team Records</h2>
 
 {% for record in opponent_records %}
-<h3>{{ record.rounds_won }} : {{ record.rounds_lost }}</h3>
-<p><a href="/teams/{{ record.opponent_team_id }}">Team details</a></p>
-<ul>
-  {% for player in record.opponent_team %}
-  <li>{{ player.steam_name }}</li>
-  {% endfor %}
-</ul>
+  <h3>{{ record.rounds_won }} : {{ record.rounds_lost }}</h3>
+  <p><a href="/teams/{{ record.opponent_team_id }}">Opponent team details</a></p>
+  <ul>
+    {% for player in record.opponent_team %}
+      <li>{{ player.steam_name }}</li>
+    {% endfor %}
+  </ul>
 {% endfor %}
 
 </body>

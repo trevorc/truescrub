@@ -9,7 +9,7 @@
 {% for round in rounds %}
 <div>
   <h3>{{ round.created_at }}</h3>
-  <p>Match quality: {{ round.quality }}</p>
+  <div>Match quality: {{ round.quality|int }}%</div>
   <div style="display: flex;">
     <div>
       <h4>Winners</h4>

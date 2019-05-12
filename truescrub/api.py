@@ -8,7 +8,7 @@ from flask import g, request
 
 from . import db
 from .recalculate import recalculate
-from .util import compute_matches, make_player_skills
+from .matchmaking import compute_matches, make_player_skills
 
 app = flask.Flask(__name__)
 app.config['PROPAGATE_EXCEPTIONS'] = True
@@ -43,11 +43,14 @@ def leaderboard():
     return flask.render_template('leaderboard.html', leaderboard=players)
 
 
-@app.route('/profiles/<player_id>', methods={'GET'})
+@app.route('/profiles/<int:player_id>', methods={'GET'})
 def profile(player_id):
-    player_profile = db.get_player_profile(player_id)
-    team_records = list(db.get_team_records(player_id))
+    try:
+        player_profile = db.get_player_profile(player_id)
+    except StopIteration:
+        return flask.make_response('No such player', 404)
 
+    team_records = list(db.get_team_records(player_id))
     return flask.render_template('profile.html', profile=player_profile,
                                  team_records=team_records)
 
@@ -70,14 +73,16 @@ def matchmaking():
                                  players=players, teams=teams)
 
 
-@app.route('/profiles/<player_id>/matches', methods={'GET'})
+@app.route('/profiles/<int:player_id>/matches', methods={'GET'})
 def matches(player_id):
-    player_id = int(player_id)
-
     all_players = list(db.get_all_players())
-    steam_name = next(player['steam_name']
-                      for player in all_players
-                      if player['player_id'] == player_id)
+
+    try:
+        steam_name = next(player['steam_name']
+                          for player in all_players
+                          if player['player_id'] == player_id)
+    except StopIteration:
+        return flask.make_response('No such player', 404)
 
     player_skills = make_player_skills(all_players)
     rounds = db.get_player_rounds(player_skills, player_id)
@@ -86,13 +91,14 @@ def matches(player_id):
             'matches.html', steam_name=steam_name, rounds=rounds)
 
 
-@app.route('/teams/<team_id>', methods={'GET'})
+@app.route('/teams/<int:team_id>', methods={'GET'})
 def team_details(team_id):
-    team_id = int(team_id)
-
     members = db.get_team_members(team_id)
+    if len(members) == 0:
+        return flask.make_response('No such team', 404)
+
     member_names = str.join(', ', [member['steam_name'] for member in members])
-    opponent_records = db.get_opponent_records(team_id)
+    opponent_records = list(db.get_opponent_records(team_id))
 
     rounds_won = 0
     rounds_lost = 0
@@ -101,10 +107,10 @@ def team_details(team_id):
         rounds_lost += record['rounds_lost']
 
     return flask.render_template(
-        'team_details.html',
-        member_names=member_names, members=members,
-        rounds_won=rounds_won, rounds_lost=rounds_lost,
-        opponent_records=opponent_records)
+            'team_details.html',
+            member_names=member_names, members=members,
+            rounds_won=rounds_won, rounds_lost=rounds_lost,
+            opponent_records=opponent_records)
 
 
 arg_parser = argparse.ArgumentParser()
