@@ -18,21 +18,21 @@ from flask import g, request
 DATABASE = os.environ.get('TRUESCRUB_DB', 'skill.db')
 SKILL_GROUPS = [
     (float('-inf'), 'Scrub'),
-    (0, 'Paper I'),
-    (150, 'Paper II'),
-    (300, 'Paper III'),
-    (450, 'Paper IV'),
+    (0, 'Cardboard I'),
+    (150, 'Cardboard II'),
+    (300, 'Cardboard III'),
+    (450, 'Cardboard IV'),
     (600, 'Plastic I'),
     (750, 'Plastic II'),
     (900, 'Plastic III'),
-    (1050, 'Plastic IV'),
-    (1200, 'Wood I'),
-    (1350, 'Wood II'),
-    (1500, 'Wood III'),
-    (1650, 'Wood IV'),
-    (1800, 'Bronze'),
-    (1950, 'Bronze Master'),
-    (2100, 'Pistols Only'),
+    (1050, 'Plastic Elite'),
+    (1200, 'Plastic Supreme'),
+    (1350, 'Wood I'),
+    (1500, 'Wood II'),
+    (1650, 'Aluminum'),
+    (1800, 'Garb Salad'),
+    (1950, 'Legendary Silver'),
+    (2100, 'Low-Key Dirty'),
 ]
 
 SKILL_MEAN = 1000
