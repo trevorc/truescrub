@@ -542,6 +542,9 @@ def replace_teams(db, round_teams):
 
 
 def insert_players(db, player_states):
+    if len(player_states) == 0:
+        return
+
     cursor = db.cursor()
 
     players = {}
@@ -685,6 +688,7 @@ arg_parser.add_argument('-r', '--use-reloader', action='store_true',
                         help='Use code reloader.')
 
 
+
 def main():
     args = arg_parser.parse_args()
     if args.recalculate:
@@ -692,12 +696,11 @@ def main():
     app.wsgi_app = werkzeug.SharedDataMiddleware(app.wsgi_app, {
         '/': (__name__, 'htdocs')
     })
-    with get_db() as db:
-        initialize(db)
-        db.commit()
     app.run(args.addr, args.port, app, use_reloader=args.use_reloader)
+
+with get_db() as db:
+    initialize(db)
+    db.commit()
 
 if __name__ == '__main__':
     main()
-elif __name__.startswith('_mod_wsgi_'):
-    application = app

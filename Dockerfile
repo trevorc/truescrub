@@ -12,4 +12,4 @@ WORKDIR /app
 
 EXPOSE 9000
 
-CMD ["python", "-m", "truescrub"]
+CMD ["waitress-serve", "--port", "9000", "truescrub:app"]
