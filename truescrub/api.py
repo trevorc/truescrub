@@ -187,7 +187,12 @@ def skill_group_name(mmr: float) -> str:
 
 @app.route('/leaderboard', methods={'GET'})
 def leaderboard():
-    players = list(execute('''
+    players = get_all_players()
+    return flask.render_template('leaderboard.html', leaderboard=players)
+
+
+def get_all_players():
+    player_rows = execute('''
     SELECT player_id
          , steam_name
          , skill_mean - 2 * skill_stdev AS mmr
@@ -195,18 +200,16 @@ def leaderboard():
          , skill_stdev
     FROM players
     ORDER BY skill_mean - 2 * skill_stdev DESC
-    '''))
+    ''')
 
-    leaders = [{
-        'player_id': player[0],
+    return [{
+        'player_id': int(player[0]),
         'steam_name': player[1],
         'mmr': int(player[2]),
         'skill_group': skill_group_name(player[2]),
-        'skill_mean': int(player[3]),
-        'skill_stdev': int(player[4]),
-    } for player in players]
-
-    return flask.render_template('leaderboard.html', leaderboard=leaders)
+        'skill_mean': player[3],
+        'skill_stdev': player[4],
+    } for player in player_rows]
 
 
 def make_player(team_row):
@@ -302,12 +305,42 @@ def profile(player_id):
         team_records=team_records)
 
 
-def round_quality(player_skills, winner, loser):
+def round_quality(player_skills, team1, team2):
     teams = (
-        [player_skills[player['player_id']] for player in winner],
-        [player_skills[player['player_id']] for player in loser],
+        [player_skills[player['player_id']] for player in team1],
+        [player_skills[player['player_id']] for player in team2],
     )
     return trueskill.quality(teams)
+
+
+def suggest_teams(player_skills):
+    players = frozenset(player_skills.keys())
+    for r in range(1, len(players) // 2):
+        for team1 in itertools.combinations(players, r):
+            team2 = players - set(team1)
+            quality = trueskill.quality((
+                [player_skills[player_id] for player_id in team1],
+                [player_skills[player_id] for player_id in team2]
+            ))
+            yield team1, team2, quality
+
+
+@app.route('/matchmaking', methods={'GET'})
+def matchmaking():
+    players = get_all_players()
+    player_skills = {player['player_id']: trueskill.Rating(player['skill_mean'], player['skill_stdev'])
+                     for player in players}
+    player_names = {player['player_id']: player['steam_name'] for player in players}
+
+    teams = [{
+        'team1': [player_names[player_id] for player_id in result[0]],
+        'team2': [player_names[player_id] for player_id in result[1]],
+        'quality': result[2],
+    } for result in suggest_teams(player_skills)]
+
+    teams.sort(key=operator.itemgetter('quality'), reverse=True)
+
+    return '<pre>' + json.dumps(teams, indent=2) + '</pre>'
 
 
 @app.route('/profiles/<player_id>/matches', methods={'GET'})
