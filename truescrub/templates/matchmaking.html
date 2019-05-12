@@ -1,0 +1,69 @@
+<html lang="en">
+<head>
+  <title>TrueScrub&trade; Matchmaking</title>
+</head>
+<body>
+<h1>TrueScrub&trade; Matchmaking</h1>
+
+<p>Proposes evenly matched teams for a given set of players.</p>
+
+<form action="/matchmaking" method="GET">
+  <h2>Who is playing?</h2>
+
+  <ul>
+    {% for player in players %}
+    <li>
+      <label for="player-{{ player.player_id }}">
+        <input type="checkbox" name="player" id="player-{{ player.player_id }}" value="{{ player.player_id }}"
+               {% if player.selected %}checked="checked"{% endif %}>
+        {{ player.steam_name }}
+      </label>
+    </li>
+    {% endfor %}
+  </ul>
+
+  <div><button id="toggle" type="button">Toggle selection</button> <input type="submit"></div>
+
+</form>
+
+{% if teams %}
+<div>
+  <h2>Matches</h2>
+
+  {% for match in teams %}
+  <div>
+    <div>Quality: {{ match.quality|int }}%</div>
+    <div style="display: flex">
+      <div>
+        <h4>Team 1</h4>
+        <ul>
+          {% for player in match.team1 %}
+          <li>{{ player.steam_name }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+      <div>
+        <h4>Team 2</h4>
+        <ul>
+          {% for player in match.team2 %}
+          <li>{{ player.steam_name }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+
+</div>
+
+{% endif %}
+
+<script>
+  document.getElementById('toggle').addEventListener('click', function() {
+    document.getElementsByName('player').forEach(function(checkbox) {
+      checkbox.checked = !checkbox.checked;
+    });
+  });
+</script>
+</body>
+</html>

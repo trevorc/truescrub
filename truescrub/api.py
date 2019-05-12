@@ -315,7 +315,7 @@ def round_quality(player_skills, team1, team2):
 
 def suggest_teams(player_skills):
     players = frozenset(player_skills.keys())
-    for r in range(1, len(players) // 2):
+    for r in range(1, len(players) // 2 + 1):
         for team1 in itertools.combinations(players, r):
             team2 = players - set(team1)
             quality = trueskill.quality((
@@ -325,22 +325,34 @@ def suggest_teams(player_skills):
             yield team1, team2, quality
 
 
-@app.route('/matchmaking', methods={'GET'})
-def matchmaking():
-    players = get_all_players()
-    player_skills = {player['player_id']: trueskill.Rating(player['skill_mean'], player['skill_stdev'])
-                     for player in players}
-    player_names = {player['player_id']: player['steam_name'] for player in players}
+def compute_matches(players):
+    player_skills = {
+        player['player_id']: trueskill.Rating(player['skill_mean'], player['skill_stdev'])
+        for player in players}
+    players_by_id = {player['player_id']: player for player in players}
 
     teams = [{
-        'team1': [player_names[player_id] for player_id in result[0]],
-        'team2': [player_names[player_id] for player_id in result[1]],
-        'quality': result[2],
-    } for result in suggest_teams(player_skills)]
+        'team1': [players_by_id[player_id] for player_id in team1],
+        'team2': [players_by_id[player_id] for player_id in team2],
+        'quality': quality * 100,
+    } for team1, team2, quality in suggest_teams(player_skills)]
 
     teams.sort(key=operator.itemgetter('quality'), reverse=True)
+    return teams
 
-    return '<pre>' + json.dumps(teams, indent=2) + '</pre>'
+
+@app.route('/matchmaking', methods={'GET'})
+def matchmaking():
+    selected_players = {int(player_id) for player_id in request.args.getlist('player')}
+
+    players = get_all_players()
+    for player in players:
+        player['selected'] = player['player_id'] in selected_players
+
+    teams = compute_matches([player for player in players if player['selected']]) \
+        if len(selected_players) > 0 else None
+
+    return flask.render_template('matchmaking.html', players=players, teams=teams)
 
 
 @app.route('/profiles/<player_id>/matches', methods={'GET'})
