@@ -60,6 +60,9 @@ def matchmaking():
     selected_players = {
         int(player_id) for player_id in request.args.getlist('player')
     }
+    if len(selected_players) > 10:
+        return flask.make_response(
+                'Cannot compute matches for more than 10 players', 403)
 
     players = list(db.get_all_players())
     for player in players:

@@ -9,6 +9,7 @@ SKILL_MEAN = 1000
 SKILL_STDEV = 200
 BETA = SKILL_STDEV / 2.0
 TAU = SKILL_STDEV / 100.0
+MAX_PLAYERS_PER_TEAM = 5
 
 trueskill.setup(mu=SKILL_MEAN, sigma=SKILL_STDEV, beta=BETA, tau=TAU)
 
@@ -50,7 +51,10 @@ def match_quality(
 
 def suggest_teams(player_skills):
     players = frozenset(player_skills.keys())
-    for r in range(1, len(players) // 2 + 1):
+    max_team_size = min(len(players) // 2, MAX_PLAYERS_PER_TEAM)
+    min_team_size = max(1, len(players) - MAX_PLAYERS_PER_TEAM)
+
+    for r in range(min_team_size, max_team_size + 1):
         for team1 in itertools.combinations(players, r):
             team2 = players - set(team1)
             quality = trueskill.quality((
