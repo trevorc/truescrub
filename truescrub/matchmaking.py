@@ -25,12 +25,12 @@ SKILL_GROUP_NAMES = [
     'Plastic II',
     'Plastic III',
     'Plastic Elite',
-    'Wood I',
-    'Wood II',
-    'Wood Supreme Master',
-    'Aluminum',
+    'Legendary Wood',
+    'Legendary Wood Master',
+    'Supreme Legendary Wood',
     'Garb Salad',
-    'Legendary Silver',
+    'Master Garbian',
+    'Master Garbian Elite',
     'Low-Key Dirty',
 ]
 SKILL_GROUPS = ((float('-inf'), SKILL_GROUP_NAMES[0]),) + tuple(
