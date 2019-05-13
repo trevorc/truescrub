@@ -47,12 +47,14 @@ def get_team_records(player_id):
          , IFNULL(rounds_won.num_rounds, 0)
          , IFNULL(rounds_lost.num_rounds, 0)
     FROM team_membership m
-    LEFT JOIN ( SELECT r.winner AS team_id, COUNT(*) AS num_rounds
+    LEFT JOIN ( SELECT r.winner AS team_id
+                     , COUNT(*) AS num_rounds
                 FROM rounds r
                 GROUP BY r.winner
               ) rounds_won
     ON m.team_id = rounds_won.team_id
-    LEFT JOIN ( SELECT r.loser AS team_id, COUNT(*) AS num_rounds
+    LEFT JOIN ( SELECT r.loser AS team_id
+                     , COUNT(*) AS num_rounds
                 FROM rounds r
                 GROUP BY r.loser
               ) rounds_lost
@@ -127,6 +129,53 @@ def get_player_teams(player_id: int):
     }
 
 
+def get_all_teams_from_player_rounds(player_id: int) -> {int: [dict]}:
+    team_rows = execute('''
+    SELECT participants.team_id
+         , participants.player_id
+         , players.steam_name
+    FROM   team_membership player_teams
+    JOIN   ( SELECT player_id
+                  , rounds.loser  AS team_id
+             FROM rounds
+             JOIN team_membership
+             ON team_membership.team_id = rounds.winner
+             UNION
+             SELECT player_id
+                  , winner AS team_id
+             FROM rounds
+             JOIN team_membership
+             ON team_membership.team_id = rounds.loser
+             UNION
+             SELECT player_id
+                  , rounds.winner AS team_id
+             FROM rounds
+             JOIN team_membership
+             ON team_membership.team_id = rounds.winner
+             UNION
+             SELECT player_id
+                  , loser AS team_id
+             FROM rounds
+             JOIN team_membership
+             ON team_membership.team_id = rounds.loser
+    ) matches
+    ON     player_teams.player_id = matches.player_id
+    JOIN   team_membership participants
+    ON     participants.team_id = matches.team_id
+    JOIN   players
+    ON     players.player_id = participants.player_id
+    WHERE player_teams.player_id = ?
+    GROUP BY participants.team_id, participants.player_id
+    ORDER BY participants.team_id, participants.player_id;
+    ''', (player_id,))
+
+    return {
+        team_id: list(make_player(val) for val in group)
+        for team_id, group in itertools.groupby(
+            team_rows, operator.itemgetter(0))
+    }
+
+
 def get_player_profile(player_id: int):
     steam_name, mmr, rounds_won, rounds_lost = execute_one('''
     SELECT p.steam_name
@@ -159,7 +208,7 @@ def get_player_profile(player_id: int):
 
 
 def get_player_rounds(player_skills, player_id):
-    teams = get_player_teams(player_id)
+    teams = get_all_teams_from_player_rounds(player_id)
 
     round_rows = execute('''
     SELECT created_at, winner, loser
