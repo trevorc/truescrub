@@ -44,8 +44,8 @@ def get_team_records(player_id):
 
     team_record_rows = execute('''
     SELECT m.team_id
-         , rounds_won.num_rounds
-         , rounds_lost.num_rounds
+         , IFNULL(rounds_won.num_rounds, 0)
+         , IFNULL(rounds_lost.num_rounds, 0)
     FROM team_membership m
     LEFT JOIN ( SELECT r.winner AS team_id, COUNT(*) AS num_rounds
                 FROM rounds r
@@ -107,7 +107,7 @@ def get_player_teams(player_id: int):
            ON     rounds.winner = winners.team_id
            UNION
            SELECT losers.player_id
-                , rounds.winner AS team_id
+                , rounds.loser AS team_id
            FROM   rounds
            JOIN   team_membership losers
            ON     rounds.loser = losers.team_id
@@ -131,8 +131,8 @@ def get_player_profile(player_id: int):
     steam_name, mmr, rounds_won, rounds_lost = execute_one('''
     SELECT p.steam_name
          , p.skill_mean - 2 * skill_stdev AS mmr
-         , rounds_won.num_rounds
-         , rounds_lost.num_rounds
+         , IFNULL(rounds_won.num_rounds, 0)
+         , IFNULL(rounds_lost.num_rounds, 0)
     FROM players p
     LEFT JOIN ( SELECT m.player_id, COUNT(*) AS num_rounds
                 FROM rounds r
