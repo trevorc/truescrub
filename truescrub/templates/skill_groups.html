@@ -1,0 +1,24 @@
+<html lang="en">
+<head>
+  <title>TrueScrub&trade; Skill Groups</title>
+</head>
+<body>
+<h1>TrueScrub&trade; Skill Groups</h1>
+<table>
+  <thead>
+  <tr>
+    <th>Name</th>
+    <th>MMR Range</th>
+  </tr>
+  </thead>
+  <tbody>
+  {% for skill_group in skill_groups %}
+    <tr>
+      <td>{{ skill_group.name }}</td>
+      <td>{{ skill_group.lower_bound }}&ndash;{{ skill_group.upper_bound }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</body>
+</html>

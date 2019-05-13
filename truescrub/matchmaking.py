@@ -6,37 +6,54 @@ import trueskill
 
 
 SKILL_MEAN = 1000
-SKILL_STDEV = 200
+SKILL_STDEV = 100
 BETA = SKILL_STDEV / 2.0
 TAU = SKILL_STDEV / 100.0
 MAX_PLAYERS_PER_TEAM = 5
 
 trueskill.setup(mu=SKILL_MEAN, sigma=SKILL_STDEV, beta=BETA, tau=TAU)
 
-SKILL_GROUPS = [
-    (float('-inf'), 'Scrub'),
-    (0, 'Cardboard I'),
-    (150, 'Cardboard II'),
-    (300, 'Cardboard III'),
-    (450, 'Cardboard IV'),
-    (600, 'Plastic I'),
-    (750, 'Plastic II'),
-    (900, 'Plastic III'),
-    (1050, 'Plastic Elite'),
-    (1200, 'Plastic Supreme'),
-    (1350, 'Wood I'),
-    (1500, 'Wood II'),
-    (1650, 'Aluminum'),
-    (1800, 'Garb Salad'),
-    (1950, 'Legendary Silver'),
-    (2100, 'Low-Key Dirty'),
+SKILL_GROUP_SPACING = 1.25 * SKILL_STDEV
+SKILL_GROUP_NAMES = [
+    'Scrub',
+    'Cardboard I',
+    'Cardboard II',
+    'Cardboard III',
+    'Cardboard IV',
+    'Cardboard Elite',
+    'Plastic I',
+    'Plastic II',
+    'Plastic III',
+    'Plastic Elite',
+    'Wood I',
+    'Wood II',
+    'Wood Supreme Master',
+    'Aluminum',
+    'Garb Salad',
+    'Legendary Silver',
+    'Low-Key Dirty',
 ]
+SKILL_GROUPS = ((float('-inf'), SKILL_GROUP_NAMES[0]),) + tuple(
+        (SKILL_GROUP_SPACING * (i + 1), name)
+        for i, name in enumerate(SKILL_GROUP_NAMES[1:])
+)
 
 
 def skill_group_name(mmr: float) -> str:
     group_ranks = [group[0] for group in SKILL_GROUPS]
     index = bisect.bisect(group_ranks, mmr)
     return SKILL_GROUPS[index - 1][1]
+
+
+def skill_group_ranges():
+    previous_bound = None
+    previous_group = None
+    for lower_bound, group_name in SKILL_GROUPS:
+        if previous_group is not None:
+            yield previous_group, previous_bound, lower_bound
+        previous_bound = lower_bound
+        previous_group = group_name
+    yield previous_group, previous_bound, float('inf')
 
 
 def match_quality(

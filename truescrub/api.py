@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import json
+import math
 import argparse
 
 import flask
@@ -8,7 +9,7 @@ from flask import g, request
 
 from . import db
 from .recalculate import recalculate
-from .matchmaking import compute_matches, make_player_skills
+from .matchmaking import skill_group_ranges, compute_matches, make_player_skills
 
 app = flask.Flask(__name__)
 app.config['PROPAGATE_EXCEPTIONS'] = True
@@ -41,6 +42,24 @@ def game_state():
 def leaderboard():
     players = list(db.get_all_players())
     return flask.render_template('leaderboard.html', leaderboard=players)
+
+
+def format_bound(bound):
+    if math.isfinite(bound):
+        return int(bound)
+    if bound < 0:
+        return '-∞'
+    return '∞'
+
+
+@app.route('/skill_groups', methods={'GET'})
+def all_skill_groups():
+    groups = [{
+        'name': skill_group,
+        'lower_bound': format_bound(lower_bound),
+        'upper_bound': format_bound(upper_bound),
+    } for skill_group, lower_bound, upper_bound in skill_group_ranges()]
+    return flask.render_template('skill_groups.html', skill_groups=groups)
 
 
 @app.route('/profiles/<int:player_id>', methods={'GET'})
