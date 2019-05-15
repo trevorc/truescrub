@@ -37,9 +37,9 @@ def db_close(exc):
 @app.route('/api/game_state', methods={'POST'})
 def game_state():
     state_json = request.get_json(force=True)
-    if state_json.get('token') != SHARED_KEY:
+    if state_json.get('auth', {}).get('token') != SHARED_KEY:
         return flask.make_response('Invalid auth token\n', 403)
-    del state_json['token']
+    del state_json['auth']
     state = json.dumps(state_json)
     db.insert_game_state(state)
     return '<h1>OK</h1>\n'
