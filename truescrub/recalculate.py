@@ -132,15 +132,18 @@ def compute_rounds(connection):
 
     round_teams = {player_state['teammates'] for player_state in player_states}
     teams_to_ids = replace_teams(connection, round_teams)
+    cursor = connection.cursor()
     fixed_rounds = [dict(created_at=rnd['created_at'], winner=teams_to_ids[rnd['winner']],
                          loser=teams_to_ids[rnd['loser']])
                     for rnd in rounds]
 
-    cursor = connection.cursor()
-    params = [value for rnd in fixed_rounds for value in (rnd['created_at'], rnd['winner'], rnd['loser'])]
-    cursor.execute('INSERT INTO rounds (created_at, winner, loser) VALUES ' +
-                   str.join(',', ['(?, ?, ?)'] * len(fixed_rounds)),
-                   params)
+    for batch in [fixed_rounds[i:i + 100]
+                  for i in range(0, len(fixed_rounds), 100)]:
+        params = [value for rnd in batch
+                  for value in (rnd['created_at'], rnd['winner'], rnd['loser'])]
+        cursor.execute('INSERT INTO rounds (created_at, winner, loser) VALUES ' +
+                       str.join(',', ['(?, ?, ?)'] * len(batch)),
+                       params)
 
 
 def recalculate_teams(connection):

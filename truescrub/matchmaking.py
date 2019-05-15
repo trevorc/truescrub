@@ -6,14 +6,14 @@ import trueskill
 
 
 SKILL_MEAN = 1000
-SKILL_STDEV = 100
+SKILL_STDEV = SKILL_MEAN / 3.0
 BETA = SKILL_STDEV / 2.0
 TAU = SKILL_STDEV / 100.0
 MAX_PLAYERS_PER_TEAM = 5
 
 trueskill.setup(mu=SKILL_MEAN, sigma=SKILL_STDEV, beta=BETA, tau=TAU)
 
-SKILL_GROUP_SPACING = 1.25 * SKILL_STDEV
+SKILL_GROUP_SPACING = SKILL_STDEV / (10.0 / 3.0)
 SKILL_GROUP_NAMES = [
     'Scrub',
     'Cardboard I',
@@ -34,7 +34,7 @@ SKILL_GROUP_NAMES = [
     'Low-Key Dirty',
 ]
 SKILL_GROUPS = ((float('-inf'), SKILL_GROUP_NAMES[0]),) + tuple(
-        (SKILL_GROUP_SPACING * (i + 1), name)
+        (1 + SKILL_GROUP_SPACING * (i + 1), name)
         for i, name in enumerate(SKILL_GROUP_NAMES[1:])
 )
 
