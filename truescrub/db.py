@@ -3,6 +3,7 @@ import sqlite3
 import operator
 import itertools
 
+import trueskill
 from flask import g
 
 from .matchmaking import SKILL_MEAN, SKILL_STDEV, \
@@ -88,8 +89,7 @@ def get_all_players():
             'steam_name': steam_name,
             'mmr': int(mmr),
             'skill_group': skill_group_name(mmr),
-            'skill_mean': skill_mean,
-            'skill_stdev': skill_stdev,
+            'rating': trueskill.Rating(skill_mean, skill_stdev),
         }
 
 
@@ -246,6 +246,7 @@ def get_team_members(team_id: int):
         'player_id': row[0],
         'steam_name': row[1],
         'skill_group': skill_group_name(row[2]),
+        'rating': trueskill.Rating(row[3], row[4]),
     } for row in member_rows]
 
 
@@ -276,8 +277,7 @@ def get_opponent_records(team_id: int):
         int(team_id): [{
             'player_id': row[1],
             'steam_name': row[2],
-            'skill_mean': row[3],
-            'skill_stdev': row[4],
+            'rating': trueskill.Rating(row[3], row[4]),
         } for row in group]
         for team_id, group in itertools.groupby(
             opponent_rows, operator.itemgetter(0))

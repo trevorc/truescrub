@@ -4,13 +4,16 @@ import os
 import json
 import math
 import argparse
+import itertools
 
 import flask
 from flask import g, request
 
 from . import db
 from .recalculate import recalculate
-from .matchmaking import skill_group_ranges, compute_matches, make_player_skills
+from .matchmaking import (
+    skill_group_ranges, compute_matches, make_player_skills,
+    match_quality, team1_win_probability)
 
 app = flask.Flask(__name__)
 app.config['PROPAGATE_EXCEPTIONS'] = True
@@ -32,6 +35,11 @@ def db_commit(response):
 @app.teardown_request
 def db_close(exc):
     g.conn.close()
+
+
+@app.route('/', methods={'GET'})
+def index():
+    return flask.render_template('index.html')
 
 
 @app.route('/api/game_state', methods={'POST'})
@@ -128,6 +136,18 @@ def team_details(team_id):
 
     member_names = str.join(', ', [member['steam_name'] for member in members])
     opponent_records = list(db.get_opponent_records(team_id))
+
+    player_skills = make_player_skills(itertools.chain(
+            members, *(record['opponent_team']
+                       for record in opponent_records)))
+
+    for record in opponent_records:
+        record.update(
+                quality=match_quality(
+                        player_skills, members, record['opponent_team']),
+                win_probability=team1_win_probability(
+                        player_skills, members, record['opponent_team'])
+        )
 
     rounds_won = 0
     rounds_lost = 0

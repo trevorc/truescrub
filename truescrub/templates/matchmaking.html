@@ -32,10 +32,11 @@
 
   {% for match in teams %}
   <div>
-    <div>Quality: {{ match.quality|int }}%</div>
+    <div title="Chance of draw">Quality: {{ (100 * match.quality)|int }}%</div>
     <div style="display: flex">
       <div>
         <h4>Team 1</h4>
+        <div>Win: {{ (100 * match.team1_win_probability)|int }}%</div>
         <ul>
           {% for player in match.team1 %}
           <li>{{ player.steam_name }}</li>
@@ -44,6 +45,7 @@
       </div>
       <div>
         <h4>Team 2</h4>
+        <div>Win: {{ (100 * match.team2_win_probability)|int }}%</div>
         <ul>
           {% for player in match.team2 %}
           <li>{{ player.steam_name }}</li>

@@ -18,6 +18,8 @@
 
 {% for record in opponent_records %}
   <h3>{{ record.rounds_won }} : {{ record.rounds_lost }}</h3>
+  <p>Quality: {{ (100 * record.quality)|int }}%</p>
+  <p title="Chance of defeating this opponent">Win probability: {{ (100 * record.win_probability)|int }}%</p>
   <p><a href="/teams/{{ record.opponent_team_id }}">Opponent team details</a></p>
   <ul>
     {% for player in record.opponent_team %}
