@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import os
 import json
 import math
 import argparse
@@ -13,6 +14,8 @@ from .matchmaking import skill_group_ranges, compute_matches, make_player_skills
 
 app = flask.Flask(__name__)
 app.config['PROPAGATE_EXCEPTIONS'] = True
+
+SHARED_KEY = os.environ.get('TRUESCRUB_KEY', 'afohXaef9ighaeSh')
 
 
 @app.before_request
@@ -33,7 +36,11 @@ def db_close(exc):
 
 @app.route('/api/game_state', methods={'POST'})
 def game_state():
-    state = json.dumps(request.get_json(force=True))
+    state_json = request.get_json(force=True)
+    if state_json.get('token') != SHARED_KEY:
+        return flask.make_response('Invalid auth token\n', 403)
+    del state_json['token']
+    state = json.dumps(state_json)
     db.insert_game_state(state)
     return '<h1>OK</h1>\n'
 
@@ -104,7 +111,7 @@ def matches(player_id):
                           for player in all_players
                           if player['player_id'] == player_id)
     except StopIteration:
-        return flask.make_response('No such player', 404)
+        return flask.make_response('No such player\n', 404)
 
     player_skills = make_player_skills(all_players)
     rounds = db.get_player_rounds(player_skills, player_id)
@@ -117,7 +124,7 @@ def matches(player_id):
 def team_details(team_id):
     members = db.get_team_members(team_id)
     if len(members) == 0:
-        return flask.make_response('No such team', 404)
+        return flask.make_response('No such team\n', 404)
 
     member_names = str.join(', ', [member['steam_name'] for member in members])
     opponent_records = list(db.get_opponent_records(team_id))
