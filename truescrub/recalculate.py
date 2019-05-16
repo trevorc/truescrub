@@ -90,6 +90,8 @@ def compute_rounds(connection):
         if not (state.get('round', {}).get('phase') == 'over' and
                 state.get('previously', {}).get('round', {}).get('phase') == 'live'):
             continue
+        if 'allplayers' not in state:
+            continue
         win_team = state['round']['win_team']
         team_steamids = [(player['team'], int(steamid))
                          for steamid, player in state['allplayers'].items()]
