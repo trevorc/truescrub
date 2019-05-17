@@ -9,13 +9,13 @@ import trueskill
 SKILL_MEAN = 1000
 SKILL_STDEV = SKILL_MEAN / 3.0
 BETA = SKILL_STDEV / 2.0
-TAU = SKILL_STDEV / 50.0
+TAU = SKILL_STDEV / 100.0
 MAX_PLAYERS_PER_TEAM = 5
 
 trueskill.setup(mu=SKILL_MEAN, sigma=SKILL_STDEV, beta=BETA, tau=TAU,
                 draw_probability=0.0)
 
-SKILL_GROUP_SPACING = SKILL_STDEV / (10.0 / 3.0)
+SKILL_GROUP_SPACING = SKILL_STDEV * 0.3
 SKILL_GROUP_NAMES = [
     'Scrub',
     'Cardboard I',
