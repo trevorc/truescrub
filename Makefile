@@ -5,3 +5,11 @@ build:
 .PHONY: push
 push:
 	docker push trevor3/truescrub:latest
+
+.PHONY: deploy
+deploy:
+	ssh rumia "sh -c 'cd services && docker-compose pull truescrub && docker-compose up -d --force-recreate truescrub'"
+
+.PHONY: recalculate
+recalculate:
+	ssh rumia docker exec services_truescrub_1 python -m truescrub --recalculate
