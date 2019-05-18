@@ -48,8 +48,9 @@ def execute_one(query, params):
 
 
 def insert_game_state(state):
-    cursor = g.conn.cursor()
-    cursor.execute('INSERT INTO game_state (game_state) VALUES (?)', (state,))
+    with get_game_db() as game_db:
+        cursor = game_db.cursor()
+        cursor.execute('INSERT INTO game_state (game_state) VALUES (?)', (state,))
 
 
 def get_team_records(player_id):
