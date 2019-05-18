@@ -10,11 +10,23 @@ from .matchmaking import SKILL_MEAN, SKILL_STDEV, \
     skill_group_name, match_quality
 
 
-DATABASE = os.environ.get('TRUESCRUB_DB', 'skill.db')
+DATA_DIR = os.environ.get('TRUESCRUB_DATA_DIR', 'data')
+GAME_DB_NAME = 'games.db'
+SKILL_DB_NAME = 'skill.db'
 
 
-def get_db():
-    return sqlite3.connect(DATABASE)
+def get_game_db():
+    db_path = os.path.join(DATA_DIR, GAME_DB_NAME)
+    return sqlite3.connect(db_path)
+
+
+def get_skill_db(name: str = SKILL_DB_NAME):
+    return sqlite3.connect(os.path.join(DATA_DIR, name))
+
+
+def replace_skill_db(new_db_name: str):
+    os.rename(os.path.join(DATA_DIR, new_db_name),
+              os.path.join(DATA_DIR, SKILL_DB_NAME))
 
 
 def enumerate_rows(cursor):
@@ -321,7 +333,19 @@ def get_opponent_records(team_id: int):
         }
 
 
-def create_tables(cursor):
+def initialize_game_db(connection):
+    cursor = connection.cursor()
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS game_state(
+      game_state_id  INTEGER PRIMARY KEY
+    , created_at     DATETIME DEFAULT CURRENT_TIMESTAMP
+    , game_state     TEXT
+    );
+    ''')
+
+
+def initialize_skill_db(connection):
+    cursor = connection.cursor()
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS players(
       player_id    INTEGER PRIMARY KEY
@@ -359,56 +383,12 @@ def create_tables(cursor):
     );
     ''')
 
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS game_state(
-      game_state_id  INTEGER PRIMARY KEY
-    , created_at     DATETIME DEFAULT CURRENT_TIMESTAMP
-    , game_state     TEXT
-    );
-    ''')
 
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS player_state(
-      player_state_id INTEGER PRIMARY KEY
-    , game_state_id   INTEGER NOT NULL
-    , round           INTEGER NOT NULL
-    , steam_id        INTEGER NOT NULL
-    , steam_name      TEXT NOT NULL
-    , team            TEXT NOT NULL
-    , won_round       BOOLEAN NOT NULL
-    , match_kills     INTEGER NOT NULL
-    , match_assists   INTEGER NOT NULL
-    , match_deaths    INTEGER NOT NULL
-    , match_mvps      INTEGER NOT NULL
-    , match_score     INTEGER NOT NULL
-    , round_kills     INTEGER NOT NULL
-    , round_totaldmg  INTEGER NOT NULL
-    , FOREIGN KEY (game_state_id) REFERENCES game_state (game_state_id)
-    , UNIQUE (game_state_id, round, steam_id)
-    );
-    ''')
-
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS player_contribution(
-      contribution_id INTEGER PRIMARY KEY
-    , player_state_id INTEGER NOT NULL
-    , player_id       INTEGER NOT NULL
-    , team_id         INTEGER NOT NULL
-    , round           INTEGER NOT NULL
-    , won_round       BOOLEAN NOT NULL
-    , round_kills     INTEGER NOT NULL
-    , round_assists   INTEGER NOT NULL
-    , round_mvps      INTEGER NOT NULL
-    , round_score     INTEGER NOT NULL
-    , round_totaldmg  INTEGER NOT NULL
-    , FOREIGN KEY (player_state_id) REFERENCES player_state (player_state_id)
-    , FOREIGN KEY (team_id, player_id) REFERENCES team_membership (team_id, player_id)
-    );
-    ''')
-
-
-def initialize(connection):
-    cursor = connection.cursor()
-    cursor.execute('PRAGMA foreign_keys = 1')
-    create_tables(cursor)
-
+def initialize_dbs():
+    if not os.path.exists(DATA_DIR):
+        os.mkdir(DATA_DIR)
+    with get_skill_db() as skill_db, get_game_db() as game_db:
+        initialize_skill_db(skill_db)
+        initialize_game_db(game_db)
+        skill_db.commit()
+        game_db.commit()

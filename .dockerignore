@@ -1,6 +1,6 @@
 .git
 .gitignore
 venv
-skill.db
+data
 logs
 Makefile

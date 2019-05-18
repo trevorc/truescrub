@@ -1,24 +1,18 @@
 import json
+import json
 import operator
 import datetime
 import itertools
 
 import trueskill
 
-from .db import enumerate_rows, get_db, initialize
+from .db import enumerate_rows, get_skill_db, get_game_db, \
+    initialize_skill_db, SKILL_DB_NAME, replace_skill_db
 from .matchmaking import SKILL_MEAN, SKILL_STDEV
 
 
-def drop_tables(connection):
-    cursor = connection.cursor()
-    cursor.execute('DROP TABLE IF EXISTS team_membership')
-    cursor.execute('DROP TABLE IF EXISTS rounds')
-    cursor.execute('DROP TABLE IF EXISTS players')
-    cursor.execute('DROP TABLE IF EXISTS teams')
-
-
-def replace_teams(db, round_teams):
-    cursor = db.cursor()
+def replace_teams(skill_db, round_teams):
+    cursor = skill_db.cursor()
     cursor.execute('''
     SELECT team_id, player_id
     FROM team_membership
@@ -74,8 +68,8 @@ def insert_players(connection, player_states):
     '''.format(placeholder), params)
 
 
-def compute_rounds(connection):
-    cursor = connection.cursor()
+def parse_game_states(game_db):
+    cursor = game_db.cursor()
 
     cursor.execute('''
     SELECT game_state_id, created_at, game_state
@@ -130,14 +124,15 @@ def compute_rounds(connection):
             'loser': team_members[lose_team],
         })
 
-    insert_players(connection, player_states)
+    return rounds, player_states
 
-    round_teams = {player_state['teammates'] for player_state in player_states}
-    teams_to_ids = replace_teams(connection, round_teams)
-    cursor = connection.cursor()
-    fixed_rounds = [dict(created_at=rnd['created_at'], winner=teams_to_ids[rnd['winner']],
-                         loser=teams_to_ids[rnd['loser']])
-                    for rnd in rounds]
+
+def insert_rounds(skill_db, teams_to_ids, rounds):
+    cursor = skill_db.cursor()
+    fixed_rounds = [
+        {'created_at': rnd['created_at'], 'winner': teams_to_ids[rnd['winner']],
+         'loser': teams_to_ids[rnd['loser']]}
+        for rnd in rounds]
 
     for batch in [fixed_rounds[i:i + 100]
                   for i in range(0, len(fixed_rounds), 100)]:
@@ -146,6 +141,16 @@ def compute_rounds(connection):
         cursor.execute('INSERT INTO rounds (created_at, winner, loser) VALUES ' +
                        str.join(',', ['(?, ?, ?)'] * len(batch)),
                        params)
+
+
+def compute_rounds(game_db, skill_db):
+    rounds, player_states = parse_game_states(game_db)
+
+    insert_players(skill_db, player_states)
+
+    round_teams = {player_state['teammates'] for player_state in player_states}
+    teams_to_ids = replace_teams(skill_db, round_teams)
+    insert_rounds(skill_db, teams_to_ids, rounds)
 
 
 def recalculate_teams(connection):
@@ -189,9 +194,11 @@ def recalculate_teams(connection):
 
 
 def recalculate():
-    with get_db() as connection:
-        drop_tables(connection)
-        initialize(connection)
-        compute_rounds(connection)
-        recalculate_teams(connection)
-        connection.commit()
+    new_skill_db = SKILL_DB_NAME + '.new'
+    with get_game_db() as game_db, \
+            get_skill_db(new_skill_db) as skill_db:
+        initialize_skill_db(skill_db)
+        compute_rounds(game_db, skill_db)
+        recalculate_teams(skill_db)
+        skill_db.commit()
+    replace_skill_db(new_skill_db)

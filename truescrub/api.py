@@ -23,7 +23,7 @@ SHARED_KEY = os.environ.get('TRUESCRUB_KEY', 'afohXaef9ighaeSh')
 
 @app.before_request
 def db_connect():
-    g.conn = db.get_db()
+    g.conn = db.get_skill_db()
 
 
 @app.after_request
@@ -180,9 +180,7 @@ def main():
     app.run(args.addr, args.port, app, use_reloader=args.use_reloader)
 
 
-with db.get_db() as connection:
-    db.initialize(connection)
-    connection.commit()
+db.initialize_dbs()
 
 if __name__ == '__main__':
     main()
