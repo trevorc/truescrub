@@ -10,7 +10,7 @@ import flask
 from flask import g, request
 
 from . import db
-from .recalculate import recalculate
+from .recalculate import recalculate, evaluate_parameters
 from .matchmaking import (
     skill_group_ranges, compute_matches, make_player_skills,
     match_quality, team1_win_probability)
@@ -171,12 +171,27 @@ arg_parser.add_argument('-c', '--recalculate', action='store_true',
                         help='Recalculate rankings.')
 arg_parser.add_argument('-r', '--use-reloader', action='store_true',
                         help='Use code reloader.')
+arg_parser.add_argument('-e', '--evaluate', action='store_true',
+                        help='Evaluate parameters')
+arg_parser.add_argument('--beta', type=float)
+arg_parser.add_argument('--tau', type=float)
+arg_parser.add_argument('--sample', type=float)
 
 
 def main():
     args = arg_parser.parse_args()
     if args.recalculate:
         return recalculate()
+    elif args.evaluate:
+        params = {}
+        if args.beta:
+            params['beta'] = args.beta
+        if args.tau:
+            params['tau'] = args.tau
+        if args.sample:
+            params['sample'] = args.sample
+        evaluate_parameters(**params)
+        return
     app.run(args.addr, args.port, app, use_reloader=args.use_reloader)
 
 

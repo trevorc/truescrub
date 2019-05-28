@@ -9,7 +9,6 @@ from flask import g
 from .matchmaking import SKILL_MEAN, SKILL_STDEV, \
     skill_group_name, match_quality
 
-
 DATA_DIR = os.environ.get('TRUESCRUB_DATA_DIR', 'data')
 GAME_DB_NAME = 'games.db'
 SKILL_DB_NAME = 'skill.db'

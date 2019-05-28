@@ -5,17 +5,16 @@ import itertools
 
 import trueskill
 
-
-SKILL_MEAN = 1000
-SKILL_STDEV = SKILL_MEAN / 3.0
-BETA = SKILL_STDEV / 2.0
+SKILL_MEAN = 1000.0
+SKILL_STDEV = SKILL_MEAN / 4.0
+BETA = SKILL_STDEV * 2.0
 TAU = SKILL_STDEV / 100.0
 MAX_PLAYERS_PER_TEAM = 5
 
 trueskill.setup(mu=SKILL_MEAN, sigma=SKILL_STDEV, beta=BETA, tau=TAU,
                 draw_probability=0.0)
 
-SKILL_GROUP_SPACING = SKILL_STDEV * 0.3
+SKILL_GROUP_SPACING = SKILL_STDEV * 0.4
 SKILL_GROUP_NAMES = [
     'Scrub',
     'Cardboard I',
@@ -36,7 +35,7 @@ SKILL_GROUP_NAMES = [
     'Low-Key Dirty',
 ]
 SKILL_GROUPS = ((float('-inf'), SKILL_GROUP_NAMES[0]),) + tuple(
-        (1 + SKILL_GROUP_SPACING * (i + 1), name)
+        (SKILL_GROUP_SPACING * (i + 1), name)
         for i, name in enumerate(SKILL_GROUP_NAMES[1:])
 )
 
@@ -58,16 +57,17 @@ def skill_group_ranges():
     yield previous_group, previous_bound, float('inf')
 
 
-def win_probability(team1, team2):
+def win_probability(trueskill_env, team1, team2):
     delta_mu = sum(r.mu for r in team1) - sum(r.mu for r in team2)
     sum_sigma = sum(r.sigma ** 2 for r in itertools.chain(team1, team2))
     size = len(team1) + len(team2)
-    denom = math.sqrt(size * (BETA * BETA) + sum_sigma)
-    return trueskill.global_env().cdf(delta_mu / denom)
+    denom = math.sqrt(size * (trueskill_env.beta ** 2) + sum_sigma)
+    return trueskill_env.cdf(delta_mu / denom)
 
 
 def team1_win_probability(player_skills: {int: trueskill.Rating}, team1, team2):
     return win_probability(
+            trueskill.global_env(),
             [player_skills[player['player_id']] for player in team1],
             [player_skills[player['player_id']] for player in team2])
 
@@ -93,7 +93,8 @@ def suggest_teams(player_skills):
             team1_skills = [player_skills[player_id] for player_id in team1]
             team2_skills = [player_skills[player_id] for player_id in team2]
             quality = trueskill.quality((team1_skills, team2_skills))
-            p_win = win_probability(team1_skills, team2_skills)
+            p_win = win_probability(trueskill.global_env(),
+                                    team1_skills, team2_skills)
             yield team1, team2, quality, p_win
 
 

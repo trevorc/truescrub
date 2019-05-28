@@ -1,5 +1,4 @@
 import json
-import json
 import operator
 import datetime
 import itertools
@@ -8,7 +7,7 @@ import trueskill
 
 from .db import enumerate_rows, get_skill_db, get_game_db, \
     initialize_skill_db, SKILL_DB_NAME, replace_skill_db
-from .matchmaking import SKILL_MEAN, SKILL_STDEV
+from .matchmaking import SKILL_MEAN, SKILL_STDEV, BETA, TAU, win_probability
 
 
 def replace_teams(skill_db, round_teams):
@@ -143,6 +142,20 @@ def insert_rounds(skill_db, teams_to_ids, rounds):
                        params)
 
 
+def rate_players(rounds, teams):
+    ratings = {player_id: trueskill.Rating(SKILL_MEAN, SKILL_STDEV)
+               for player_id in frozenset().union(*teams.values())}
+    for winner, loser in rounds:
+        ranks = (
+            {player_id: ratings[player_id] for player_id in teams[winner]},
+            {player_id: ratings[player_id] for player_id in teams[loser]},
+        )
+        new_ratings = trueskill.rate(ranks)
+        for rating in new_ratings:
+            ratings.update(rating)
+    return ratings
+
+
 def compute_rounds(game_db, skill_db):
     rounds, player_states = parse_game_states(game_db)
 
@@ -172,17 +185,7 @@ def recalculate_teams(connection):
     teams = {team_id: frozenset(team[1] for team in teams)
              for team_id, teams
              in itertools.groupby(memberships, operator.itemgetter(0))}
-    ratings = {player_id: trueskill.Rating(SKILL_MEAN, SKILL_STDEV)
-               for player_id in frozenset().union(*teams.values())}
-
-    for winner, loser in rounds:
-        ranks = (
-            {player_id: ratings[player_id] for player_id in teams[winner]},
-            {player_id: ratings[player_id] for player_id in teams[loser]},
-        )
-        new_ratings = trueskill.rate(ranks)
-        for rating in new_ratings:
-            ratings.update(rating)
+    ratings = rate_players(rounds, teams)
 
     for player_id, rating in ratings.items():
         cursor.execute('''
@@ -191,6 +194,47 @@ def recalculate_teams(connection):
           , skill_stdev = ?
         WHERE player_id = ?
         ''', (rating.mu, rating.sigma, player_id))
+
+
+def run_evaluation(connection, beta, tau, sample):
+    cursor = connection.cursor()
+
+    cursor.execute('''
+    SELECT team_id, player_id
+    FROM team_membership
+    ORDER BY team_id
+    ''')
+    memberships = list(enumerate_rows(cursor))
+
+    cursor.execute('''
+    SELECT winner, loser
+    FROM rounds
+    ''')
+    rounds = list(enumerate_rows(cursor))
+
+    offset = int(len(rounds) * sample)
+    training_sample = rounds[:offset]
+    testing_sample = rounds[offset:]
+    environment = trueskill.TrueSkill(SKILL_MEAN, SKILL_STDEV, beta, tau, 0.0)
+
+    teams = {team_id: frozenset(team[1] for team in teams)
+             for team_id, teams
+             in itertools.groupby(memberships, operator.itemgetter(0))}
+    ratings = rate_players(training_sample, teams)
+
+    total = 1.0
+
+    for winner, loser in testing_sample:
+        winning_team = [ratings[player_id] for player_id in teams[winner]]
+        losing_team = [ratings[player_id] for player_id in teams[loser]]
+        total *= win_probability(environment, winning_team, losing_team)
+
+    return total ** (1 / float(len(testing_sample)))
+
+
+def evaluate_parameters(beta=BETA, tau=TAU, sample=0.5):
+    with get_skill_db() as skill_db:
+        print(run_evaluation(skill_db, beta, tau, sample))
 
 
 def recalculate():
