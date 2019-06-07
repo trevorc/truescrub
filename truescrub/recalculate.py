@@ -94,7 +94,7 @@ def parse_game_states(game_db):
             for team, group in itertools.groupby(
                 team_steamids, operator.itemgetter(0))}
         if len(team_members) != 2:
-            raise ValueError(team_members)
+            continue
         lose_team = next(iter(set(team_members.keys()) - {win_team}))
 
         for steamid, player in state['allplayers'].items():
