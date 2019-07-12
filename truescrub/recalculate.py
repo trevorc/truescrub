@@ -83,7 +83,7 @@ def parse_game_states(game_db):
         if not (state.get('round', {}).get('phase') == 'over' and
                 state.get('previously', {}).get('round', {}).get('phase') == 'live'):
             continue
-        if 'allplayers' not in state:
+        if 'allplayers' not in state or 'win_team' not in state['round']:
             continue
         win_team = state['round']['win_team']
         team_steamids = [(player['team'], int(steamid))
