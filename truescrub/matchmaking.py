@@ -32,6 +32,7 @@ SKILL_GROUP_NAMES = [
     'Garb Salad',
     'Master Garbian',
     'Master Garbian Elite',
+    'Supreme Bottom Quartile First Class',
     'Low-Key Dirty',
 ]
 SKILL_GROUPS = ((float('-inf'), SKILL_GROUP_NAMES[0]),) + tuple(
