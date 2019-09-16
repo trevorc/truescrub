@@ -54,7 +54,8 @@ def insert_players(connection, player_states):
 
     players = {}
     for state in player_states:
-        players[int(state['steam_id'])] = state['steam_name']
+        if state['steam_name'] != 'unconnected':
+            players[int(state['steam_id'])] = state['steam_name']
 
     placeholder = str.join(',', ['(?, ?)'] * len(players))
     params = [value
