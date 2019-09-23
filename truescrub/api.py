@@ -4,6 +4,7 @@ import os
 import json
 import math
 import argparse
+import operator
 import itertools
 
 import flask
@@ -54,9 +55,19 @@ def game_state():
 
 
 @app.route('/leaderboard', methods={'GET'})
-def leaderboard():
+def default_leaderboard():
     players = list(db.get_all_players())
-    return flask.render_template('leaderboard.html', leaderboard=players)
+    seasons = db.get_seasons()
+    return flask.render_template('leaderboard.html', leaderboard=players,
+                                 seasons=seasons, selected_season=None)
+
+
+@app.route('/leaderboard/season/<int:season>', methods={'GET'})
+def leaderboard(season):
+    players = list(db.get_season_players(season))
+    seasons = db.get_seasons()
+    return flask.render_template('leaderboard.html', leaderboard=players,
+                                 seasons=seasons, selected_season=season)
 
 
 def format_bound(bound):
@@ -122,10 +133,13 @@ def matches(player_id):
         return flask.make_response('No such player\n', 404)
 
     player_skills = make_player_skills(all_players)
-    rounds = db.get_player_rounds(player_skills, player_id)
+    rounds_by_season = itertools.groupby(
+            db.get_player_rounds(player_skills, player_id),
+            operator.itemgetter('season_id'))
 
     return flask.render_template(
-            'matches.html', steam_name=steam_name, rounds=rounds)
+            'matches.html', steam_name=steam_name,
+            rounds_by_season=rounds_by_season)
 
 
 @app.route('/teams/<int:team_id>', methods={'GET'})

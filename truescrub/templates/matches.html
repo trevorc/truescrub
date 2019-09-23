@@ -6,13 +6,15 @@
 <h1>{{ steam_name }}'s Matches</h1>
 
 <h2>Rounds</h2>
+{% for season, rounds in rounds_by_season %}
+<h3>Season {{ season }}</h3>
 {% for round in rounds %}
 <div>
-  <h3>{{ round.created_at }}</h3>
+  <h4>{{ round.created_at }}</h4>
   <div>Match quality: {{ round.quality|int }}%</div>
   <div style="display: flex;">
     <div>
-      <h4>Winners</h4>
+      <h5>Winners</h5>
       <ul>
         {% for player in round.winner %}
         <li>{{ player.steam_name }}</li>
@@ -20,7 +22,7 @@
       </ul>
     </div>
     <div>
-      <h4>Losers</h4>
+      <h5>Losers</h5>
       <ul>
         {% for player in round.loser %}
         <li>{{ player.steam_name }}</li>
@@ -29,6 +31,7 @@
     </div>
   </div>
 </div>
+{% endfor %}
 {% endfor %}
 
 </body>

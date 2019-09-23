@@ -1,7 +1,9 @@
 import json
+import bisect
 import operator
 import datetime
 import itertools
+import collections
 
 import trueskill
 
@@ -10,15 +12,36 @@ from .db import enumerate_rows, get_skill_db, get_game_db, \
 from .matchmaking import SKILL_MEAN, SKILL_STDEV, BETA, TAU, win_probability
 
 
+def make_placeholder(columns, rows):
+    row = '({})'.format(str.join(', ', ['?'] * columns))
+    return str.join(', ', [row] * rows)
+
+
+def load_seasons(game_db, skill_db):
+    game_db_cursor = game_db.cursor()
+    game_db_cursor.execute('''
+    SELECT *
+    FROM seasons
+    ''')
+    seasons = list(enumerate_rows(game_db_cursor))
+
+    placeholder = make_placeholder(2, len(seasons))
+    params = [
+        param
+        for season in seasons
+        for param in season
+    ]
+
+    skill_db_cursor = skill_db.cursor()
+    skill_db_cursor.execute('''
+    REPLACE INTO seasons (season_id, start_date)
+    VALUES {}
+    '''.format(placeholder), params)
+
+
 def replace_teams(skill_db, round_teams):
     cursor = skill_db.cursor()
-    cursor.execute('''
-    SELECT team_id, player_id
-    FROM team_membership
-    ORDER BY team_id
-    ''')
-
-    rows = list(enumerate_rows(cursor))
+    rows = get_all_memberships(skill_db)
     memberships = {
         tuple(sorted(item[1] for item in group)): team
         for team, group in itertools.groupby(
@@ -57,7 +80,7 @@ def insert_players(connection, player_states):
         if state['steam_name'] != 'unconnected':
             players[int(state['steam_id'])] = state['steam_name']
 
-    placeholder = str.join(',', ['(?, ?)'] * len(players))
+    placeholder = make_placeholder(2, len(players))
     params = [value
               for player in players.items()
               for value in player]
@@ -70,6 +93,17 @@ def insert_players(connection, player_states):
 
 def parse_game_states(game_db):
     cursor = game_db.cursor()
+
+    cursor.execute('''
+    SELECT season_id, start_date
+    FROM seasons
+    ''')
+
+    season_ids = {
+        datetime.datetime.fromisoformat(start_date): season_id
+        for season_id, start_date in enumerate_rows(cursor)
+    }
+    seasons = list(season_ids.keys())
 
     cursor.execute('''
     SELECT game_state_id, created_at, game_state
@@ -118,8 +152,12 @@ def parse_game_states(game_db):
         created_at = datetime.datetime.utcfromtimestamp(
                 state['provider']['timestamp'])
 
+        season_index = bisect.bisect_left(seasons, created_at) - 1
+        season_id = season_ids[seasons[season_index]]
+
         rounds.append({
             'created_at': created_at,
+            'season_id': season_id,
             'winner': team_members[win_team],
             'loser': team_members[lose_team],
         })
@@ -127,29 +165,63 @@ def parse_game_states(game_db):
     return rounds, player_states
 
 
+def get_all_rounds(skill_db):
+    cursor = skill_db.cursor()
+    cursor.execute('''
+    SELECT season_id, winner, loser
+    FROM rounds
+    ''')
+    for season_id, winner, loser in enumerate_rows(cursor):
+        yield {
+            'season_id': season_id,
+            'winner': winner,
+            'loser': loser,
+        }
+
+
+def get_all_memberships(skill_db):
+    cursor = skill_db.cursor()
+    cursor.execute('''
+    SELECT team_id, player_id
+    FROM team_membership
+    ORDER BY team_id
+    ''')
+    return list(enumerate_rows(cursor))
+
+
 def insert_rounds(skill_db, teams_to_ids, rounds):
     cursor = skill_db.cursor()
-    fixed_rounds = [
-        {'created_at': rnd['created_at'], 'winner': teams_to_ids[rnd['winner']],
-         'loser': teams_to_ids[rnd['loser']]}
-        for rnd in rounds]
+    fixed_rounds = [{
+        'created_at': rnd['created_at'],
+        'season_id': rnd['season_id'],
+        'winner': teams_to_ids[rnd['winner']],
+        'loser': teams_to_ids[rnd['loser']]
+    } for rnd in rounds]
 
     for batch in [fixed_rounds[i:i + 100]
                   for i in range(0, len(fixed_rounds), 100)]:
         params = [value for rnd in batch
-                  for value in (rnd['created_at'], rnd['winner'], rnd['loser'])]
-        cursor.execute('INSERT INTO rounds (created_at, winner, loser) VALUES ' +
-                       str.join(',', ['(?, ?, ?)'] * len(batch)),
-                       params)
+                  for value in (
+                      rnd['season_id'],
+                      rnd['created_at'],
+                      rnd['winner'],
+                      rnd['loser'])
+                  ]
+        placeholder = make_placeholder(4, len(batch))
+        cursor.execute('''
+        INSERT INTO rounds (season_id, created_at, winner, loser)
+        VALUES {}
+        '''.format(placeholder), params)
 
 
-def rate_players(rounds, teams):
-    ratings = {player_id: trueskill.Rating(SKILL_MEAN, SKILL_STDEV)
-               for player_id in frozenset().union(*teams.values())}
-    for winner, loser in rounds:
+def rate_players(rounds: [dict], teams: [dict]) -> dict:
+    ratings = collections.defaultdict(trueskill.Rating)
+    for round in rounds:
         ranks = (
-            {player_id: ratings[player_id] for player_id in teams[winner]},
-            {player_id: ratings[player_id] for player_id in teams[loser]},
+            {player_id: ratings[player_id]
+             for player_id in teams[round['winner']]},
+            {player_id: ratings[player_id]
+             for player_id in teams[round['loser']]},
         )
         new_ratings = trueskill.rate(ranks)
         for rating in new_ratings:
@@ -167,26 +239,9 @@ def compute_rounds(game_db, skill_db):
     insert_rounds(skill_db, teams_to_ids, rounds)
 
 
-def recalculate_teams(connection):
+def update_global_ratings(connection, all_rounds, teams):
     cursor = connection.cursor()
-
-    cursor.execute('''
-    SELECT team_id, player_id
-    FROM team_membership
-    ORDER BY team_id
-    ''')
-    memberships = list(enumerate_rows(cursor))
-
-    cursor.execute('''
-    SELECT winner, loser
-    FROM rounds
-    ''')
-    rounds = list(enumerate_rows(cursor))
-
-    teams = {team_id: frozenset(team[1] for team in teams)
-             for team_id, teams
-             in itertools.groupby(memberships, operator.itemgetter(0))}
-    ratings = rate_players(rounds, teams)
+    ratings = rate_players(all_rounds, teams)
 
     for player_id, rating in ratings.items():
         cursor.execute('''
@@ -197,21 +252,48 @@ def recalculate_teams(connection):
         ''', (rating.mu, rating.sigma, player_id))
 
 
-def run_evaluation(connection, beta, tau, sample):
+def insert_season_ratings(connection, rounds_by_season, teams):
     cursor = connection.cursor()
 
-    cursor.execute('''
-    SELECT team_id, player_id
-    FROM team_membership
-    ORDER BY team_id
-    ''')
-    memberships = list(enumerate_rows(cursor))
+    skills = {}
+    for season, rounds in rounds_by_season:
+        ratings = rate_players(rounds, teams)
+        for player_id, rating in ratings.items():
+            skills[(player_id, season)] = rating
+
+    params = [
+        param
+        for (player_id, season_id), skill in skills.items()
+        for param in (player_id, season_id, skill.mu, skill.sigma)
+    ]
 
     cursor.execute('''
-    SELECT winner, loser
-    FROM rounds
-    ''')
-    rounds = list(enumerate_rows(cursor))
+    INSERT INTO skills (
+      player_id
+    , season_id
+    , mean
+    , stdev
+    ) VALUES {}
+    '''.format(make_placeholder(4, len(skills))), params)
+
+
+def recalculate_teams(connection):
+    memberships = get_all_memberships(connection)
+    all_rounds = list(get_all_rounds(connection))
+
+    teams = {team_id: frozenset(team[1] for team in teams)
+             for team_id, teams
+             in itertools.groupby(memberships, operator.itemgetter(0))}
+    update_global_ratings(connection, all_rounds, teams)
+
+    rounds_by_season = itertools.groupby(
+            all_rounds, operator.itemgetter('season_id'))
+    insert_season_ratings(connection, rounds_by_season, teams)
+
+
+def run_evaluation(connection, beta, tau, sample):
+    memberships = get_all_memberships(connection)
+    rounds = list(get_all_rounds(connection))
 
     offset = int(len(rounds) * sample)
     training_sample = rounds[:offset]
@@ -225,9 +307,11 @@ def run_evaluation(connection, beta, tau, sample):
 
     total = 1.0
 
-    for winner, loser in testing_sample:
-        winning_team = [ratings[player_id] for player_id in teams[winner]]
-        losing_team = [ratings[player_id] for player_id in teams[loser]]
+    for round in testing_sample:
+        winning_team = [ratings[player_id]
+                        for player_id in teams[round['winner']]]
+        losing_team = [ratings[player_id]
+                       for player_id in teams[round['loser']]]
         total *= win_probability(environment, winning_team, losing_team)
 
     return total ** (1 / float(len(testing_sample)))
@@ -243,6 +327,7 @@ def recalculate():
     with get_game_db() as game_db, \
             get_skill_db(new_skill_db) as skill_db:
         initialize_skill_db(skill_db)
+        load_seasons(game_db, skill_db)
         compute_rounds(game_db, skill_db)
         recalculate_teams(skill_db)
         skill_db.commit()

@@ -4,6 +4,22 @@
 </head>
 <body>
 <h1>TrueScrub&trade; Leaderboard</h1>
+<p>
+  Season
+  {% if selected_season %}
+  <a href="/leaderboard">all</a>
+  {% else %}
+  <strong>all</strong>
+  {% endif %}
+  {% for season in seasons %}
+    |
+    {% if selected_season == season %}
+    <strong>{{ season }}</strong>
+    {% else %}
+    <a href="/leaderboard/season/{{ season }}">{{ season }}</a>
+    {% endif %}
+  {% endfor %}
+</p>
 <table>
   <thead>
   <tr>
@@ -15,7 +31,7 @@
   <tbody>
   {% for player in leaderboard %}
     <tr>
-      <td><a href="profiles/{{ player.player_id }}">{{ player.steam_name }}</a></td>
+      <td><a href="/profiles/{{ player.player_id }}">{{ player.steam_name }}</a></td>
       <td title="{{ player.rating.mu|int }} ± {{ player.rating.sigma|int }}σ">{{ player.mmr }}</td>
       <td>{{ player.skill_group }}</td>
     </tr>

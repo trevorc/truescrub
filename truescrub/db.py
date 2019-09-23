@@ -42,7 +42,7 @@ def execute(query, params=()):
     return enumerate_rows(cursor)
 
 
-def execute_one(query, params):
+def execute_one(query, params=()):
     return next(execute(query, params))
 
 
@@ -94,6 +94,30 @@ def get_all_players():
     FROM players
     ORDER BY skill_mean - 2 * skill_stdev DESC
     ''')
+
+    for player_id, steam_name, mmr, skill_mean, skill_stdev in player_rows:
+        yield {
+            'player_id': int(player_id),
+            'steam_name': steam_name,
+            'mmr': int(mmr),
+            'skill_group': skill_group_name(mmr),
+            'rating': trueskill.Rating(skill_mean, skill_stdev),
+        }
+
+
+def get_season_players(season: int):
+    player_rows = execute('''
+    SELECT players.player_id
+         , players.steam_name
+         , skills.mean - 2 * skills.stdev AS mmr
+         , skills.mean
+         , skills.stdev
+    FROM players
+    JOIN skills
+    ON   players.player_id = skills.player_id
+    WHERE skills.season_id = ?
+    ORDER BY skills.mean - 2 * skills.stdev DESC
+    ''', (season,))
 
     for player_id, steam_name, mmr, skill_mean, skill_stdev in player_rows:
         yield {
@@ -223,16 +247,17 @@ def get_player_rounds(player_skills, player_id):
     teams = get_all_teams_from_player_rounds(player_id)
 
     round_rows = execute('''
-    SELECT created_at, winner, loser
+    SELECT season_id, created_at, winner, loser
     FROM rounds
     JOIN team_membership m
     ON m.team_id = rounds.winner OR m.team_id = rounds.loser
     WHERE m.player_id = ?
-    ORDER BY created_at DESC
+    ORDER BY season_id DESC, created_at DESC
     ''', (player_id,))
 
-    for created_at, winner, loser in round_rows:
+    for season_id, created_at, winner, loser in round_rows:
         yield {
+            'season_id': season_id,
             'created_at': created_at,
             'winner': teams[winner],
             'loser': teams[loser],
@@ -342,10 +367,26 @@ def initialize_game_db(connection):
     , game_state     TEXT
     );
     ''')
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS seasons(
+      season_id  INTEGER PRIMARY KEY
+    , start_date DATETIME NOT NULL
+    )''')
+    cursor.execute('''
+    REPLACE INTO seasons (season_id, start_date)
+    VALUES (1, '2019-01-01')
+    ''')
 
 
 def initialize_skill_db(connection):
     cursor = connection.cursor()
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS seasons(
+      season_id  INTEGER PRIMARY KEY
+    , start_date DATETIME NOT NULL
+    );
+    ''')
+
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS players(
       player_id    INTEGER PRIMARY KEY
@@ -354,6 +395,18 @@ def initialize_skill_db(connection):
     , skill_stdev  DOUBLE  NOT NULL DEFAULT {skill_stdev}
     );
     '''.format(skill_mean=SKILL_MEAN, skill_stdev=SKILL_STDEV))
+
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS skills(
+      player_id   INTEGER NOT NULL
+    , season_id   INTEGER NOT NULL
+    , mean        DOUBLE  NOT NULL
+    , stdev       DOUBLE  NOT NULL
+    , PRIMARY KEY (player_id, season_id)
+    , FOREIGN KEY (player_id) REFERENCES players (player_id)
+    , FOREIGN KEY (season_id) REFERENCES seasons (season_id)
+    );
+    ''')
 
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS teams(
@@ -375,9 +428,11 @@ def initialize_skill_db(connection):
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS rounds(
       round_id    INTEGER PRIMARY KEY
+    , season_id   INTEGER NOT NULL
     , created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
     , winner      INTEGER NOT NULL
     , loser       INTEGER NOT NULL
+    , FOREIGN KEY (season_id) REFERENCES seasons (season_id)
     , FOREIGN KEY (winner) REFERENCES teams (team_id)
     , FOREIGN KEY (loser) REFERENCES teams (team_id)
     );
@@ -392,3 +447,8 @@ def initialize_dbs():
         initialize_game_db(game_db)
         skill_db.commit()
         game_db.commit()
+
+
+def get_seasons() -> [int]:
+    [season_count] = execute_one('SELECT COUNT(*) FROM seasons')
+    return list(range(1, season_count + 1))
