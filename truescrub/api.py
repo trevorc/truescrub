@@ -40,7 +40,9 @@ def db_close(exc):
 
 @app.route('/', methods={'GET'})
 def index():
-    return flask.render_template('index.html')
+    seasons = len(db.get_seasons())
+    season_path = '/season/{}'.format(seasons) if seasons > 1 else ''
+    return flask.render_template('index.html', season_path=season_path)
 
 
 @app.route('/api/game_state', methods={'POST'})
