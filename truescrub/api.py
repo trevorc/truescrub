@@ -103,7 +103,13 @@ def profile(player_id):
 
 
 @app.route('/matchmaking', methods={'GET'})
-def matchmaking():
+def default_matchmaking():
+    return matchmaking(None)
+
+
+@app.route('/matchmaking/season/<int:season_id>', methods={'GET'})
+def matchmaking(season_id):
+    seasons = db.get_seasons()
     selected_players = {
         int(player_id) for player_id in request.args.getlist('player')
     }
@@ -111,7 +117,10 @@ def matchmaking():
         return flask.make_response(
                 'Cannot compute matches for more than 10 players', 403)
 
-    players = list(db.get_all_players())
+    players = list(db.get_all_players()
+                   if season_id is None
+                   else db.get_season_players(season_id))
+
     for player in players:
         player['selected'] = player['player_id'] in selected_players
 
@@ -120,6 +129,7 @@ def matchmaking():
     ]) if len(selected_players) > 0 else None
 
     return flask.render_template('matchmaking.html',
+                                 seasons=seasons, selected_season=season_id,
                                  players=players, teams=teams)
 
 

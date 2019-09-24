@@ -1,25 +1,11 @@
+{% import "macros.html" as macros -%}
 <html lang="en">
 <head>
   <title>TrueScrub&trade; Leaderboard</title>
 </head>
 <body>
 <h1>TrueScrub&trade; Leaderboard</h1>
-<p>
-  Season
-  {% if selected_season %}
-  <a href="/leaderboard">all</a>
-  {% else %}
-  <strong>all</strong>
-  {% endif %}
-  {% for season in seasons %}
-    |
-    {% if selected_season == season %}
-    <strong>{{ season }}</strong>
-    {% else %}
-    <a href="/leaderboard/season/{{ season }}">{{ season }}</a>
-    {% endif %}
-  {% endfor %}
-</p>
+{{ macros.season_menu("/leaderboard", selected_season, seasons) }}
 <table>
   <thead>
   <tr>

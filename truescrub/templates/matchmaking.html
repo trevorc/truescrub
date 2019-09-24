@@ -1,3 +1,4 @@
+{% import "macros.html" as macros -%}
 <html lang="en">
 <head>
   <title>TrueScrub&trade; Matchmaking</title>
@@ -5,9 +6,11 @@
 <body>
 <h1>TrueScrub&trade; Matchmaking</h1>
 
+{{ macros.season_menu("/matchmaking", selected_season, seasons) }}
+
 <p>Proposes evenly matched teams for a given set of players.</p>
 
-<form action="/matchmaking" method="GET">
+<form action="/matchmaking{{ macros.season_path(selected_season) }}" method="GET">
   <h2>Who is playing?</h2>
 
   <ul>
