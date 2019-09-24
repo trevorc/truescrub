@@ -89,7 +89,8 @@ def suggest_teams(player_skills):
 
     for r in range(min_team_size, max_team_size + 1):
         for team1 in itertools.combinations(players, r):
-            team2 = players - set(team1)
+            team1 = frozenset(team1)
+            team2 = players - team1
             team1_skills = [player_skills[player_id] for player_id in team1]
             team2_skills = [player_skills[player_id] for player_id in team2]
             quality = trueskill.quality((team1_skills, team2_skills))
@@ -105,17 +106,48 @@ def make_player_skills(players):
     }
 
 
+def uniquify(matches):
+    last_team1 = None
+    last_team2 = None
+
+    for match in matches:
+        if match['team1'] == last_team1 and match['team2'] == last_team2 or \
+                match['team1'] == last_team2 and match['team2'] == last_team1:
+            continue
+        yield match
+        last_team1 = match['team1']
+        last_team2 = match['team2']
+
+
+def make_team(players_by_id, player_ids):
+    team = [players_by_id[player_id] for player_id in player_ids]
+    team.sort(key=operator.itemgetter('mmr'), reverse=True)
+    return team
+
+
+def make_match(players_by_id, team1, team2, quality, p_win):
+    team1 = make_team(players_by_id, team1)
+    team2 = make_team(players_by_id, team2)
+
+    if p_win < 0.5:
+        team1, team2 = team2, team1
+        p_win = 1.0 - p_win
+
+    return {
+        'team1': team1,
+        'team2': team2,
+        'quality': quality,
+        'team1_win_probability': p_win,
+        'team2_win_probability': 1.0 - p_win,
+    }
+
+
 def compute_matches(players):
     player_skills = make_player_skills(players)
     players_by_id = {player['player_id']: player for player in players}
 
-    teams = [{
-        'team1': [players_by_id[player_id] for player_id in team1],
-        'team2': [players_by_id[player_id] for player_id in team2],
-        'quality': quality,
-        'team1_win_probability': p_win,
-        'team2_win_probability': 1.0 - p_win,
-    } for team1, team2, quality, p_win in suggest_teams(player_skills)]
+    matches = [make_match(players_by_id, *suggestion)
+               for suggestion in suggest_teams(player_skills)]
 
-    teams.sort(key=operator.itemgetter('quality'), reverse=True)
-    return teams
+    matches.sort(key=operator.itemgetter('quality'), reverse=True)
+    return list(uniquify(matches))
