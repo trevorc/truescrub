@@ -17,6 +17,8 @@ trueskill.setup(mu=SKILL_MEAN, sigma=SKILL_STDEV, beta=BETA, tau=TAU,
 SKILL_GROUP_SPACING = SKILL_STDEV * 0.3
 SKILL_GROUP_NAMES = [
     'Scrub',
+    'Staff Scrub',
+    'Scrub First Class',
     'Cardboard I',
     'Cardboard II',
     'Cardboard III',
@@ -26,11 +28,13 @@ SKILL_GROUP_NAMES = [
     'Plastic II',
     'Plastic III',
     'Plastic Elite',
+    'Plastic Elite Master',
     'Legendary Wood',
     'Legendary Wood Master',
     'Supreme Legendary Wood',
     'Garb Salad',
-    'Master Garbian',
+    'Master Garbian I',
+    'Master Garbian II',
     'Master Garbian Elite',
     'Low-Key Dirty',
 ]
