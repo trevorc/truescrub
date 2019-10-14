@@ -33,11 +33,11 @@ SKILL_GROUP_NAMES = [
     'Low-Key Dirty',
 ]
 SKILL_GROUPS = ((float('-inf'), SKILL_GROUP_NAMES[0]),) + tuple(
-        (SKILL_GROUP_SPACING * (i + 1), name)
+        (make_elite(SKILL_GROUP_SPACING * (i + 1)), name)
         for i, name in enumerate(SKILL_GROUP_NAMES[1:])
 )
 
-def makeElite(rating):
+def make_elite(rating):
     return 1337 if abs(rating - 1337) < SKILL_GROUP_SPACING / 2 else rating
 
 def skill_group_name(mmr: float) -> str:
