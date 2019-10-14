@@ -38,7 +38,7 @@ SKILL_GROUPS = ((float('-inf'), SKILL_GROUP_NAMES[0]),) + tuple(
 )
 
 def makeElite(rating):
-  return 1337 if abs(rating - 1337) < SKILL_GROUP_SPACING / 2 else rating
+    return 1337 if abs(rating - 1337) < SKILL_GROUP_SPACING / 2 else rating
 
 def skill_group_name(mmr: float) -> str:
     group_ranks = [group[0] for group in SKILL_GROUPS]
