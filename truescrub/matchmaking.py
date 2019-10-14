@@ -14,7 +14,7 @@ MAX_PLAYERS_PER_TEAM = 5
 trueskill.setup(mu=SKILL_MEAN, sigma=SKILL_STDEV, beta=BETA, tau=TAU,
                 draw_probability=0.0)
 
-SKILL_GROUP_SPACING = SKILL_STDEV * 0.4
+SKILL_GROUP_SPACING = SKILL_STDEV * 0.3
 SKILL_GROUP_NAMES = [
     'Scrub',
     'Cardboard I',
