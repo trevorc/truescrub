@@ -283,7 +283,8 @@ def recalculate():
         load_seasons(game_db, skill_db)
         max_game_state_id, new_rounds = \
             compute_rounds_and_players(game_db, skill_db)
-        recalculate_ratings(skill_db, new_rounds)
+        if len(new_rounds) > 0:
+            recalculate_ratings(skill_db, new_rounds)
         save_game_state_progress(skill_db, max_game_state_id)
         skill_db.commit()
     replace_skill_db(new_skill_db)

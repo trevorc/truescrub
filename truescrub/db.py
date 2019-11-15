@@ -6,6 +6,7 @@ import itertools
 import trueskill
 from flask import g
 
+from truescrub.matchmaking import skill_group_name
 from .matchmaking import SKILL_MEAN, SKILL_STDEV, \
     skill_group_name, match_quality
 
@@ -172,7 +173,17 @@ def get_ratings_by_season(skill_db, seasons: [int] = None) \
 
 
 def get_season_players(season: int):
-    return get_players_by_seasons(g.conn, [season])[season]
+    return [
+        {
+            'player_id': int(player_id),
+            'steam_name': steam_name,
+            'mmr': int(mmr),
+            'skill_group': skill_group_name(mmr),
+            'rating': trueskill.Rating(skill_mean, skill_stdev),
+        }
+        for season_id_, player_id, steam_name, mmr, skill_mean, skill_stdev
+        in get_player_rows_by_season(g.conn, [season])
+    ]
 
 
 def make_player(team_row):
