@@ -49,7 +49,9 @@ def execute_one(query, params=()):
 def insert_game_state(state):
     with get_game_db() as game_db:
         cursor = game_db.cursor()
-        cursor.execute('INSERT INTO game_state (game_state) VALUES (?)', (state,))
+        cursor.execute('INSERT INTO game_state (game_state) VALUES (?)',
+                       (state,))
+        return cursor.lastrowid
 
 
 def get_team_records(player_id):
@@ -84,8 +86,9 @@ def get_team_records(player_id):
         }
 
 
-def get_all_players():
-    player_rows = execute('''
+def get_player_overall_skills(skill_db):
+    cursor = skill_db.cursor()
+    cursor.execute('''
     SELECT player_id
          , steam_name
          , skill_mean - 2 * skill_stdev AS mmr
@@ -95,7 +98,8 @@ def get_all_players():
     ORDER BY skill_mean - 2 * skill_stdev DESC
     ''')
 
-    for player_id, steam_name, mmr, skill_mean, skill_stdev in player_rows:
+    for player_id, steam_name, mmr, skill_mean, skill_stdev in \
+            enumerate_rows(cursor):
         yield {
             'player_id': int(player_id),
             'steam_name': steam_name,
@@ -105,9 +109,24 @@ def get_all_players():
         }
 
 
-def get_season_players(season: int):
-    player_rows = execute('''
-    SELECT players.player_id
+def get_all_players():
+    return get_player_overall_skills(g.conn)
+
+
+def get_player_rows_by_season(skill_db, seasons: [int] = None):
+    cursor = skill_db.cursor()
+
+    if seasons is None:
+        where_clause = ''
+        params = ()
+    else:
+        where_clause = 'WHERE skills.season_id IN {}'.format(
+                make_placeholder(len(seasons), 1))
+        params = seasons
+
+    cursor.execute('''
+    SELECT skills.season_id
+         , players.player_id
          , players.steam_name
          , skills.mean - 2 * skills.stdev AS mmr
          , skills.mean
@@ -115,18 +134,45 @@ def get_season_players(season: int):
     FROM players
     JOIN skills
     ON   players.player_id = skills.player_id
-    WHERE skills.season_id = ?
-    ORDER BY skills.mean - 2 * skills.stdev DESC
-    ''', (season,))
+    {}
+    ORDER BY skills.season_id
+           , skills.mean - 2 * skills.stdev DESC
+    '''.format(where_clause), params)
 
-    for player_id, steam_name, mmr, skill_mean, skill_stdev in player_rows:
-        yield {
-            'player_id': int(player_id),
-            'steam_name': steam_name,
-            'mmr': int(mmr),
-            'skill_group': skill_group_name(mmr),
-            'rating': trueskill.Rating(skill_mean, skill_stdev),
+    return itertools.groupby(enumerate_rows(cursor), operator.itemgetter(0))
+
+
+def get_players_by_seasons(skill_db):
+    return {
+        season_id: [
+            {
+                'player_id': int(player_id),
+                'steam_name': steam_name,
+                'mmr': int(mmr),
+                'skill_group': skill_group_name(mmr),
+                'rating': trueskill.Rating(skill_mean, skill_stdev),
+            }
+            for season_id_, player_id, steam_name, mmr, skill_mean, skill_stdev
+            in season_players
+        ]
+        for season_id, season_players
+        in get_player_rows_by_season(skill_db)
+    }
+
+
+def get_ratings_by_season(skill_db, seasons: [int] = None) \
+        -> {int: {int: trueskill.Rating}}:
+    return {
+        season_id: {
+            player_row[1]: trueskill.Rating(player_row[4], player_row[5])
+            for player_row in season_players
         }
+        for season_id, season_players in get_player_rows_by_season(skill_db)
+    }
+
+
+def get_season_players(season: int):
+    return get_players_by_seasons(g.conn, [season])[season]
 
 
 def make_player(team_row):
@@ -358,8 +404,118 @@ def get_opponent_records(team_id: int):
         }
 
 
-def initialize_game_db(connection):
-    cursor = connection.cursor()
+def get_all_rounds(skill_db, round_range: (int, int)):
+    if round_range is not None:
+        where_clause = 'WHERE round_id BETWEEN ? AND ?'
+        params = round_range
+    else:
+        where_clause = ''
+        params = []
+
+    cursor = skill_db.cursor()
+    cursor.execute('''
+    SELECT season_id, winner, loser
+    FROM rounds
+    {}
+    '''.format(where_clause), params)
+    for season_id, winner, loser in enumerate_rows(cursor):
+        yield {
+            'season_id': season_id,
+            'winner': winner,
+            'loser': loser,
+        }
+
+
+def get_all_memberships(skill_db) -> [(int, int)]:
+    cursor = skill_db.cursor()
+    cursor.execute('''
+    SELECT team_id, player_id
+    FROM team_membership
+    ORDER BY team_id
+    ''')
+    return list(enumerate_rows(cursor))
+
+
+def get_all_teams(skill_db) -> {int: frozenset}:
+    memberships = get_all_memberships(skill_db)
+    return {
+        team_id: frozenset(team[1] for team in teams)
+        for team_id, teams
+        in itertools.groupby(memberships, operator.itemgetter(0))
+    }
+
+
+def get_game_states(game_db, game_state_range):
+    cursor = game_db.cursor()
+
+    if game_state_range is None:
+        where_clause = ''
+        params = ()
+    else:
+        where_clause = 'WHERE game_state_id BETWEEN ? AND ?'
+        params = game_state_range
+
+    cursor.execute('''
+    SELECT game_state_id, created_at, game_state
+    FROM game_state
+    {}
+    '''.format(where_clause), params)
+    return enumerate_rows(cursor)
+
+
+def get_game_state_progress(skill_db) -> int:
+    cursor = skill_db.cursor()
+    cursor.execute('''
+    SELECT last_processed_game_state
+    FROM game_state_progress
+    ''')
+    row = cursor.fetchone()
+    return 0 if row is None else row[0]
+
+
+def save_game_state_progress(skill_db, max_game_state_id):
+    cursor = skill_db.cursor()
+    cursor.execute('''
+    REPLACE INTO game_state_progress (
+      game_state_progress_id
+    , updated_at
+    , last_processed_game_state
+    ) VALUES (1, CURRENT_TIMESTAMP, ?)
+    ''', [max_game_state_id])
+
+
+def update_player_skills(skill_db, ratings: {int: trueskill.Rating}):
+    cursor = skill_db.cursor()
+    for player_id, rating in ratings.items():
+        cursor.execute('''
+        UPDATE players
+        SET skill_mean = ?
+          , skill_stdev = ?
+        WHERE player_id = ?
+        ''', (rating.mu, rating.sigma, player_id))
+
+
+def replace_season_skills(
+        skill_db, season_ratings: {(int, int): trueskill.Rating}):
+    cursor = skill_db.cursor()
+    params = [
+        param
+        for (player_id, season_id), skill in season_ratings.items()
+        for param in (player_id, season_id, skill.mu, skill.sigma)
+    ]
+
+    cursor.execute('''
+    REPLACE INTO skills (
+      player_id
+    , season_id
+    , mean
+    , stdev
+    ) VALUES {}
+    '''.format(make_placeholder(4, len(season_ratings))), params)
+
+
+def initialize_game_db(game_db):
+    cursor = game_db.cursor()
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS game_state(
       game_state_id  INTEGER PRIMARY KEY
@@ -378,8 +534,8 @@ def initialize_game_db(connection):
     ''')
 
 
-def initialize_skill_db(connection):
-    cursor = connection.cursor()
+def initialize_skill_db(skill_db):
+    cursor = skill_db.cursor()
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS seasons(
       season_id  INTEGER PRIMARY KEY
@@ -438,6 +594,14 @@ def initialize_skill_db(connection):
     );
     ''')
 
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS game_state_progress(
+      game_state_progress_id    INTEGER PRIMARY KEY
+    , updated_at                DATETIME DEFAULT CURRENT_TIMESTAMP
+    , last_processed_game_state INTEGER NOT NULL
+    );
+    ''')
+
 
 def initialize_dbs():
     if not os.path.exists(DATA_DIR):
@@ -452,3 +616,8 @@ def initialize_dbs():
 def get_seasons() -> [int]:
     [season_count] = execute_one('SELECT COUNT(*) FROM seasons')
     return list(range(1, season_count + 1))
+
+
+def make_placeholder(columns, rows):
+    row = '({})'.format(str.join(', ', ['?'] * columns))
+    return str.join(', ', [row] * rows)

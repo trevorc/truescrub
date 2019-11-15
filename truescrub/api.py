@@ -7,11 +7,11 @@ import argparse
 import operator
 import itertools
 
+import zmq
 import flask
 from flask import g, request
 
 from . import db
-from .recalculate import recalculate, evaluate_parameters
 from .matchmaking import (
     skill_group_ranges, compute_matches, make_player_skills,
     match_quality, team1_win_probability)
@@ -20,6 +20,14 @@ app = flask.Flask(__name__)
 app.config['PROPAGATE_EXCEPTIONS'] = True
 
 SHARED_KEY = os.environ.get('TRUESCRUB_KEY', 'afohXaef9ighaeSh')
+
+zmq_socket = zmq.Context().socket(zmq.PUSH)
+
+
+def send_updater_message(**message):
+    if 'command' not in message:
+        raise ValueError('missing "command"')
+    return zmq_socket.send_json(message, flags=zmq.NOBLOCK)
 
 
 @app.before_request
@@ -52,7 +60,9 @@ def game_state():
         return flask.make_response('Invalid auth token\n', 403)
     del state_json['auth']
     state = json.dumps(state_json)
-    db.insert_game_state(state)
+    game_state_id = db.insert_game_state(state)
+    send_updater_message(command='process_game_state',
+                         game_state_id=game_state_id)
     return '<h1>OK</h1>\n'
 
 
@@ -197,31 +207,21 @@ arg_parser.add_argument('-c', '--recalculate', action='store_true',
                         help='Recalculate rankings.')
 arg_parser.add_argument('-r', '--use-reloader', action='store_true',
                         help='Use code reloader.')
-arg_parser.add_argument('-e', '--evaluate', action='store_true',
-                        help='Evaluate parameters')
-arg_parser.add_argument('--beta', type=float)
-arg_parser.add_argument('--tau', type=float)
-arg_parser.add_argument('--sample', type=float)
+arg_parser.add_argument('-y', '--zmq-addr', metavar='HOST', default='127.0.0.1',
+                        help='Connect to zeromq on this address.')
+arg_parser.add_argument('-z', '--zmq-port', type=int,
+                        default=5555, help='Connect to zeromq on this port.')
 
 
 def main():
     args = arg_parser.parse_args()
+    zmq_addr = 'tcp://{}:{}'.format(args.zmq_addr, args.zmq_port)
+    print('Connecting ZeroMQ socket to {}'.format(zmq_addr))
+    zmq_socket.connect(zmq_addr)
     if args.recalculate:
-        return recalculate()
-    elif args.evaluate:
-        params = {}
-        if args.beta:
-            params['beta'] = args.beta
-        if args.tau:
-            params['tau'] = args.tau
-        if args.sample:
-            params['sample'] = args.sample
-        evaluate_parameters(**params)
-        return
+        return send_updater_message(command='recalculate')
+    print('TrueScrub listening on {}:{}'.format(args.addr, args.port))
     app.run(args.addr, args.port, app, use_reloader=args.use_reloader)
 
 
 db.initialize_dbs()
-
-if __name__ == '__main__':
-    main()
