@@ -63,9 +63,10 @@ def game_state():
         return flask.make_response('Invalid auth token\n', 403)
     del state_json['auth']
     state = json.dumps(state_json)
-    game_state_id = db.insert_game_state(state)
-    send_updater_message(command='process_game_state',
-                         game_state_id=game_state_id)
+    with db.get_game_db() as game_db:
+        game_state_id = db.insert_game_state(game_db, state)
+        send_updater_message(command='process_game_state',
+                             game_state_id=game_state_id)
     return '<h1>OK</h1>\n'
 
 
@@ -218,6 +219,7 @@ arg_parser.add_argument('-z', '--zmq-port', type=int,
 
 def main():
     args = arg_parser.parse_args()
+    db.initialize_dbs()
     zmq_addr = 'tcp://{}:{}'.format(args.zmq_addr, args.zmq_port)
     print('Connecting ZeroMQ socket to {}'.format(zmq_addr))
     zmq_socket.connect(zmq_addr)
@@ -225,6 +227,3 @@ def main():
         return send_updater_message(command='recalculate')
     print('TrueScrub listening on {}:{}'.format(args.addr, args.port))
     app.run(args.addr, args.port, app, use_reloader=args.use_reloader)
-
-
-db.initialize_dbs()

@@ -25,19 +25,9 @@ class Player(object):
         self.skill_group = skill_group_name(self.mmr)
 
 
-def get_game_db():
-    db_path = os.path.join(DATA_DIR, GAME_DB_NAME)
-    return sqlite3.connect(db_path)
-
-
-def get_skill_db(name: str = SKILL_DB_NAME):
-    return sqlite3.connect(os.path.join(DATA_DIR, name))
-
-
-def replace_skill_db(new_db_name: str):
-    os.rename(os.path.join(DATA_DIR, new_db_name),
-              os.path.join(DATA_DIR, SKILL_DB_NAME))
-
+#################
+### Utilities ###
+#################
 
 def enumerate_rows(cursor: sqlite3.Cursor):
     while True:
@@ -57,15 +47,35 @@ def execute_one(connection: sqlite3.Connection, query: str, params=()):
     return next(execute(connection, query, params))
 
 
-def insert_game_state(state):
-    with get_game_db() as game_db:
-        cursor = game_db.cursor()
-        cursor.execute('INSERT INTO game_state (game_state) VALUES (?)',
-                       (state,))
-        return cursor.lastrowid
+def make_placeholder(columns, rows):
+    row = '({})'.format(str.join(', ', ['?'] * columns))
+    return str.join(', ', [row] * rows)
 
 
-def get_all_seasons(game_db) -> {datetime.datetime: int}:
+##########################
+### Game DB Operations ###
+##########################
+
+def get_game_db():
+    db_path = os.path.join(DATA_DIR, GAME_DB_NAME)
+    return sqlite3.connect(db_path)
+
+
+def insert_game_state(game_db, state):
+    cursor = game_db.cursor()
+    cursor.execute('INSERT INTO game_state (game_state) VALUES (?)',
+                   (state,))
+    return cursor.lastrowid
+
+
+def get_season_rows(game_db):
+    return list(execute(game_db, '''
+    SELECT *
+    FROM seasons
+    '''))
+
+
+def get_seasons_by_start_date(game_db) -> {datetime.datetime: int}:
     season_rows = execute(game_db, '''
     SELECT season_id, start_date
     FROM seasons
@@ -75,6 +85,111 @@ def get_all_seasons(game_db) -> {datetime.datetime: int}:
         datetime.datetime.fromisoformat(start_date): season_id
         for season_id, start_date in season_rows
     }
+
+
+def get_game_states(game_db, game_state_range):
+    if game_state_range is None:
+        where_clause = ''
+        params = ()
+    else:
+        where_clause = 'WHERE game_state_id BETWEEN ? AND ?'
+        params = game_state_range
+
+    return execute(game_db, '''
+    SELECT game_state_id, created_at, game_state
+    FROM game_state
+    {}
+    '''.format(where_clause), params)
+
+
+def initialize_game_db(game_db):
+    cursor = game_db.cursor()
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS game_state(
+      game_state_id  INTEGER PRIMARY KEY
+    , created_at     DATETIME DEFAULT CURRENT_TIMESTAMP
+    , game_state     TEXT
+    );
+    ''')
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS seasons(
+      season_id  INTEGER PRIMARY KEY
+    , start_date DATETIME NOT NULL
+    )''')
+    cursor.execute('''
+    REPLACE INTO seasons (season_id, start_date)
+    VALUES (1, '2019-01-01')
+    ''')
+
+
+###########################
+### Skill DB Operations ###
+###########################
+
+def get_skill_db(name: str = SKILL_DB_NAME):
+    return sqlite3.connect(os.path.join(DATA_DIR, name))
+
+
+def replace_skill_db(new_db_name: str):
+    os.rename(os.path.join(DATA_DIR, new_db_name),
+              os.path.join(DATA_DIR, SKILL_DB_NAME))
+
+
+def replace_seasons(skill_db, season_rows):
+    placeholder = make_placeholder(2, len(season_rows))
+    params = [
+        param
+        for season in season_rows
+        for param in season
+    ]
+
+    skill_db_cursor = skill_db.cursor()
+    skill_db_cursor.execute('''
+    REPLACE INTO seasons (season_id, start_date)
+    VALUES {}
+    '''.format(placeholder), params)
+
+
+def upsert_player_names(skill_db, players: {int: str}):
+    cursor = skill_db.cursor()
+    placeholder = make_placeholder(2, len(players))
+    params = [value
+              for player in players.items()
+              for value in player]
+
+    cursor.execute('''
+    INSERT INTO players (player_id, steam_name)
+    VALUES {}
+    ON CONFLICT (player_id)
+    DO UPDATE SET steam_name = excluded.steam_name
+    '''.format(placeholder), params)
+
+
+def insert_rounds(skill_db, rounds: [dict]) -> (int, int):
+    if len(rounds) == 0:
+        raise ValueError
+
+    cursor = skill_db.cursor()
+    for batch in [rounds[i:i + 100]
+                  for i in range(0, len(rounds), 100)]:
+        params = [
+            value
+            for rnd in batch
+            for value in (
+                rnd['season_id'],
+                rnd['created_at'],
+                rnd['winner'],
+                rnd['loser'],
+            )
+        ]
+        placeholder = make_placeholder(4, len(batch))
+        cursor.execute('''
+        INSERT INTO rounds (season_id, created_at, winner, loser)
+        VALUES {}
+        '''.format(placeholder), params)
+
+    max_round_id = cursor.lastrowid
+    return max_round_id - len(rounds) + 1, max_round_id
 
 
 def get_team_records(skill_db, player_id):
@@ -466,21 +581,6 @@ def get_all_teams(skill_db) -> {int: frozenset}:
     }
 
 
-def get_game_states(game_db, game_state_range):
-    if game_state_range is None:
-        where_clause = ''
-        params = ()
-    else:
-        where_clause = 'WHERE game_state_id BETWEEN ? AND ?'
-        params = game_state_range
-
-    return execute(game_db, '''
-    SELECT game_state_id, created_at, game_state
-    FROM game_state
-    {}
-    '''.format(where_clause), params)
-
-
 def get_game_state_progress(skill_db) -> int:
     try:
         return execute_one(skill_db, '''
@@ -532,24 +632,9 @@ def replace_season_skills(
     '''.format(make_placeholder(4, len(season_ratings))), params)
 
 
-def initialize_game_db(game_db):
-    cursor = game_db.cursor()
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS game_state(
-      game_state_id  INTEGER PRIMARY KEY
-    , created_at     DATETIME DEFAULT CURRENT_TIMESTAMP
-    , game_state     TEXT
-    );
-    ''')
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS seasons(
-      season_id  INTEGER PRIMARY KEY
-    , start_date DATETIME NOT NULL
-    )''')
-    cursor.execute('''
-    REPLACE INTO seasons (season_id, start_date)
-    VALUES (1, '2019-01-01')
-    ''')
+def get_season_count(skill_db) -> [int]:
+    [season_count] = execute_one(skill_db, 'SELECT COUNT(*) FROM seasons')
+    return list(range(1, season_count + 1))
 
 
 def initialize_skill_db(skill_db):
@@ -629,13 +714,3 @@ def initialize_dbs():
         initialize_game_db(game_db)
         skill_db.commit()
         game_db.commit()
-
-
-def get_season_count(skill_db) -> [int]:
-    [season_count] = execute_one(skill_db, 'SELECT COUNT(*) FROM seasons')
-    return list(range(1, season_count + 1))
-
-
-def make_placeholder(columns, rows):
-    row = '({})'.format(str.join(', ', ['?'] * columns))
-    return str.join(', ', [row] * rows)

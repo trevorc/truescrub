@@ -8,11 +8,8 @@ import collections
 
 import trueskill
 
-from truescrub.db import enumerate_rows, get_skill_db, get_game_db, \
-    initialize_skill_db, SKILL_DB_NAME, replace_skill_db, \
-    save_game_state_progress, get_game_states, get_all_rounds, get_all_teams, \
-    make_placeholder, update_player_skills, replace_season_skills, \
-    get_overall_ratings, get_ratings_by_season, get_all_seasons
+from .. import db
+
 
 logger = logging.getLogger(__name__)
 
@@ -22,32 +19,14 @@ class NoRounds(Exception):
 
 
 def load_seasons(game_db, skill_db):
-    game_db_cursor = game_db.cursor()
-    game_db_cursor.execute('''
-    SELECT *
-    FROM seasons
-    ''')
-    seasons = list(enumerate_rows(game_db_cursor))
-
-    placeholder = make_placeholder(2, len(seasons))
-    params = [
-        param
-        for season in seasons
-        for param in season
-    ]
-
-    skill_db_cursor = skill_db.cursor()
-    skill_db_cursor.execute('''
-    REPLACE INTO seasons (season_id, start_date)
-    VALUES {}
-    '''.format(placeholder), params)
+    db.replace_seasons(skill_db, db.get_season_rows(game_db))
 
 
 def replace_teams(skill_db, round_teams):
     cursor = skill_db.cursor()
     memberships = {
         tuple(sorted(members)): team_id
-        for team_id, members in get_all_teams(skill_db).items()
+        for team_id, members in db.get_all_teams(skill_db).items()
     }
     missing_teams = set()
 
@@ -76,24 +55,12 @@ def insert_players(skill_db, player_states):
     if len(player_states) == 0:
         return
 
-    cursor = skill_db.cursor()
-
     players = {}
     for state in player_states:
         if state['steam_name'] != 'unconnected':
             players[int(state['steam_id'])] = state['steam_name']
 
-    placeholder = make_placeholder(2, len(players))
-    params = [value
-              for player in players.items()
-              for value in player]
-
-    cursor.execute('''
-    INSERT INTO players (player_id, steam_name)
-    VALUES {}
-    ON CONFLICT (player_id)
-    DO UPDATE SET steam_name = excluded.steam_name    
-    '''.format(placeholder), params)
+    db.upsert_player_names(skill_db, players)
 
 
 def parse_game_state(
@@ -147,10 +114,10 @@ def parse_game_state(
 
 
 def parse_game_states(game_db, game_state_range):
-    season_ids = get_all_seasons(game_db)
+    season_ids = db.get_seasons_by_start_date(game_db)
     season_starts = list(season_ids.keys())
 
-    game_states = get_game_states(game_db, game_state_range)
+    game_states = db.get_game_states(game_db, game_state_range)
 
     player_states = []
     rounds = []
@@ -168,41 +135,20 @@ def parse_game_states(game_db, game_state_range):
     return rounds, player_states, max_game_state_id
 
 
-def insert_rounds(skill_db, teams_to_ids, rounds) -> (int, int):
-    if len(rounds) == 0:
-        raise ValueError
-    cursor = skill_db.cursor()
-    fixed_rounds = [{
-        'created_at': rnd['created_at'],
-        'season_id': rnd['season_id'],
-        'winner': teams_to_ids[rnd['winner']],
-        'loser': teams_to_ids[rnd['loser']]
-    } for rnd in rounds]
-
-    for batch in [fixed_rounds[i:i + 100]
-                  for i in range(0, len(fixed_rounds), 100)]:
-        params = [value for rnd in batch
-                  for value in (
-                      rnd['season_id'],
-                      rnd['created_at'],
-                      rnd['winner'],
-                      rnd['loser'])
-                  ]
-        placeholder = make_placeholder(4, len(batch))
-        cursor.execute('''
-        INSERT INTO rounds (season_id, created_at, winner, loser)
-        VALUES {}
-        '''.format(placeholder), params)
-
-    max_round_id = cursor.lastrowid
-    return max_round_id - len(rounds) + 1, max_round_id
-
-
 def compute_rounds(skill_db, rounds, player_states):
     insert_players(skill_db, player_states)
     round_teams = {player_state['teammates'] for player_state in player_states}
     teams_to_ids = replace_teams(skill_db, round_teams)
-    return insert_rounds(skill_db, teams_to_ids, rounds)
+    fixed_rounds = [
+        {
+            'created_at': rnd['created_at'],
+            'season_id': rnd['season_id'],
+            'winner': teams_to_ids[rnd['winner']],
+            'loser': teams_to_ids[rnd['loser']]
+        }
+        for rnd in rounds
+    ]
+    return db.insert_rounds(skill_db, fixed_rounds)
 
 
 def compute_rounds_and_players(game_db, skill_db, game_state_range=None) \
@@ -254,35 +200,39 @@ def rate_players_by_season(
 def recalculate_ratings(skill_db, new_rounds: (int, int)):
     logger.debug('recalculating for rounds between %d and %d', *new_rounds)
 
-    all_rounds = get_all_rounds(skill_db, new_rounds)
-    teams = get_all_teams(skill_db)
+    all_rounds = db.get_all_rounds(skill_db, new_rounds)
+    teams = db.get_all_teams(skill_db)
 
-    player_ratings = get_overall_ratings(skill_db)
+    player_ratings = db.get_overall_ratings(skill_db)
     ratings = rate_players(all_rounds, teams, player_ratings)
-    update_player_skills(skill_db, ratings)
+    db.update_player_skills(skill_db, ratings)
 
     rounds_by_season = {
         season_id: list(rounds)
         for season_id, rounds in itertools.groupby(
                 all_rounds, operator.itemgetter('season_id'))
     }
-    season_ratings = get_ratings_by_season(
+    season_ratings = db.get_ratings_by_season(
             skill_db, seasons=list(rounds_by_season.keys()))
     skills_by_season = rate_players_by_season(
             rounds_by_season, teams, season_ratings)
-    replace_season_skills(skill_db, skills_by_season)
+    db.replace_season_skills(skill_db, skills_by_season)
+
+
+def compute_skill_db(game_db, skill_db):
+    load_seasons(game_db, skill_db)
+    max_game_state_id, new_rounds = \
+        compute_rounds_and_players(game_db, skill_db)
+    if new_rounds is not None:
+        recalculate_ratings(skill_db, new_rounds)
+    db.save_game_state_progress(skill_db, max_game_state_id)
 
 
 def recalculate():
-    new_skill_db = SKILL_DB_NAME + '.new'
-    with get_game_db() as game_db, \
-            get_skill_db(new_skill_db) as skill_db:
-        initialize_skill_db(skill_db)
-        load_seasons(game_db, skill_db)
-        max_game_state_id, new_rounds = \
-            compute_rounds_and_players(game_db, skill_db)
-        if new_rounds is not None:
-            recalculate_ratings(skill_db, new_rounds)
-        save_game_state_progress(skill_db, max_game_state_id)
+    new_skill_db = db.SKILL_DB_NAME + '.new'
+    with db.get_game_db() as game_db, \
+            db.get_skill_db(new_skill_db) as skill_db:
+        db.initialize_skill_db(skill_db)
+        compute_skill_db(game_db, skill_db)
         skill_db.commit()
-    replace_skill_db(new_skill_db)
+    db.replace_skill_db(new_skill_db)

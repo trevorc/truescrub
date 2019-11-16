@@ -68,8 +68,6 @@ arg_parser.add_argument('-z', '--zmq-port', type=int,
                         default=5555, help='Bind zeromq on this port.')
 arg_parser.add_argument('-c', '--recalculate', action='store_true',
                         help='Recalculate rankings.')
-arg_parser.add_argument('-r', '--use-reloader', action='store_true',
-                        help='Use code reloader.')
 arg_parser.add_argument('-e', '--evaluate', action='store_true',
                         help='Evaluate parameters')
 arg_parser.add_argument('--beta', type=float)
