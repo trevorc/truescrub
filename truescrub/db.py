@@ -164,8 +164,10 @@ def get_season_players(season: int):
             'skill_group': skill_group_name(mmr),
             'rating': trueskill.Rating(skill_mean, skill_stdev),
         }
-        for season_id_, player_id, steam_name, mmr, skill_mean, skill_stdev
+        for season_id, player_rows
         in get_player_rows_by_season(g.conn, [season])
+        for season_id_, player_id, steam_name, mmr, skill_mean, skill_stdev
+        in player_rows
     ]
 
 
