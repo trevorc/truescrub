@@ -51,7 +51,7 @@ def db_close(exc):
 
 @app.route('/', methods={'GET'})
 def index():
-    seasons = len(db.get_seasons())
+    seasons = len(db.get_season_count(g.conn))
     season_path = '/season/{}'.format(seasons) if seasons > 1 else ''
     return flask.render_template('index.html', season_path=season_path)
 
@@ -71,16 +71,16 @@ def game_state():
 
 @app.route('/leaderboard', methods={'GET'})
 def default_leaderboard():
-    players = list(db.get_all_players())
-    seasons = db.get_seasons()
+    players = db.get_all_players(g.conn)
+    seasons = db.get_season_count(g.conn)
     return flask.render_template('leaderboard.html', leaderboard=players,
                                  seasons=seasons, selected_season=None)
 
 
 @app.route('/leaderboard/season/<int:season>', methods={'GET'})
 def leaderboard(season):
-    players = list(db.get_season_players(season))
-    seasons = db.get_seasons()
+    players = db.get_season_players(g.conn, season)
+    seasons = db.get_season_count(g.conn)
     return flask.render_template('leaderboard.html', leaderboard=players,
                                  seasons=seasons, selected_season=season)
 
@@ -106,11 +106,11 @@ def all_skill_groups():
 @app.route('/profiles/<int:player_id>', methods={'GET'})
 def profile(player_id):
     try:
-        player_profile = db.get_player_profile(player_id)
+        player_profile = db.get_player_profile(g.conn, player_id)
     except StopIteration:
         return flask.make_response('No such player', 404)
 
-    team_records = list(db.get_team_records(player_id))
+    team_records = db.get_team_records(g.conn, player_id)
     return flask.render_template('profile.html', profile=player_profile,
                                  team_records=team_records)
 
@@ -122,7 +122,7 @@ def default_matchmaking():
 
 @app.route('/matchmaking/season/<int:season_id>', methods={'GET'})
 def matchmaking(season_id):
-    seasons = db.get_seasons()
+    seasons = db.get_season_count(g.conn)
     selected_players = {
         int(player_id) for player_id in request.args.getlist('player')
     }
@@ -130,9 +130,9 @@ def matchmaking(season_id):
         return flask.make_response(
                 'Cannot compute matches for more than 10 players', 403)
 
-    players = list(db.get_all_players()
-                   if season_id is None
-                   else db.get_season_players(season_id))
+    players = db.get_all_players(g.conn) \
+        if season_id is None \
+        else db.get_season_players(g.conn, season_id)
 
     for player in players:
         player['selected'] = player['player_id'] in selected_players
@@ -148,7 +148,7 @@ def matchmaking(season_id):
 
 @app.route('/profiles/<int:player_id>/matches', methods={'GET'})
 def matches(player_id):
-    all_players = list(db.get_all_players())
+    all_players = db.get_all_players(g.conn)
 
     try:
         steam_name = next(player['steam_name']
@@ -159,7 +159,7 @@ def matches(player_id):
 
     player_skills = make_player_skills(all_players)
     rounds_by_season = itertools.groupby(
-            db.get_player_rounds(player_skills, player_id),
+            db.get_player_rounds(g.conn, player_skills, player_id),
             operator.itemgetter('season_id'))
 
     return flask.render_template(
@@ -169,12 +169,12 @@ def matches(player_id):
 
 @app.route('/teams/<int:team_id>', methods={'GET'})
 def team_details(team_id):
-    members = db.get_team_members(team_id)
+    members = db.get_team_members(g.conn, team_id)
     if len(members) == 0:
         return flask.make_response('No such team\n', 404)
 
     member_names = str.join(', ', [member['steam_name'] for member in members])
-    opponent_records = list(db.get_opponent_records(team_id))
+    opponent_records = db.get_opponent_records(g.conn, team_id)
 
     player_skills = make_player_skills(itertools.chain(
             members, *(record['opponent_team']

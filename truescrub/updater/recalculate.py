@@ -12,7 +12,7 @@ from truescrub.db import enumerate_rows, get_skill_db, get_game_db, \
     initialize_skill_db, SKILL_DB_NAME, replace_skill_db, \
     save_game_state_progress, get_game_states, get_all_rounds, get_all_teams, \
     make_placeholder, update_player_skills, replace_season_skills, \
-    get_player_overall_skills, get_ratings_by_season
+    get_overall_ratings, get_ratings_by_season, get_all_seasons
 
 logger = logging.getLogger(__name__)
 
@@ -147,17 +147,7 @@ def parse_game_state(
 
 
 def parse_game_states(game_db, game_state_range):
-    cursor = game_db.cursor()
-
-    cursor.execute('''
-    SELECT season_id, start_date
-    FROM seasons
-    ''')
-
-    season_ids = {
-        datetime.datetime.fromisoformat(start_date): season_id
-        for season_id, start_date in enumerate_rows(cursor)
-    }
+    season_ids = get_all_seasons(game_db)
     season_starts = list(season_ids.keys())
 
     game_states = get_game_states(game_db, game_state_range)
@@ -264,13 +254,10 @@ def rate_players_by_season(
 def recalculate_ratings(skill_db, new_rounds: (int, int)):
     logger.debug('recalculating for rounds between %d and %d', *new_rounds)
 
-    all_rounds = list(get_all_rounds(skill_db, new_rounds))
+    all_rounds = get_all_rounds(skill_db, new_rounds)
     teams = get_all_teams(skill_db)
 
-    player_ratings = {
-        player['player_id']: player['rating']
-        for player in get_player_overall_skills(skill_db)
-    }
+    player_ratings = get_overall_ratings(skill_db)
     ratings = rate_players(all_rounds, teams, player_ratings)
     update_player_skills(skill_db, ratings)
 

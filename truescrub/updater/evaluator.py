@@ -7,7 +7,7 @@ from .recalculate import rate_players
 
 def run_evaluation(connection, beta, tau, sample):
     teams = get_all_teams(connection)
-    rounds = list(get_all_rounds(connection, None))
+    rounds = get_all_rounds(connection, None)
 
     offset = int(len(rounds) * sample)
     training_sample = rounds[:offset]

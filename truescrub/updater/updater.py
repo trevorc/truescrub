@@ -79,6 +79,7 @@ arg_parser.add_argument('--sample', type=float)
 
 def main():
     args = arg_parser.parse_args()
+    db.initialize_dbs()
     if args.recalculate:
         return recalculate()
     elif args.evaluate:
@@ -91,9 +92,6 @@ def main():
             params['sample'] = args.sample
         return evaluate_parameters(**params)
     start_updater(args.zmq_addr, args.zmq_port)
-
-
-db.initialize_dbs()
 
 
 if __name__ == '__main__':
