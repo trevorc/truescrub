@@ -17,6 +17,10 @@ from truescrub.db import enumerate_rows, get_skill_db, get_game_db, \
 logger = logging.getLogger(__name__)
 
 
+class NoRounds(Exception):
+    pass
+
+
 def load_seasons(game_db, skill_db):
     game_db_cursor = game_db.cursor()
     game_db_cursor.execute('''
@@ -68,11 +72,11 @@ def replace_teams(skill_db, round_teams):
     return memberships
 
 
-def insert_players(connection, player_states):
+def insert_players(skill_db, player_states):
     if len(player_states) == 0:
         return
 
-    cursor = connection.cursor()
+    cursor = skill_db.cursor()
 
     players = {}
     for state in player_states:
@@ -85,8 +89,10 @@ def insert_players(connection, player_states):
               for value in player]
 
     cursor.execute('''
-    REPLACE INTO players (player_id, steam_name) 
+    INSERT INTO players (player_id, steam_name)
     VALUES {}
+    ON CONFLICT (player_id)
+    DO UPDATE SET steam_name = excluded.steam_name    
     '''.format(placeholder), params)
 
 
@@ -173,6 +179,8 @@ def parse_game_states(game_db, game_state_range):
 
 
 def insert_rounds(skill_db, teams_to_ids, rounds) -> (int, int):
+    if len(rounds) == 0:
+        raise ValueError
     cursor = skill_db.cursor()
     fixed_rounds = [{
         'created_at': rnd['created_at'],
@@ -211,16 +219,19 @@ def compute_rounds_and_players(game_db, skill_db, game_state_range=None) \
         -> (int, (int, int)):
     rounds, player_states, max_game_state_id = \
         parse_game_states(game_db, game_state_range)
-    new_rounds = compute_rounds(skill_db, rounds, player_states)
+    new_rounds = compute_rounds(skill_db, rounds, player_states) \
+        if len(rounds) > 0 \
+        else None
     return max_game_state_id, new_rounds
 
 
 def rate_players(rounds: [dict], teams: [dict],
         current_ratings: {int: trueskill.Rating} = None) \
         -> {int: trueskill.Rating}:
-    ratings = collections.defaultdict(
-            trueskill.Rating,
-            current_ratings.items() if current_ratings else ())
+    ratings = collections.defaultdict(trueskill.Rating)
+    if current_ratings is not None:
+        ratings.update(current_ratings)
+
     for round in rounds:
         ranks = (
             {player_id: ratings[player_id]
@@ -283,7 +294,7 @@ def recalculate():
         load_seasons(game_db, skill_db)
         max_game_state_id, new_rounds = \
             compute_rounds_and_players(game_db, skill_db)
-        if len(new_rounds) > 0:
+        if new_rounds is not None:
             recalculate_ratings(skill_db, new_rounds)
         save_game_state_progress(skill_db, max_game_state_id)
         skill_db.commit()

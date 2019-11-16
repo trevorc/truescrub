@@ -114,7 +114,7 @@ def get_all_players():
     return get_player_overall_skills(g.conn)
 
 
-def get_player_rows_by_season(skill_db, seasons: [int] = None):
+def get_player_rows_by_season(skill_db, seasons):
     cursor = skill_db.cursor()
 
     if seasons is None:
@@ -143,32 +143,15 @@ def get_player_rows_by_season(skill_db, seasons: [int] = None):
     return itertools.groupby(enumerate_rows(cursor), operator.itemgetter(0))
 
 
-def get_players_by_seasons(skill_db):
-    return {
-        season_id: [
-            {
-                'player_id': int(player_id),
-                'steam_name': steam_name,
-                'mmr': int(mmr),
-                'skill_group': skill_group_name(mmr),
-                'rating': trueskill.Rating(skill_mean, skill_stdev),
-            }
-            for season_id_, player_id, steam_name, mmr, skill_mean, skill_stdev
-            in season_players
-        ]
-        for season_id, season_players
-        in get_player_rows_by_season(skill_db)
-    }
-
-
-def get_ratings_by_season(skill_db, seasons: [int] = None) \
+def get_ratings_by_season(skill_db, seasons: [int]) \
         -> {int: {int: trueskill.Rating}}:
     return {
         season_id: {
             player_row[1]: trueskill.Rating(player_row[4], player_row[5])
             for player_row in season_players
         }
-        for season_id, season_players in get_player_rows_by_season(skill_db)
+        for season_id, season_players
+        in get_player_rows_by_season(skill_db, seasons)
     }
 
 
