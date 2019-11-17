@@ -234,7 +234,7 @@ def get_overall_player_rows(skill_db):
          , skill_mean
          , skill_stdev
     FROM players
-    ORDER BY skill_mean - 2 * skill_stdev DESC
+    ORDER BY mmr DESC
     ''')
 
 
@@ -280,7 +280,7 @@ def get_player_rows_by_season(skill_db, seasons):
     ON   players.player_id = skills.player_id
     {}
     ORDER BY skills.season_id
-           , skills.mean - 2 * skills.stdev DESC
+           , mmr DESC
     '''.format(where_clause), params)
 
     return itertools.groupby(player_rows, operator.itemgetter(0))
