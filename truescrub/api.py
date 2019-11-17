@@ -216,10 +216,11 @@ arg_parser.add_argument('-y', '--zmq-addr', metavar='HOST', default='127.0.0.1',
 arg_parser.add_argument('-z', '--zmq-port', type=int,
                         default=5555, help='Connect to zeromq on this port.')
 
+db.initialize_dbs()
+
 
 def main():
     args = arg_parser.parse_args()
-    db.initialize_dbs()
     zmq_addr = 'tcp://{}:{}'.format(args.zmq_addr, args.zmq_port)
     print('Connecting ZeroMQ socket to {}'.format(zmq_addr))
     zmq_socket.connect(zmq_addr)

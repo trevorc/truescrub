@@ -75,9 +75,11 @@ arg_parser.add_argument('--tau', type=float)
 arg_parser.add_argument('--sample', type=float)
 
 
+db.initialize_dbs()
+
+
 def main():
     args = arg_parser.parse_args()
-    db.initialize_dbs()
     if args.recalculate:
         return recalculate()
     elif args.evaluate:
