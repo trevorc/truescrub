@@ -211,7 +211,9 @@ arg_parser.add_argument('-c', '--recalculate', action='store_true',
                         help='Recalculate rankings.')
 arg_parser.add_argument('-r', '--use-reloader', action='store_true',
                         help='Use code reloader.')
-arg_parser.add_argument('-y', '--zmq-addr', metavar='HOST', default='127.0.0.1',
+arg_parser.add_argument('-y', '--zmq-addr', metavar='HOST',
+                        default=os.environ.get(
+                                'TRUESCRUB_UPDATER_HOST', '127.0.0.1'),
                         help='Connect to zeromq on this address.')
 arg_parser.add_argument('-z', '--zmq-port', type=int,
                         default=5555, help='Connect to zeromq on this port.')
