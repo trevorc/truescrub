@@ -218,6 +218,8 @@ def recalculate_ratings(skill_db, new_rounds: (int, int)):
             rounds_by_season, teams, season_ratings)
     db.replace_season_skills(skill_db, skills_by_season)
 
+    logger.debug('recalculation for %d-%d completed', *new_rounds)
+
 
 def compute_skill_db(game_db, skill_db):
     load_seasons(game_db, skill_db)

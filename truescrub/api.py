@@ -33,12 +33,8 @@ zmq_socket = zmq.Context().socket(zmq.PUSH)
 def send_updater_message(**message):
     if 'command' not in message:
         raise ValueError('missing "command"')
-    try:
-        result = zmq_socket.send_json(message, flags=zmq.NOBLOCK)
-        logger.debug('send "%s" message. result: %s',
-                     message['command'], result)
-    except zmq.Again:
-        pass
+    result = zmq_socket.send_json(message, flags=zmq.NOBLOCK)
+    logger.debug('sent "%s" message', repr(message), result)
 
 
 @app.before_request
@@ -66,6 +62,7 @@ def index():
 
 @app.route('/api/game_state', methods={'POST'})
 def game_state():
+    logger.debug('processing game state')
     state_json = request.get_json(force=True)
     if state_json.get('auth', {}).get('token') != SHARED_KEY:
         return flask.make_response('Invalid auth token\n', 403)
@@ -73,8 +70,10 @@ def game_state():
     state = json.dumps(state_json)
     with db.get_game_db() as game_db:
         game_state_id = db.insert_game_state(game_db, state)
+        logger.debug('saved game_state with id %d', game_state_id)
         send_updater_message(command='process_game_state',
                              game_state_id=game_state_id)
+        game_db.commit()
     return '<h1>OK</h1>\n'
 
 
