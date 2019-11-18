@@ -21,13 +21,27 @@ app = flask.Flask(__name__)
 app.config['PROPAGATE_EXCEPTIONS'] = True
 
 SHARED_KEY = os.environ.get('TRUESCRUB_KEY', 'afohXaef9ighaeSh')
+LOG_LEVEL = os.environ.get('TRUESCRUB_LOG_LEVEL', 'DEBUG')
+UPDATER_HOST = os.environ.get('TRUESCRUB_UPDATER_HOST', '127.0.0.1')
+UPDATER_PORT = os.environ.get('TRUESCRUB_UPDATER_PORT', 5555)
+
 
 logging.basicConfig(format='%(asctime)s.%(msecs).3dZ\t'
                            '%(levelname)s\t%(message)s',
                     datefmt='%Y-%m-%dT%H:%M:%S',
-                    level=os.environ.get('TRUESCRUB_LOG_LEVEL', 'DEBUG'))
+                    level=LOG_LEVEL)
 logger = logging.getLogger(__name__)
 zmq_socket = zmq.Context().socket(zmq.PUSH)
+
+
+def initialize():
+    db.initialize_dbs()
+    zmq_addr = 'tcp://{}:{}'.format(UPDATER_HOST, UPDATER_PORT)
+    logger.info('Connecting ZeroMQ socket to {}'.format(zmq_addr))
+    zmq_socket.connect(zmq_addr)
+
+
+initialize()
 
 
 def send_updater_message(**message):
@@ -218,21 +232,10 @@ arg_parser.add_argument('-c', '--recalculate', action='store_true',
                         help='Recalculate rankings.')
 arg_parser.add_argument('-r', '--use-reloader', action='store_true',
                         help='Use code reloader.')
-arg_parser.add_argument('-y', '--zmq-addr', metavar='HOST',
-                        default=os.environ.get(
-                                'TRUESCRUB_UPDATER_HOST', '127.0.0.1'),
-                        help='Connect to zeromq on this address.')
-arg_parser.add_argument('-z', '--zmq-port', type=int,
-                        default=5555, help='Connect to zeromq on this port.')
-
-db.initialize_dbs()
 
 
 def main():
     args = arg_parser.parse_args()
-    zmq_addr = 'tcp://{}:{}'.format(args.zmq_addr, args.zmq_port)
-    logger.info('Connecting ZeroMQ socket to {}'.format(zmq_addr))
-    zmq_socket.connect(zmq_addr)
     if args.recalculate:
         return send_updater_message(command='recalculate')
     logger.info('TrueScrub listening on {}:{}'.format(args.addr, args.port))
