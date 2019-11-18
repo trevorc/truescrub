@@ -1,5 +1,6 @@
 import os
 import sqlite3
+import logging
 import datetime
 import operator
 import itertools
@@ -9,9 +10,12 @@ import trueskill
 from .matchmaking import SKILL_MEAN, SKILL_STDEV, \
     skill_group_name, match_quality
 
+
 DATA_DIR = os.environ.get('TRUESCRUB_DATA_DIR', 'data')
 GAME_DB_NAME = 'games.db'
 SKILL_DB_NAME = 'skill.db'
+
+logger = logging.getLogger(__name__)
 
 
 class Player(object):
@@ -103,6 +107,7 @@ def get_game_states(game_db, game_state_range):
 
 
 def initialize_game_db(game_db):
+    logger.debug('Initializing game_db')
     cursor = game_db.cursor()
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS game_state(
@@ -638,6 +643,7 @@ def get_season_count(skill_db) -> [int]:
 
 
 def initialize_skill_db(skill_db):
+    logger.debug('Initializing skill_db')
     cursor = skill_db.cursor()
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS seasons(

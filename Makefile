@@ -8,7 +8,7 @@ push:
 
 .PHONY: deploy
 deploy:
-	ssh rumia "sh -c 'cd services && docker-compose pull truescrub && docker-compose up -d --force-recreate truescrub'"
+	ssh rumia "sh -c 'cd services && docker-compose pull truescrub && docker-compose up -d --force-recreate truescrub truescrub-updater'"
 
 .PHONY: recalculate
 recalculate:

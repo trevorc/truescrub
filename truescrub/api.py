@@ -3,6 +3,7 @@
 import os
 import json
 import math
+import logging
 import argparse
 import operator
 import itertools
@@ -21,6 +22,11 @@ app.config['PROPAGATE_EXCEPTIONS'] = True
 
 SHARED_KEY = os.environ.get('TRUESCRUB_KEY', 'afohXaef9ighaeSh')
 
+logging.basicConfig(format='%(asctime)s.%(msecs).3dZ\t'
+                           '%(levelname)s\t%(message)s',
+                    datefmt='%Y-%m-%dT%H:%M:%S',
+                    level=os.environ.get('TRUESCRUB_LOG_LEVEL', 'DEBUG'))
+logger = logging.getLogger(__name__)
 zmq_socket = zmq.Context().socket(zmq.PUSH)
 
 
@@ -28,7 +34,9 @@ def send_updater_message(**message):
     if 'command' not in message:
         raise ValueError('missing "command"')
     try:
-        zmq_socket.send_json(message, flags=zmq.NOBLOCK)
+        result = zmq_socket.send_json(message, flags=zmq.NOBLOCK)
+        logger.debug('send "%s" message. result: %s',
+                     message['command'], result)
     except zmq.Again:
         pass
 
@@ -224,9 +232,9 @@ db.initialize_dbs()
 def main():
     args = arg_parser.parse_args()
     zmq_addr = 'tcp://{}:{}'.format(args.zmq_addr, args.zmq_port)
-    print('Connecting ZeroMQ socket to {}'.format(zmq_addr))
+    logger.info('Connecting ZeroMQ socket to {}'.format(zmq_addr))
     zmq_socket.connect(zmq_addr)
     if args.recalculate:
         return send_updater_message(command='recalculate')
-    print('TrueScrub listening on {}:{}'.format(args.addr, args.port))
+    logger.info('TrueScrub listening on {}:{}'.format(args.addr, args.port))
     app.run(args.addr, args.port, app, use_reloader=args.use_reloader)

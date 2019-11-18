@@ -1,3 +1,4 @@
+import os
 import logging
 import argparse
 
@@ -14,7 +15,7 @@ zmq_socket = zmq.Context().socket(zmq.PULL)
 logging.basicConfig(format='%(asctime)s.%(msecs).3dZ\t'
                            '%(levelname)s\t%(message)s',
                     datefmt='%Y-%m-%dT%H:%M:%S',
-                    level=logging.DEBUG)
+                    level=os.environ.get('TRUESCRUB_LOG_LEVEL', 'DEBUG'))
 logger = logging.getLogger(__name__)
 
 
@@ -45,6 +46,7 @@ def drain_queue():
 def run_updater():
     while True:
         messages = drain_queue()
+        logger.debug('processing %d messages', len(messages))
         if any(message['command'] == 'recalculate' for message in messages):
             recalculate()
         else:
