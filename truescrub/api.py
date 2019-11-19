@@ -3,15 +3,16 @@
 import os
 import json
 import math
+import logging
 import argparse
 import operator
 import itertools
 
+import zmq
 import flask
 from flask import g, request
 
 from . import db
-from .recalculate import recalculate, evaluate_parameters
 from .matchmaking import (
     skill_group_ranges, compute_matches, make_player_skills,
     match_quality, team1_win_probability)
@@ -20,6 +21,34 @@ app = flask.Flask(__name__)
 app.config['PROPAGATE_EXCEPTIONS'] = True
 
 SHARED_KEY = os.environ.get('TRUESCRUB_KEY', 'afohXaef9ighaeSh')
+LOG_LEVEL = os.environ.get('TRUESCRUB_LOG_LEVEL', 'DEBUG')
+UPDATER_HOST = os.environ.get('TRUESCRUB_UPDATER_HOST', '127.0.0.1')
+UPDATER_PORT = os.environ.get('TRUESCRUB_UPDATER_PORT', 5555)
+
+
+logging.basicConfig(format='%(asctime)s.%(msecs).3dZ\t'
+                           '%(levelname)s\t%(message)s',
+                    datefmt='%Y-%m-%dT%H:%M:%S',
+                    level=LOG_LEVEL)
+logger = logging.getLogger(__name__)
+zmq_socket = zmq.Context().socket(zmq.PUSH)
+
+
+def initialize():
+    db.initialize_dbs()
+    zmq_addr = 'tcp://{}:{}'.format(UPDATER_HOST, UPDATER_PORT)
+    logger.info('Connecting ZeroMQ socket to {}'.format(zmq_addr))
+    zmq_socket.connect(zmq_addr)
+
+
+initialize()
+
+
+def send_updater_message(**message):
+    if 'command' not in message:
+        raise ValueError('missing "command"')
+    result = zmq_socket.send_json(message, flags=zmq.NOBLOCK)
+    logger.debug('sent "%s" message', repr(message))
 
 
 @app.before_request
@@ -40,34 +69,40 @@ def db_close(exc):
 
 @app.route('/', methods={'GET'})
 def index():
-    seasons = len(db.get_seasons())
+    seasons = len(db.get_season_count(g.conn))
     season_path = '/season/{}'.format(seasons) if seasons > 1 else ''
     return flask.render_template('index.html', season_path=season_path)
 
 
 @app.route('/api/game_state', methods={'POST'})
 def game_state():
+    logger.debug('processing game state')
     state_json = request.get_json(force=True)
     if state_json.get('auth', {}).get('token') != SHARED_KEY:
         return flask.make_response('Invalid auth token\n', 403)
     del state_json['auth']
     state = json.dumps(state_json)
-    db.insert_game_state(state)
+    with db.get_game_db() as game_db:
+        game_state_id = db.insert_game_state(game_db, state)
+        logger.debug('saved game_state with id %d', game_state_id)
+        send_updater_message(command='process_game_state',
+                             game_state_id=game_state_id)
+        game_db.commit()
     return '<h1>OK</h1>\n'
 
 
 @app.route('/leaderboard', methods={'GET'})
 def default_leaderboard():
-    players = list(db.get_all_players())
-    seasons = db.get_seasons()
+    players = db.get_all_players(g.conn)
+    seasons = db.get_season_count(g.conn)
     return flask.render_template('leaderboard.html', leaderboard=players,
                                  seasons=seasons, selected_season=None)
 
 
 @app.route('/leaderboard/season/<int:season>', methods={'GET'})
 def leaderboard(season):
-    players = list(db.get_season_players(season))
-    seasons = db.get_seasons()
+    players = db.get_season_players(g.conn, season)
+    seasons = db.get_season_count(g.conn)
     return flask.render_template('leaderboard.html', leaderboard=players,
                                  seasons=seasons, selected_season=season)
 
@@ -93,11 +128,11 @@ def all_skill_groups():
 @app.route('/profiles/<int:player_id>', methods={'GET'})
 def profile(player_id):
     try:
-        player_profile = db.get_player_profile(player_id)
+        player_profile = db.get_player_profile(g.conn, player_id)
     except StopIteration:
         return flask.make_response('No such player', 404)
 
-    team_records = list(db.get_team_records(player_id))
+    team_records = db.get_team_records(g.conn, player_id)
     return flask.render_template('profile.html', profile=player_profile,
                                  team_records=team_records)
 
@@ -109,7 +144,7 @@ def default_matchmaking():
 
 @app.route('/matchmaking/season/<int:season_id>', methods={'GET'})
 def matchmaking(season_id):
-    seasons = db.get_seasons()
+    seasons = db.get_season_count(g.conn)
     selected_players = {
         int(player_id) for player_id in request.args.getlist('player')
     }
@@ -117,9 +152,9 @@ def matchmaking(season_id):
         return flask.make_response(
                 'Cannot compute matches for more than 10 players', 403)
 
-    players = list(db.get_all_players()
-                   if season_id is None
-                   else db.get_season_players(season_id))
+    players = db.get_all_players(g.conn) \
+        if season_id is None \
+        else db.get_season_players(g.conn, season_id)
 
     for player in players:
         player['selected'] = player['player_id'] in selected_players
@@ -135,7 +170,7 @@ def matchmaking(season_id):
 
 @app.route('/profiles/<int:player_id>/matches', methods={'GET'})
 def matches(player_id):
-    all_players = list(db.get_all_players())
+    all_players = db.get_all_players(g.conn)
 
     try:
         steam_name = next(player['steam_name']
@@ -146,7 +181,7 @@ def matches(player_id):
 
     player_skills = make_player_skills(all_players)
     rounds_by_season = itertools.groupby(
-            db.get_player_rounds(player_skills, player_id),
+            db.get_player_rounds(g.conn, player_skills, player_id),
             operator.itemgetter('season_id'))
 
     return flask.render_template(
@@ -156,12 +191,12 @@ def matches(player_id):
 
 @app.route('/teams/<int:team_id>', methods={'GET'})
 def team_details(team_id):
-    members = db.get_team_members(team_id)
+    members = db.get_team_members(g.conn, team_id)
     if len(members) == 0:
         return flask.make_response('No such team\n', 404)
 
     member_names = str.join(', ', [member['steam_name'] for member in members])
-    opponent_records = list(db.get_opponent_records(team_id))
+    opponent_records = db.get_opponent_records(g.conn, team_id)
 
     player_skills = make_player_skills(itertools.chain(
             members, *(record['opponent_team']
@@ -197,31 +232,11 @@ arg_parser.add_argument('-c', '--recalculate', action='store_true',
                         help='Recalculate rankings.')
 arg_parser.add_argument('-r', '--use-reloader', action='store_true',
                         help='Use code reloader.')
-arg_parser.add_argument('-e', '--evaluate', action='store_true',
-                        help='Evaluate parameters')
-arg_parser.add_argument('--beta', type=float)
-arg_parser.add_argument('--tau', type=float)
-arg_parser.add_argument('--sample', type=float)
 
 
 def main():
     args = arg_parser.parse_args()
     if args.recalculate:
-        return recalculate()
-    elif args.evaluate:
-        params = {}
-        if args.beta:
-            params['beta'] = args.beta
-        if args.tau:
-            params['tau'] = args.tau
-        if args.sample:
-            params['sample'] = args.sample
-        evaluate_parameters(**params)
-        return
+        return send_updater_message(command='recalculate')
+    logger.info('TrueScrub listening on {}:{}'.format(args.addr, args.port))
     app.run(args.addr, args.port, app, use_reloader=args.use_reloader)
-
-
-db.initialize_dbs()
-
-if __name__ == '__main__':
-    main()
