@@ -48,7 +48,7 @@ def send_updater_message(**message):
     if 'command' not in message:
         raise ValueError('missing "command"')
     result = zmq_socket.send_json(message, flags=zmq.NOBLOCK)
-    logger.debug('sent "%s" message', repr(message), result)
+    logger.debug('sent "%s" message', repr(message))
 
 
 @app.before_request
