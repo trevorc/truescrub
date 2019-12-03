@@ -6,6 +6,10 @@
 <body>
 <h1>TrueScrub&trade; Matchmaking</h1>
 
+
+{% if latest %}
+<p>Proposes evenly matched teams given the players in the last round.</p>
+{% else %}
 {{ macros.season_menu("/matchmaking", selected_season, seasons) }}
 
 <p>Proposes evenly matched teams for a given set of players.</p>
@@ -28,6 +32,7 @@
   <div><button id="toggle" type="button">Toggle selection</button> <input type="submit"></div>
 
 </form>
+{% endif %}
 
 {% if teams %}
 <div>

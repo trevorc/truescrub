@@ -47,7 +47,7 @@ initialize()
 def send_updater_message(**message):
     if 'command' not in message:
         raise ValueError('missing "command"')
-    result = zmq_socket.send_json(message, flags=zmq.NOBLOCK)
+    zmq_socket.send_json(message, flags=zmq.NOBLOCK)
     logger.debug('sent "%s" message', repr(message))
 
 
@@ -69,7 +69,7 @@ def db_close(exc):
 
 @app.route('/', methods={'GET'})
 def index():
-    seasons = len(db.get_season_count(g.conn))
+    seasons = len(db.get_season_range(g.conn))
     season_path = '/season/{}'.format(seasons) if seasons > 1 else ''
     return flask.render_template('index.html', season_path=season_path)
 
@@ -94,7 +94,7 @@ def game_state():
 @app.route('/leaderboard', methods={'GET'})
 def default_leaderboard():
     players = db.get_all_players(g.conn)
-    seasons = db.get_season_count(g.conn)
+    seasons = db.get_season_range(g.conn)
     return flask.render_template('leaderboard.html', leaderboard=players,
                                  seasons=seasons, selected_season=None)
 
@@ -102,9 +102,9 @@ def default_leaderboard():
 @app.route('/leaderboard/season/<int:season>', methods={'GET'})
 def leaderboard(season):
     players = db.get_season_players(g.conn, season)
-    seasons = db.get_season_count(g.conn)
+    seasons = db.get_season_range(g.conn)
     return flask.render_template('leaderboard.html', leaderboard=players,
-                                 seasons=seasons, selected_season=season)
+                                 seasons=seasons, selected_season=season,)
 
 
 def format_bound(bound):
@@ -142,12 +142,26 @@ def default_matchmaking():
     return matchmaking(None)
 
 
+@app.route('/matchmaking/latest', methods={'GET'})
+def latest_matchmaking():
+    seasons = db.get_season_range(g.conn)
+    if len(seasons) == 0:
+        return flask.make_response('No seasons found', 404)
+    players = db.get_players_in_last_round(g.conn)
+    return matchmaking0(seasons, players, season_id=seasons[-1], latest=True)
+
+
 @app.route('/matchmaking/season/<int:season_id>', methods={'GET'})
 def matchmaking(season_id):
-    seasons = db.get_season_count(g.conn)
+    seasons = db.get_season_range(g.conn)
     selected_players = {
         int(player_id) for player_id in request.args.getlist('player')
     }
+    return matchmaking0(seasons, selected_players, season_id)
+
+
+def matchmaking0(seasons: [int], selected_players: {int}, season_id: int = None,
+                 latest: bool = False):
     if len(selected_players) > 10:
         return flask.make_response(
                 'Cannot compute matches for more than 10 players', 403)
@@ -165,7 +179,7 @@ def matchmaking(season_id):
 
     return flask.render_template('matchmaking.html',
                                  seasons=seasons, selected_season=season_id,
-                                 players=players, teams=teams)
+                                 players=players, teams=teams, latest=latest)
 
 
 @app.route('/profiles/<int:player_id>/matches', methods={'GET'})

@@ -456,6 +456,28 @@ def get_player_rounds(skill_db, player_skills, player_id):
         }
 
 
+def get_players_in_last_round(skill_db) -> {int}:
+    player_ids = execute(skill_db, '''
+    SELECT m.player_id
+    FROM rounds r
+    JOIN ( SELECT w.round_id
+                , w.winner AS team_id
+           FROM rounds w
+           UNION ALL
+           SELECT l.round_id
+                , l.loser AS team_id
+           FROM rounds l
+         ) teams
+    ON    r.round_id = teams.round_id
+    JOIN  team_membership m
+    ON    teams.team_id = m.team_id
+    WHERE r.round_id =
+          ( SELECT MAX(round_id)
+            FROM rounds )
+    ''')
+    return {row[0] for row in player_ids}
+
+
 def get_team_members(skill_db, team_id: int):
     member_rows = execute(skill_db, '''
     SELECT players.player_id
@@ -637,7 +659,7 @@ def replace_season_skills(
     '''.format(make_placeholder(4, len(season_ratings))), params)
 
 
-def get_season_count(skill_db) -> [int]:
+def get_season_range(skill_db) -> [int]:
     [season_count] = execute_one(skill_db, 'SELECT COUNT(*) FROM seasons')
     return list(range(1, season_count + 1))
 
