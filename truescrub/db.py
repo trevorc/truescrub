@@ -175,8 +175,8 @@ def insert_rounds(skill_db, rounds: [dict]) -> (int, int):
         raise ValueError
 
     cursor = skill_db.cursor()
-    for batch in [rounds[i:i + 100]
-                  for i in range(0, len(rounds), 100)]:
+    for batch in [rounds[i:i + 128]
+                  for i in range(0, len(rounds), 128)]:
         params = [
             value
             for rnd in batch
@@ -185,11 +185,12 @@ def insert_rounds(skill_db, rounds: [dict]) -> (int, int):
                 rnd['created_at'],
                 rnd['winner'],
                 rnd['loser'],
+                rnd['mvp'],
             )
         ]
-        placeholder = make_placeholder(4, len(batch))
+        placeholder = make_placeholder(5, len(batch))
         cursor.execute('''
-        INSERT INTO rounds (season_id, created_at, winner, loser)
+        INSERT INTO rounds (season_id, created_at, winner, loser, mvp)
         VALUES {}
         '''.format(placeholder), params)
 
@@ -437,7 +438,7 @@ def get_player_rounds(skill_db, player_skills, player_id):
     teams = get_all_teams_from_player_rounds(skill_db, player_id)
 
     round_rows = execute(skill_db, '''
-    SELECT season_id, created_at, winner, loser
+    SELECT season_id, created_at, winner, loser, mvp
     FROM rounds
     JOIN team_membership m
     ON m.team_id = rounds.winner OR m.team_id = rounds.loser
@@ -445,12 +446,13 @@ def get_player_rounds(skill_db, player_skills, player_id):
     ORDER BY season_id DESC, created_at DESC
     ''', (player_id,))
 
-    for season_id, created_at, winner, loser in round_rows:
+    for season_id, created_at, winner, loser, mvp in round_rows:
         yield {
             'season_id': season_id,
             'created_at': created_at,
             'winner': teams[winner],
             'loser': teams[loser],
+            'mvp': mvp,
             'quality': 100 * match_quality(
                     player_skills, teams[winner], teams[loser]),
         }
@@ -581,7 +583,7 @@ def get_all_rounds(skill_db, round_range: (int, int)):
         params = []
 
     rounds = execute(skill_db, '''
-    SELECT season_id, winner, loser
+    SELECT season_id, winner, loser, mvp
     FROM rounds
     {}
     '''.format(where_clause), params)
@@ -590,8 +592,9 @@ def get_all_rounds(skill_db, round_range: (int, int)):
             'season_id': season_id,
             'winner': winner,
             'loser': loser,
+            'mvp': mvp,
         }
-        for season_id, winner, loser in rounds
+        for season_id, winner, loser, mvp in rounds
     ]
 
 
@@ -719,9 +722,11 @@ def initialize_skill_db(skill_db):
     , created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
     , winner      INTEGER NOT NULL
     , loser       INTEGER NOT NULL
+    , mvp         INTEGER
     , FOREIGN KEY (season_id) REFERENCES seasons (season_id)
     , FOREIGN KEY (winner) REFERENCES teams (team_id)
     , FOREIGN KEY (loser) REFERENCES teams (team_id)
+    , FOREIGN KEY (mvp) REFERENCES players (player_id)
     );
     ''')
 

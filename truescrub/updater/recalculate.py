@@ -5,6 +5,7 @@ import operator
 import datetime
 import itertools
 import collections
+from typing import Optional, Iterable
 
 import trueskill
 
@@ -63,6 +64,34 @@ def insert_players(skill_db, player_states):
     db.upsert_player_names(skill_db, players)
 
 
+def compute_mvp(state: dict) -> Optional[int]:
+    previous_allplayers = state['previously'].get('allplayers', {})
+
+    mvp_counts = {
+        steam_id: player['match_stats']['mvps']
+        for steam_id, player in state['allplayers'].items()
+    }
+
+    previous_mvps = {
+        steam_id: player['match_stats']['mvps']
+        for steam_id, player in previous_allplayers.items()
+        if 'mvps' in previous_allplayers.get(steam_id, {}).get('match_stats', {})
+    }
+
+    try:
+        mvp = next(
+                int(steam_id)
+                for steam_id in mvp_counts
+                if steam_id in previous_mvps
+                and mvp_counts[steam_id] - previous_mvps[steam_id] > 0)
+    except StopIteration:
+        # Not sure why, but sometimes there is no MVP data in
+        # the state's previously.allplayers
+        mvp = None
+
+    return mvp
+
+
 def parse_game_state(
         season_starts: [datetime.datetime],
         season_ids: {datetime.datetime: int},
@@ -85,17 +114,19 @@ def parse_game_state(
         return
     lose_team = next(iter(set(team_members.keys()) - {win_team}))
 
-    new_player_states = []
+    mvp = compute_mvp(state)
 
-    for steamid, player in state['allplayers'].items():
-        new_player_states.append({
+    new_player_states = [
+        {
             'teammates': team_members[player['team']],
             'round': state['map']['round'],
             'team': player['team'],
             'steam_id': steamid,
             'steam_name': player['name'],
             'round_won': player['team'] == win_team,
-        })
+        }
+        for steamid, player in state['allplayers'].items()
+    ]
 
     created_at = datetime.datetime.utcfromtimestamp(
             state['provider']['timestamp'])
@@ -108,6 +139,7 @@ def parse_game_state(
         'season_id': season_id,
         'winner': team_members[win_team],
         'loser': team_members[lose_team],
+        'mvp': mvp,
     }
 
     return new_round, new_player_states
@@ -144,7 +176,8 @@ def compute_rounds(skill_db, rounds, player_states):
             'created_at': rnd['created_at'],
             'season_id': rnd['season_id'],
             'winner': teams_to_ids[rnd['winner']],
-            'loser': teams_to_ids[rnd['loser']]
+            'loser': teams_to_ids[rnd['loser']],
+            'mvp': rnd['mvp'],
         }
         for rnd in rounds
     ]
@@ -169,13 +202,13 @@ def rate_players(rounds: [dict], teams: [dict],
         ratings.update(current_ratings)
 
     for round in rounds:
-        ranks = (
+        rating_groups = (
             {player_id: ratings[player_id]
              for player_id in teams[round['winner']]},
             {player_id: ratings[player_id]
              for player_id in teams[round['loser']]},
         )
-        new_ratings = trueskill.rate(ranks)
+        new_ratings = trueskill.rate(rating_groups)
         for rating in new_ratings:
             ratings.update(rating)
     ratings.default_factory = None

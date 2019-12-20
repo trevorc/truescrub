@@ -17,7 +17,12 @@
       <h5>Winners</h5>
       <ul>
         {% for player in round.winner %}
-        <li>{{ player.steam_name }}</li>
+        <li>
+          {% if player.player_id == round.mvp -%}
+            &#x2605;
+          {%- endif -%}
+          {{ player.steam_name }}
+        </li>
         {% endfor %}
       </ul>
     </div>
