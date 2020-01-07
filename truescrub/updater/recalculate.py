@@ -5,7 +5,7 @@ import operator
 import datetime
 import itertools
 import collections
-from typing import Optional, Iterable
+from typing import Optional
 
 import trueskill
 

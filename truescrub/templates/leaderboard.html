@@ -1,4 +1,5 @@
 {% import "macros.html" as macros -%}
+{%- set bar_width = 6 -%}
 <html lang="en">
 <head>
   <title>TrueScrub&trade; Leaderboard</title>
@@ -10,7 +11,7 @@
   <thead>
   <tr>
     <th>Name</th>
-    <th>MMR</th>
+    <th colspan="2">MMR</th>
     <th>Skill Group</th>
   </tr>
   </thead>
@@ -19,6 +20,11 @@
     <tr>
       <td><a href="/profiles/{{ player.player_id }}">{{ player.steam_name }}</a></td>
       <td title="{{ player.rating.mu|int }} ± {{ player.rating.sigma|int }}σ">{{ player.mmr }}</td>
+      <td>
+        <div style="background: #ddd; width: {{ bar_width }}em; height: 1em; border-radius: 1em;">
+          <div style="background: #444; width: {{ player.rating_width * bar_width }}em; height: 1em; border-radius: 1em; margin-left: {{ player.rating_offset * bar_width }}em;"></div>
+        </div>
+      </td>
       <td>{{ player.skill_group }}</td>
     </tr>
   {% endfor %}

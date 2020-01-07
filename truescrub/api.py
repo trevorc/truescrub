@@ -15,7 +15,7 @@ from flask import g, request
 from . import db
 from .matchmaking import (
     skill_group_ranges, compute_matches, make_player_skills,
-    match_quality, team1_win_probability)
+    match_quality, team1_win_probability, SKILL_GROUPS, SKILL_GROUP_SPACING)
 
 app = flask.Flask(__name__)
 app.config['PROPAGATE_EXCEPTIONS'] = True
@@ -91,9 +91,27 @@ def game_state():
     return '<h1>OK</h1>\n'
 
 
+def make_player_viewmodel(player):
+    max_rating = SKILL_GROUPS[-1][0] + SKILL_GROUP_SPACING * 2.0
+    min_width = 0.125
+
+    rating_center = player['rating'].mu / max_rating
+    rating_width = max(min_width, player['rating'].sigma * 2 / max_rating)
+    rating_offset = min(
+            1.0 - min_width,
+            1.0 - rating_width,
+            max(0.0, rating_center - rating_width))
+
+    return {
+        'rating_width': rating_width,
+        'rating_offset': rating_offset,
+        **player
+    }
+
+
 @app.route('/leaderboard', methods={'GET'})
 def default_leaderboard():
-    players = db.get_all_players(g.conn)
+    players = map(make_player_viewmodel, db.get_all_players(g.conn))
     seasons = db.get_season_range(g.conn)
     return flask.render_template('leaderboard.html', leaderboard=players,
                                  seasons=seasons, selected_season=None)
@@ -101,7 +119,7 @@ def default_leaderboard():
 
 @app.route('/leaderboard/season/<int:season>', methods={'GET'})
 def leaderboard(season):
-    players = db.get_season_players(g.conn, season)
+    players = map(make_player_viewmodel, db.get_season_players(g.conn, season))
     seasons = db.get_season_range(g.conn)
     return flask.render_template('leaderboard.html', leaderboard=players,
                                  seasons=seasons, selected_season=season,)
