@@ -15,7 +15,7 @@ from flask import g, request
 from . import db
 from .matchmaking import (
     skill_group_ranges, compute_matches, make_player_skills,
-    match_quality, team1_win_probability, SKILL_GROUPS, SKILL_GROUP_SPACING)
+    match_quality, team1_win_probability, estimated_skill_range)
 
 app = flask.Flask(__name__)
 app.config['PROPAGATE_EXCEPTIONS'] = True
@@ -92,19 +92,17 @@ def game_state():
 
 
 def make_player_viewmodel(player):
-    max_rating = SKILL_GROUPS[-1][0] + SKILL_GROUP_SPACING * 2.0
-    min_width = 0.125
+    lower_bound, upper_bound = estimated_skill_range(player['rating'])
+    min_width = 0.1
 
-    rating_center = player['rating'].mu / max_rating
-    rating_width = max(min_width, player['rating'].sigma * 2 / max_rating)
-    rating_offset = min(
-            1.0 - min_width,
-            1.0 - rating_width,
-            max(0.0, rating_center - rating_width))
+    left_offset = min(lower_bound, 1 - min_width)
+    right_offset = max(upper_bound, 0 + min_width)
 
     return {
-        'rating_width': rating_width,
-        'rating_offset': rating_offset,
+        'rating_offset': left_offset,
+        'rating_width': right_offset - left_offset,
+        'lower_bound': '%.1f' % (lower_bound * 100.0),
+        'upper_bound': '%.1f' % (upper_bound * 100.0),
         **player
     }
 

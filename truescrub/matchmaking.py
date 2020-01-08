@@ -4,6 +4,7 @@ import operator
 import itertools
 
 import trueskill
+from trueskill import Gaussian
 
 SKILL_MEAN = 1000.0
 SKILL_STDEV = SKILL_MEAN / 4.0
@@ -14,6 +15,7 @@ MAX_PLAYERS_PER_TEAM = 5
 trueskill.setup(mu=SKILL_MEAN, sigma=SKILL_STDEV, beta=BETA, tau=TAU,
                 draw_probability=0.0)
 
+CONFIDENCE_LEVEL = 0.90
 SKILL_GROUP_SPACING = SKILL_STDEV * 0.3
 SKILL_GROUP_NAMES = [
     'Scrub',
@@ -42,6 +44,31 @@ SKILL_GROUPS = ((float('-inf'), SKILL_GROUP_NAMES[0]),) + tuple(
         (SKILL_GROUP_SPACING * (i + 1), name)
         for i, name in enumerate(SKILL_GROUP_NAMES[1:])
 )
+
+
+def confidence_interval_z(confidence_level: float) -> float:
+    if confidence_level >= 1.0 or confidence_level <= 0.0:
+        raise ValueError('confidence_interval {} is out of range (0, 1)'.format(
+                confidence_level))
+    alpha = 1 - confidence_level
+    return -trueskill.global_env().ppf(alpha / 2.0)
+
+
+def standard_normal_percentile_range(estimate: Gaussian) -> (float, float):
+    cdf = trueskill.global_env().cdf
+    z_star = confidence_interval_z(CONFIDENCE_LEVEL)
+
+    lower_bound = cdf(estimate.mu - z_star * estimate.sigma)
+    upper_bound = cdf(estimate.mu + z_star * estimate.sigma)
+
+    return lower_bound, upper_bound
+
+
+def estimated_skill_range(skill: Gaussian) -> (float, float):
+    normal_mu = (skill.mu - SKILL_MEAN) / SKILL_STDEV
+    normal_sigma = skill.sigma / SKILL_STDEV
+    normal_estimate = Gaussian(normal_mu, normal_sigma)
+    return standard_normal_percentile_range(normal_estimate)
 
 
 def skill_group_name(mmr: float) -> str:
