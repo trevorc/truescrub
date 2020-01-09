@@ -132,7 +132,7 @@ def suggest_teams(player_skills):
 
 def make_player_skills(players):
     return {
-        player['player_id']: player['rating']
+        player['player_id']: player['skill']
         for player in players
     }
 

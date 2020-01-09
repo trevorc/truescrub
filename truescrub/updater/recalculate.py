@@ -19,6 +19,19 @@ class NoRounds(Exception):
     pass
 
 
+# Rating2 = 0.2778*Kills - 0.2559*Deaths + 0.00651*ADR + 0.00633*KAST + 0.18377
+
+
+def dump_rounds(game_db, outfile, indent=False):
+    game_states = db.get_game_states(game_db, None)
+    for game_state_id, created_at, game_state_str in game_states:
+        state = json.loads(game_state_str)
+        if not is_round_transition(state):
+            continue
+        json.dump(state, outfile, indent=2 if indent else None)
+        outfile.write('\n')
+
+
 def load_seasons(game_db, skill_db):
     db.replace_seasons(skill_db, db.get_season_rows(game_db))
 
@@ -64,6 +77,33 @@ def insert_players(skill_db, player_states):
     db.upsert_player_names(skill_db, players)
 
 
+def calculate_round_stats(state: dict) -> {int: dict}:
+    previous_allplayers = state['previously'].get('allplayers', {})
+
+    assist_counts = {
+        steam_id: player['match_stats']['assists']
+        for steam_id, player in state['allplayers'].items()
+    }
+
+    previous_assists = {
+        steam_id: player['match_stats']['assists']
+        for steam_id, player in previous_allplayers.items()
+        if 'assists' in previous_allplayers.get(
+                steam_id, {}).get('match_stats', {})
+    }
+
+    return {
+        int(steam_id): {
+            'kills': player['state']['round_kills'],
+            'assists': assist_counts[steam_id] -
+                       previous_assists.get(steam_id, 0),
+            'survived': player['state']['health'] > 0,
+            'damage': player['state']['round_totaldmg'],
+        }
+        for steam_id, player in state['allplayers'].items()
+    }
+
+
 def compute_mvp(state: dict) -> Optional[int]:
     previous_allplayers = state['previously'].get('allplayers', {})
 
@@ -92,15 +132,22 @@ def compute_mvp(state: dict) -> Optional[int]:
     return mvp
 
 
+def is_round_transition(state):
+    current_phase = state.get('round', {}).get('phase')
+    previously = state.get('previously', {})
+    return current_phase == 'over' \
+           and previously.get('round', {}).get('phase') == 'live' \
+           and 'allplayers' in state \
+           and 'win_team' in state['round']
+
+
 def parse_game_state(
         season_starts: [datetime.datetime],
         season_ids: {datetime.datetime: int},
+        game_state_id: int,
         game_state_json: str):
     state = json.loads(game_state_json)
-    if not (state.get('round', {}).get('phase') == 'over' and
-            state.get('previously', {}).get('round', {}).get('phase') == 'live'):
-        return
-    if 'allplayers' not in state or 'win_team' not in state['round']:
+    if not is_round_transition(state):
         return
     win_team = state['round']['win_team']
     team_steamids = [(player['team'], int(steamid))
@@ -134,12 +181,16 @@ def parse_game_state(
     season_index = bisect.bisect_left(season_starts, created_at) - 1
     season_id = season_ids[season_starts[season_index]]
 
+    round_stats = calculate_round_stats(state)
+
     new_round = {
+        'game_state_id': game_state_id,
         'created_at': created_at,
         'season_id': season_id,
         'winner': team_members[win_team],
         'loser': team_members[lose_team],
         'mvp': mvp,
+        'stats': round_stats,
     }
 
     return new_round, new_player_states
@@ -157,7 +208,7 @@ def parse_game_states(game_db, game_state_range):
 
     for (game_state_id, created_at, game_state_json) in game_states:
         parsed_game_state = parse_game_state(season_starts, season_ids,
-                                             game_state_json)
+                                             game_state_id, game_state_json)
         if parsed_game_state is not None:
             new_round, new_player_states = parsed_game_state
             rounds.append(new_round)
@@ -175,13 +226,22 @@ def compute_rounds(skill_db, rounds, player_states):
         {
             'created_at': rnd['created_at'],
             'season_id': rnd['season_id'],
+            'game_state_id': rnd['game_state_id'],
             'winner': teams_to_ids[rnd['winner']],
             'loser': teams_to_ids[rnd['loser']],
             'mvp': rnd['mvp'],
         }
         for rnd in rounds
     ]
-    return db.insert_rounds(skill_db, fixed_rounds)
+    round_range = db.insert_rounds(skill_db, fixed_rounds)
+
+    round_stats = {
+        rnd['game_state_id']: rnd['stats']
+        for rnd in rounds
+    }
+    db.insert_round_stats(skill_db, round_stats)
+
+    return round_range
 
 
 def compute_rounds_and_players(game_db, skill_db, game_state_range=None) \
@@ -194,7 +254,7 @@ def compute_rounds_and_players(game_db, skill_db, game_state_range=None) \
     return max_game_state_id, new_rounds
 
 
-def rate_players(rounds: [dict], teams: [dict],
+def compute_player_skills(rounds: [dict], teams: [dict],
         current_ratings: {int: trueskill.Rating} = None) \
         -> {int: trueskill.Rating}:
     ratings = collections.defaultdict(trueskill.Rating)
@@ -223,7 +283,7 @@ def rate_players_by_season(
     if ratings_by_season is None:
         ratings_by_season = {}
     for season, rounds in rounds_by_season.items():
-        new_ratings = rate_players(
+        new_ratings = compute_player_skills(
                 rounds, teams, ratings_by_season.get(season))
         for player_id, rating in new_ratings.items():
             skills[(player_id, season)] = rating
@@ -236,20 +296,24 @@ def recalculate_ratings(skill_db, new_rounds: (int, int)):
     all_rounds = db.get_all_rounds(skill_db, new_rounds)
     teams = db.get_all_teams(skill_db)
 
-    player_ratings = db.get_overall_ratings(skill_db)
-    ratings = rate_players(all_rounds, teams, player_ratings)
-    db.update_player_skills(skill_db, ratings)
+    player_ratings = db.get_overall_skills(skill_db)
+    skills = compute_player_skills(all_rounds, teams, player_ratings)
+    impact_ratings = db.get_overall_impact_ratings(skill_db)
+
+    db.update_player_skills(skill_db, skills, impact_ratings)
 
     rounds_by_season = {
         season_id: list(rounds)
         for season_id, rounds in itertools.groupby(
                 all_rounds, operator.itemgetter('season_id'))
     }
-    season_ratings = db.get_ratings_by_season(
+    season_ratings = db.get_skills_by_season(
             skill_db, seasons=list(rounds_by_season.keys()))
     skills_by_season = rate_players_by_season(
             rounds_by_season, teams, season_ratings)
-    db.replace_season_skills(skill_db, skills_by_season)
+    season_impact_ratings = db.get_impact_ratings_by_season(skill_db)
+
+    db.replace_season_skills(skill_db, skills_by_season, season_impact_ratings)
 
     logger.debug('recalculation for %d-%d completed', *new_rounds)
 

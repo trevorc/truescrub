@@ -15,17 +15,24 @@ DATA_DIR = os.environ.get('TRUESCRUB_DATA_DIR', 'data')
 GAME_DB_NAME = 'games.db'
 SKILL_DB_NAME = 'skill.db'
 
+KILL_COEFF = 2.778
+DEATH_COEFF = 2.559
+DAMAGE_COEFF = 0.0651
+KAS_COEFF = 0.0633
+INTERCEPT = 0.18377
+
+
 logger = logging.getLogger(__name__)
 
 
 class Player(object):
-    __slots__ = ('player_id', 'steam_name', 'rating', 'mmr', 'skill_group')
+    __slots__ = ('player_id', 'steam_name', 'skill', 'mmr', 'skill_group')
 
     def __init__(self, player_id, steam_name, skill_mean, skill_stdev):
         self.player_id = int(player_id)
         self.steam_name = steam_name
-        self.rating = trueskill.Rating(skill_mean, skill_stdev)
-        self.mmr = self.rating.mu - self.rating.sigma * 2
+        self.skill = trueskill.Rating(skill_mean, skill_stdev)
+        self.mmr = self.skill.mu - self.skill.sigma * 2
         self.skill_group = skill_group_name(self.mmr)
 
 
@@ -170,32 +177,83 @@ def upsert_player_names(skill_db, players: {int: str}):
     '''.format(placeholder), params)
 
 
+def make_batches(items: list, size: int):
+    return (
+        items[i:i + size]
+        for i in range(0, len(items), size)
+    )
+
+
 def insert_rounds(skill_db, rounds: [dict]) -> (int, int):
     if len(rounds) == 0:
         raise ValueError
 
     cursor = skill_db.cursor()
-    for batch in [rounds[i:i + 128]
-                  for i in range(0, len(rounds), 128)]:
+    for batch in make_batches(rounds, 128):
         params = [
             value
             for rnd in batch
             for value in (
                 rnd['season_id'],
+                rnd['game_state_id'],
                 rnd['created_at'],
                 rnd['winner'],
                 rnd['loser'],
                 rnd['mvp'],
             )
         ]
-        placeholder = make_placeholder(5, len(batch))
+        placeholder = make_placeholder(6, len(batch))
         cursor.execute('''
-        INSERT INTO rounds (season_id, created_at, winner, loser, mvp)
+        INSERT INTO rounds (season_id, game_state_id, created_at, winner, loser, mvp)
         VALUES {}
         '''.format(placeholder), params)
 
     max_round_id = cursor.lastrowid
     return max_round_id - len(rounds) + 1, max_round_id
+
+
+def insert_round_stats(skill_db, round_stats_by_game_state_id: {int: dict}):
+    min_game_state_id = min(round_stats_by_game_state_id.keys())
+    max_game_state_id = max(round_stats_by_game_state_id.keys())
+
+    round_mappings = execute(skill_db, '''
+    SELECT game_state_id, round_id
+    FROM rounds
+    WHERE game_state_id BETWEEN ? AND ?
+    ''', (min_game_state_id, max_game_state_id))
+
+    game_state_id_to_round_id = {
+        row[0]: row[1]
+        for row in round_mappings
+        if row[0] in round_stats_by_game_state_id
+    }
+
+    round_stats_rows = [
+        (
+            game_state_id_to_round_id[game_state_id],
+            player_id,
+            player_stats['kills'],
+            player_stats['assists'],
+            player_stats['damage'],
+            player_stats['survived'],
+        )
+        for game_state_id, round_stats in round_stats_by_game_state_id.items()
+        for player_id, player_stats in round_stats.items()
+
+    ]
+
+    cursor = skill_db.cursor()
+    for batch in make_batches(round_stats_rows, 128):
+        params = [
+            value
+            for row in batch
+            for value in row
+        ]
+        placeholder = make_placeholder(6, len(batch))
+        cursor.execute('''
+        INSERT INTO round_stats (round_id, player_id, kills, assists, damage, survived)
+        VALUES {}
+        '''.format(placeholder), params)
 
 
 def get_team_records(skill_db, player_id):
@@ -239,15 +297,57 @@ def get_overall_player_rows(skill_db):
          , skill_mean - 2 * skill_stdev AS mmr
          , skill_mean
          , skill_stdev
+         , impact_rating
     FROM players
     ORDER BY mmr DESC
     ''')
 
 
-def get_overall_ratings(skill_db) -> {int: trueskill.Rating}:
+def get_overall_skills(skill_db) -> {int: trueskill.Rating}:
     return {
         int(player_row[0]): trueskill.Rating(player_row[3], player_row[4])
         for player_row in get_overall_player_rows(skill_db)
+    }
+
+
+def get_overall_impact_ratings(skill_db) -> {int: float}:
+    return dict(execute(skill_db, '''
+    SELECT rc.player_id
+         , {} * AVG(rc.kill_rating)
+         + {} * AVG(rc.death_rating)
+         + {} * AVG(rc.damage_rating)
+         + {} * AVG(rc.kas_rating)
+         + {}
+         AS rating
+     FROM rating_components rc
+     GROUP BY rc.player_id
+     '''.format(KILL_COEFF, DEATH_COEFF, DAMAGE_COEFF, KAS_COEFF, INTERCEPT)))
+
+
+def get_impact_ratings_by_season(skill_db) -> {int: {int: float}}:
+    rating_rows = execute(skill_db, '''
+    SELECT r.season_id
+         , rc.player_id
+         , {} * AVG(rc.kill_rating)
+         + {} * AVG(rc.death_rating)
+         + {} * AVG(rc.damage_rating)
+         + {} * AVG(rc.kas_rating)
+         + {}
+         AS rating
+     FROM rating_components rc
+     JOIN rounds r ON r.round_id = rc.round_id
+     GROUP BY r.season_id
+            , rc.player_id
+     ORDER BY r.season_id
+     '''.format(KILL_COEFF, DEATH_COEFF, DAMAGE_COEFF, KAS_COEFF, INTERCEPT))
+
+    return {
+        season_id: {
+            row[1]: row[2]
+            for row in season_ratings
+        }
+        for season_id, season_ratings
+        in itertools.groupby(rating_rows, operator.itemgetter(0))
     }
 
 
@@ -258,9 +358,10 @@ def get_all_players(skill_db):
             'steam_name': steam_name,
             'mmr': int(mmr),
             'skill_group': skill_group_name(mmr),
-            'rating': trueskill.Rating(skill_mean, skill_stdev),
+            'skill': trueskill.Rating(skill_mean, skill_stdev),
+            'impact_rating': impact_rating,
         }
-        for player_id, steam_name, mmr, skill_mean, skill_stdev
+        for player_id, steam_name, mmr, skill_mean, skill_stdev, impact_rating
         in get_overall_player_rows(skill_db)
     ]
 
@@ -281,6 +382,7 @@ def get_player_rows_by_season(skill_db, seasons):
          , skills.mean - 2 * skills.stdev AS mmr
          , skills.mean
          , skills.stdev
+         , skills.impact_rating
     FROM players
     JOIN skills
     ON   players.player_id = skills.player_id
@@ -292,7 +394,7 @@ def get_player_rows_by_season(skill_db, seasons):
     return itertools.groupby(player_rows, operator.itemgetter(0))
 
 
-def get_ratings_by_season(skill_db, seasons: [int]) \
+def get_skills_by_season(skill_db, seasons: [int]) \
         -> {int: {int: trueskill.Rating}}:
     return {
         season_id: {
@@ -311,11 +413,13 @@ def get_season_players(skill_db, season: int):
             'steam_name': steam_name,
             'mmr': int(mmr),
             'skill_group': skill_group_name(mmr),
-            'rating': trueskill.Rating(skill_mean, skill_stdev),
+            'skill': trueskill.Rating(skill_mean, skill_stdev),
+            'impact_rating': impact_rating,
         }
         for season_id, player_rows
         in get_player_rows_by_season(skill_db, [season])
-        for season_id_, player_id, steam_name, mmr, skill_mean, skill_stdev
+        for season_id_, player_id, steam_name, mmr,
+            skill_mean, skill_stdev, impact_rating
         in player_rows
     ]
 
@@ -497,7 +601,7 @@ def get_team_members(skill_db, team_id: int):
         'player_id': row[0],
         'steam_name': row[1],
         'skill_group': skill_group_name(row[2]),
-        'rating': trueskill.Rating(row[3], row[4]),
+        'skill': trueskill.Rating(row[3], row[4]),
     } for row in member_rows]
 
 
@@ -528,7 +632,7 @@ def get_opponent_records(skill_db, team_id: int):
         int(team_id): [{
             'player_id': row[1],
             'steam_name': row[2],
-            'rating': trueskill.Rating(row[3], row[4]),
+            'skill': trueskill.Rating(row[3], row[4]),
         } for row in group]
         for team_id, group in itertools.groupby(
             opponent_rows, operator.itemgetter(0))
@@ -632,24 +736,33 @@ def save_game_state_progress(skill_db, max_game_state_id):
     ''', [max_game_state_id])
 
 
-def update_player_skills(skill_db, ratings: {int: trueskill.Rating}):
+def update_player_skills(skill_db, ratings: {int: trueskill.Rating},
+                         impact_ratings: {int: float}):
     cursor = skill_db.cursor()
     for player_id, rating in ratings.items():
         cursor.execute('''
         UPDATE players
         SET skill_mean = ?
           , skill_stdev = ?
+          , impact_rating = ?
         WHERE player_id = ?
-        ''', (rating.mu, rating.sigma, player_id))
+        ''', (rating.mu, rating.sigma, impact_ratings[player_id], player_id))
 
 
 def replace_season_skills(
-        skill_db, season_ratings: {(int, int): trueskill.Rating}):
+        skill_db, season_skills: {(int, int): trueskill.Rating},
+        season_impact_ratings: {int: {int: float}}):
     cursor = skill_db.cursor()
     params = [
         param
-        for (player_id, season_id), skill in season_ratings.items()
-        for param in (player_id, season_id, skill.mu, skill.sigma)
+        for (player_id, season_id), skill in season_skills.items()
+        for param in (
+            player_id,
+            season_id,
+            skill.mu,
+            skill.sigma,
+            season_impact_ratings[season_id][player_id],
+        )
     ]
 
     cursor.execute('''
@@ -658,8 +771,9 @@ def replace_season_skills(
     , season_id
     , mean
     , stdev
+    , impact_rating
     ) VALUES {}
-    '''.format(make_placeholder(4, len(season_ratings))), params)
+    '''.format(make_placeholder(5, len(season_skills))), params)
 
 
 def get_season_range(skill_db) -> [int]:
@@ -679,19 +793,21 @@ def initialize_skill_db(skill_db):
 
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS players(
-      player_id    INTEGER PRIMARY KEY
-    , steam_name   TEXT    NOT NULL
-    , skill_mean   DOUBLE  NOT NULL DEFAULT {skill_mean}
-    , skill_stdev  DOUBLE  NOT NULL DEFAULT {skill_stdev}
+      player_id     INTEGER PRIMARY KEY
+    , steam_name    TEXT    NOT NULL
+    , skill_mean    DOUBLE  NOT NULL DEFAULT {skill_mean}
+    , skill_stdev   DOUBLE  NOT NULL DEFAULT {skill_stdev}
+    , impact_rating DOUBLE
     );
     '''.format(skill_mean=SKILL_MEAN, skill_stdev=SKILL_STDEV))
 
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS skills(
-      player_id   INTEGER NOT NULL
-    , season_id   INTEGER NOT NULL
-    , mean        DOUBLE  NOT NULL
-    , stdev       DOUBLE  NOT NULL
+      player_id     INTEGER NOT NULL
+    , season_id     INTEGER NOT NULL
+    , mean          DOUBLE  NOT NULL
+    , stdev         DOUBLE  NOT NULL
+    , impact_rating DOUBLE  NOT NULL
     , PRIMARY KEY (player_id, season_id)
     , FOREIGN KEY (player_id) REFERENCES players (player_id)
     , FOREIGN KEY (season_id) REFERENCES seasons (season_id)
@@ -717,17 +833,62 @@ def initialize_skill_db(skill_db):
 
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS rounds(
-      round_id    INTEGER PRIMARY KEY
-    , season_id   INTEGER NOT NULL
-    , created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
-    , winner      INTEGER NOT NULL
-    , loser       INTEGER NOT NULL
-    , mvp         INTEGER
+      round_id      INTEGER PRIMARY KEY
+    , season_id     INTEGER NOT NULL
+    , game_state_id INTEGER NOT NULL
+    , created_at    DATETIME DEFAULT CURRENT_TIMESTAMP
+    , winner        INTEGER NOT NULL
+    , loser         INTEGER NOT NULL
+    , mvp           INTEGER
     , FOREIGN KEY (season_id) REFERENCES seasons (season_id)
     , FOREIGN KEY (winner) REFERENCES teams (team_id)
     , FOREIGN KEY (loser) REFERENCES teams (team_id)
     , FOREIGN KEY (mvp) REFERENCES players (player_id)
     );
+    ''')
+
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS round_stats(
+      round_id   INTEGER NOT NULL
+    , player_id  INTEGER NOT NULL
+    , kills      INTEGER NOT NULL
+    , assists    INTEGER NOT NULL
+    , damage     INTEGER NOT NULL
+    , survived   BOOLEAN NOT NULL
+    , PRIMARY KEY (round_id, player_id)
+    , FOREIGN KEY (round_id) REFERENCES rounds (round_id)
+    , FOREIGN KEY (player_id) REFERENCES players (player_id)
+    );
+    ''')
+
+    cursor.execute('''
+    CREATE VIEW IF NOT EXISTS rating_components AS
+    WITH
+        team_player_counts AS (
+            SELECT team_id
+                 , COUNT(*) AS player_count
+            FROM team_membership
+            GROUP BY team_id
+        ),
+        round_player_counts AS (
+            SELECT round_id AS round_id
+            , winners.player_count + losers.player_count AS player_count
+            FROM rounds
+            JOIN team_player_counts winners
+              ON rounds.winner = winners.team_id
+            JOIN team_player_counts losers
+              ON rounds.loser = losers.team_id
+        )
+    SELECT rs.round_id
+         , rs.player_id
+         , ((r.mvp = rs.player_id) * 1.0) / rpc.player_count AS mvp_rating
+         , rs.kills / rpc.player_count AS kill_rating
+         , (rs.survived - 1.0) / rpc.player_count AS death_rating
+         , rs.damage / rpc.player_count AS damage_rating
+         , ((rs.kills OR rs.survived OR rs.assists) * 1.0) / rpc.player_count AS kas_rating
+    FROM round_stats rs
+    JOIN rounds r ON rs.round_id = r.round_id
+    JOIN round_player_counts rpc ON rs.round_id = rpc.round_id;
     ''')
 
     cursor.execute('''

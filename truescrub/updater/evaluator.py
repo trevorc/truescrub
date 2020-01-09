@@ -2,7 +2,7 @@ import trueskill
 
 from ..db import get_skill_db, get_all_teams, get_all_rounds
 from ..matchmaking import SKILL_MEAN, SKILL_STDEV, win_probability, BETA, TAU
-from .recalculate import rate_players
+from .recalculate import compute_player_skills
 
 
 def run_evaluation(connection, beta, tau, sample):
@@ -14,7 +14,7 @@ def run_evaluation(connection, beta, tau, sample):
     testing_sample = rounds[offset:]
     environment = trueskill.TrueSkill(SKILL_MEAN, SKILL_STDEV, beta, tau, 0.0)
 
-    ratings = rate_players(training_sample, teams)
+    ratings = compute_player_skills(training_sample, teams)
 
     total = 1.0
 

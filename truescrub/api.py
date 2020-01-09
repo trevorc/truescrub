@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import os
+import sys
 import json
 import math
 import logging
@@ -16,6 +17,7 @@ from . import db
 from .matchmaking import (
     skill_group_ranges, compute_matches, make_player_skills,
     match_quality, team1_win_probability, estimated_skill_range)
+from .updater.recalculate import dump_rounds
 
 app = flask.Flask(__name__)
 app.config['PROPAGATE_EXCEPTIONS'] = True
@@ -92,18 +94,26 @@ def game_state():
 
 
 def make_player_viewmodel(player):
-    lower_bound, upper_bound = estimated_skill_range(player['rating'])
+    lower_bound, upper_bound = estimated_skill_range(player['skill'])
     min_width = 0.1
 
     left_offset = min(lower_bound, 1 - min_width)
     right_offset = max(upper_bound, 0 + min_width)
 
     return {
+        'player_id': player['player_id'],
+        'steam_name': player['steam_name'],
+        'skill': player['skill'],
+        'skill_group': player['skill_group'],
+        'mmr': player['mmr'],
         'rating_offset': left_offset,
         'rating_width': right_offset - left_offset,
         'lower_bound': '%.1f' % (lower_bound * 100.0),
         'upper_bound': '%.1f' % (upper_bound * 100.0),
-        **player
+        'impact_rating': (
+            '-'
+            if player['impact_rating'] is None
+            else '%.2f' % player['impact_rating'])
     }
 
 
@@ -120,7 +130,7 @@ def leaderboard(season):
     players = map(make_player_viewmodel, db.get_season_players(g.conn, season))
     seasons = db.get_season_range(g.conn)
     return flask.render_template('leaderboard.html', leaderboard=players,
-                                 seasons=seasons, selected_season=season,)
+                                 seasons=seasons, selected_season=season)
 
 
 def format_bound(bound):
@@ -262,10 +272,20 @@ arg_parser.add_argument('-c', '--recalculate', action='store_true',
                         help='Recalculate rankings.')
 arg_parser.add_argument('-r', '--use-reloader', action='store_true',
                         help='Use code reloader.')
+arg_parser.add_argument('-d', '--dump-rounds', action='store_true',
+                        help='Print out round JSON.')
+arg_parser.add_argument('-i', '--indent', action='store_true')
+
+
+def print_rounds(indent: bool):
+    with db.get_game_db() as game_db:
+        dump_rounds(game_db, sys.stdout, indent)
 
 
 def main():
     args = arg_parser.parse_args()
+    if args.dump_rounds:
+        return print_rounds(args.indent)
     if args.recalculate:
         return send_updater_message(command='recalculate')
     logger.info('TrueScrub listening on {}:{}'.format(args.addr, args.port))

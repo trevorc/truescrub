@@ -13,6 +13,7 @@
     <th>Name</th>
     <th>MMR</th>
     <th>Percentile</th>
+    <th>Impact</th>
     <th>Skill Group</th>
   </tr>
   </thead>
@@ -20,12 +21,13 @@
   {% for player in leaderboard %}
     <tr>
       <td><a href="/profiles/{{ player.player_id }}">{{ player.steam_name }}</a></td>
-      <td title="{{ player.rating.mu|int }} ± {{ player.rating.sigma|int }}σ">{{ player.mmr }}</td>
+      <td title="{{ player.skill.mu|int }} ± {{ player.skill.sigma|int }}σ">{{ player.mmr }}</td>
       <td title="{{ player.lower_bound }}% &ndash; {{ player.upper_bound }}%">
         <div style="background: #ddd; width: {{ bar_width }}em; height: 1em; border-radius: 1em;">
           <div style="background: #444; width: {{ player.rating_width * bar_width }}em; height: 1em; border-radius: 1em; margin-left: {{ player.rating_offset * bar_width }}em;"></div>
         </div>
       </td>
+      <td>{{ player.impact_rating }}</td>
       <td>{{ player.skill_group }}</td>
     </tr>
   {% endfor %}
