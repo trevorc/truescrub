@@ -22,3 +22,10 @@
     {% endfor %}
   </p>
 {%- endmacro %}
+
+{% macro percentile_estimate(player, bar_width) -%}
+<div title="{{ player.lower_bound }}% &ndash; {{ player.upper_bound }}%"
+     style="background: #ddd; width: {{ bar_width }}em; height: 1em; border-radius: 1em;">
+  <div style="background: #444; width: {{ player.rating_width * bar_width }}em; height: 1em; border-radius: 1em; margin-left: {{ player.rating_offset * bar_width }}em;"></div>
+</div>
+{%- endmacro %}

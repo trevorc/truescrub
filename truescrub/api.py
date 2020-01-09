@@ -17,6 +17,7 @@ from . import db
 from .matchmaking import (
     skill_group_ranges, compute_matches, make_player_skills,
     match_quality, team1_win_probability, estimated_skill_range)
+from .models import Player
 from .updater.recalculate import dump_rounds
 
 app = flask.Flask(__name__)
@@ -93,33 +94,35 @@ def game_state():
     return '<h1>OK</h1>\n'
 
 
-def make_player_viewmodel(player):
-    lower_bound, upper_bound = estimated_skill_range(player['skill'])
+def make_player_viewmodel(player: Player):
+    lower_bound, upper_bound = estimated_skill_range(player.skill)
     min_width = 0.1
 
     left_offset = min(lower_bound, 1 - min_width)
     right_offset = max(upper_bound, 0 + min_width)
 
     return {
-        'player_id': player['player_id'],
-        'steam_name': player['steam_name'],
-        'skill': player['skill'],
-        'skill_group': player['skill_group'],
-        'mmr': player['mmr'],
+        'player_id': player.player_id,
+        'steam_name': player.steam_name,
+        'skill': player.skill,
+        'skill_group': player.skill_group,
+        'mmr': player.mmr,
         'rating_offset': left_offset,
         'rating_width': right_offset - left_offset,
         'lower_bound': '%.1f' % (lower_bound * 100.0),
         'upper_bound': '%.1f' % (upper_bound * 100.0),
         'impact_rating': (
             '-'
-            if player['impact_rating'] is None
-            else '%.2f' % player['impact_rating'])
+            if player.impact_rating is None
+            else '%.2f' % player.impact_rating)
     }
 
 
 @app.route('/leaderboard', methods={'GET'})
 def default_leaderboard():
-    players = map(make_player_viewmodel, db.get_all_players(g.conn))
+    players = [make_player_viewmodel(player)
+               for player in db.get_all_players(g.conn)]
+    players.sort(key=operator.itemgetter('mmr'), reverse=True)
     seasons = db.get_season_range(g.conn)
     return flask.render_template('leaderboard.html', leaderboard=players,
                                  seasons=seasons, selected_season=None)
@@ -127,7 +130,9 @@ def default_leaderboard():
 
 @app.route('/leaderboard/season/<int:season>', methods={'GET'})
 def leaderboard(season):
-    players = map(make_player_viewmodel, db.get_season_players(g.conn, season))
+    players = [make_player_viewmodel(player)
+               for player in db.get_season_players(g.conn, season)]
+    players.sort(key=operator.itemgetter('mmr'), reverse=True)
     seasons = db.get_season_range(g.conn)
     return flask.render_template('leaderboard.html', leaderboard=players,
                                  seasons=seasons, selected_season=season)
@@ -154,12 +159,14 @@ def all_skill_groups():
 @app.route('/profiles/<int:player_id>', methods={'GET'})
 def profile(player_id):
     try:
-        player_profile = db.get_player_profile(g.conn, player_id)
+        player, overall_record = db.get_player_profile(g.conn, player_id)
     except StopIteration:
         return flask.make_response('No such player', 404)
 
+    player_viewmodel = make_player_viewmodel(player)
     team_records = db.get_team_records(g.conn, player_id)
-    return flask.render_template('profile.html', profile=player_profile,
+    return flask.render_template('profile.html', player=player_viewmodel,
+                                 overall_record=overall_record,
                                  team_records=team_records)
 
 
@@ -195,16 +202,15 @@ def matchmaking0(seasons: [int], selected_players: {int}, season_id: int = None,
     players = db.get_all_players(g.conn) \
         if season_id is None \
         else db.get_season_players(g.conn, season_id)
-
-    for player in players:
-        player['selected'] = player['player_id'] in selected_players
+    players.sort(key=operator.attrgetter('mmr'), reverse=True)
 
     teams = compute_matches([
-        player for player in players if player['selected']
+        player for player in players if player.player_id in selected_players
     ]) if len(selected_players) > 0 else None
 
     return flask.render_template('matchmaking.html',
                                  seasons=seasons, selected_season=season_id,
+                                 selected_players=selected_players,
                                  players=players, teams=teams, latest=latest)
 
 
@@ -213,9 +219,9 @@ def matches(player_id):
     all_players = db.get_all_players(g.conn)
 
     try:
-        steam_name = next(player['steam_name']
+        steam_name = next(player.steam_name
                           for player in all_players
-                          if player['player_id'] == player_id)
+                          if player.player_id == player_id)
     except StopIteration:
         return flask.make_response('No such player\n', 404)
 
@@ -235,7 +241,7 @@ def team_details(team_id):
     if len(members) == 0:
         return flask.make_response('No such team\n', 404)
 
-    member_names = str.join(', ', [member['steam_name'] for member in members])
+    member_names = str.join(', ', [member.steam_name for member in members])
     opponent_records = db.get_opponent_records(g.conn, team_id)
 
     player_skills = make_player_skills(itertools.chain(

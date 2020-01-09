@@ -7,9 +7,9 @@ import itertools
 
 import trueskill
 
-from .matchmaking import SKILL_MEAN, SKILL_STDEV, \
-    skill_group_name, match_quality
-
+from .models import Player, ThinPlayer
+from .matchmaking import match_quality
+from truescrub.models import SKILL_MEAN, SKILL_STDEV
 
 DATA_DIR = os.environ.get('TRUESCRUB_DATA_DIR', 'data')
 GAME_DB_NAME = 'games.db'
@@ -23,17 +23,6 @@ INTERCEPT = 0.18377
 
 
 logger = logging.getLogger(__name__)
-
-
-class Player(object):
-    __slots__ = ('player_id', 'steam_name', 'skill', 'mmr', 'skill_group')
-
-    def __init__(self, player_id, steam_name, skill_mean, skill_stdev):
-        self.player_id = int(player_id)
-        self.steam_name = steam_name
-        self.skill = trueskill.Rating(skill_mean, skill_stdev)
-        self.mmr = self.skill.mu - self.skill.sigma * 2
-        self.skill_group = skill_group_name(self.mmr)
 
 
 #################
@@ -290,23 +279,28 @@ def get_team_records(skill_db, player_id):
     ]
 
 
-def get_overall_player_rows(skill_db):
-    return execute(skill_db, '''
+def get_all_players(skill_db) -> [Player]:
+    player_rows = execute(skill_db, '''
     SELECT player_id
          , steam_name
-         , skill_mean - 2 * skill_stdev AS mmr
          , skill_mean
          , skill_stdev
          , impact_rating
     FROM players
-    ORDER BY mmr DESC
     ''')
+
+    return [
+        Player(int(player_id), steam_name,
+               skill_mean, skill_stdev, impact_rating)
+        for player_id, steam_name, skill_mean, skill_stdev, impact_rating
+        in player_rows
+    ]
 
 
 def get_overall_skills(skill_db) -> {int: trueskill.Rating}:
     return {
-        int(player_row[0]): trueskill.Rating(player_row[3], player_row[4])
-        for player_row in get_overall_player_rows(skill_db)
+        player.player_id: player.skill
+        for player in get_all_players(skill_db)
     }
 
 
@@ -351,21 +345,6 @@ def get_impact_ratings_by_season(skill_db) -> {int: {int: float}}:
     }
 
 
-def get_all_players(skill_db):
-    return [
-        {
-            'player_id': int(player_id),
-            'steam_name': steam_name,
-            'mmr': int(mmr),
-            'skill_group': skill_group_name(mmr),
-            'skill': trueskill.Rating(skill_mean, skill_stdev),
-            'impact_rating': impact_rating,
-        }
-        for player_id, steam_name, mmr, skill_mean, skill_stdev, impact_rating
-        in get_overall_player_rows(skill_db)
-    ]
-
-
 def get_player_rows_by_season(skill_db, seasons):
     if seasons is None:
         where_clause = ''
@@ -379,7 +358,6 @@ def get_player_rows_by_season(skill_db, seasons):
     SELECT skills.season_id
          , players.player_id
          , players.steam_name
-         , skills.mean - 2 * skills.stdev AS mmr
          , skills.mean
          , skills.stdev
          , skills.impact_rating
@@ -388,7 +366,6 @@ def get_player_rows_by_season(skill_db, seasons):
     ON   players.player_id = skills.player_id
     {}
     ORDER BY skills.season_id
-           , mmr DESC
     '''.format(where_clause), params)
 
     return itertools.groupby(player_rows, operator.itemgetter(0))
@@ -408,24 +385,14 @@ def get_skills_by_season(skill_db, seasons: [int]) \
 
 def get_season_players(skill_db, season: int):
     return [
-        {
-            'player_id': int(player_id),
-            'steam_name': steam_name,
-            'mmr': int(mmr),
-            'skill_group': skill_group_name(mmr),
-            'skill': trueskill.Rating(skill_mean, skill_stdev),
-            'impact_rating': impact_rating,
-        }
+        Player(int(player_id), steam_name,
+               skill_mean, skill_stdev, impact_rating)
         for season_id, player_rows
         in get_player_rows_by_season(skill_db, [season])
-        for season_id_, player_id, steam_name, mmr,
+        for season_id_, player_id, steam_name,
             skill_mean, skill_stdev, impact_rating
         in player_rows
     ]
-
-
-def make_player(team_row):
-    return {'player_id': team_row[1], 'steam_name': team_row[2]}
 
 
 def get_player_teams(skill_db, player_id: int):
@@ -454,7 +421,7 @@ def get_player_teams(skill_db, player_id: int):
     ''', (player_id,))
 
     return {
-        team_id: list(make_player(val) for val in group)
+        team_id: list(ThinPlayer(val[1], val[2]) for val in group)
         for team_id, group in itertools.groupby(
             team_rows, operator.itemgetter(0))
     }
@@ -501,16 +468,25 @@ def get_all_teams_from_player_rounds(skill_db, player_id: int) -> {int: [dict]}:
     ''', (player_id,))
 
     return {
-        team_id: list(make_player(val) for val in group)
+        team_id: list(ThinPlayer(val[1], val[2]) for val in group)
         for team_id, group in itertools.groupby(
             team_rows, operator.itemgetter(0))
     }
 
 
 def get_player_profile(skill_db, player_id: int):
-    steam_name, mmr, rounds_won, rounds_lost = execute_one(skill_db, '''
+    (
+        steam_name,
+        skill_mean,
+        skill_stdev,
+        impact_rating,
+        rounds_won,
+        rounds_lost,
+    ) = execute_one(skill_db, '''
     SELECT p.steam_name
-         , p.skill_mean - 2 * skill_stdev AS mmr
+         , skill_mean
+         , skill_stdev
+         , impact_rating
          , IFNULL(rounds_won.num_rounds, 0)
          , IFNULL(rounds_lost.num_rounds, 0)
     FROM players p
@@ -528,14 +504,13 @@ def get_player_profile(skill_db, player_id: int):
     ON p.player_id = rounds_lost.player_id
     WHERE p.player_id = ?
     ''', (player_id,))
-    return {
-        'player_id': player_id,
-        'steam_name': steam_name,
-        'mmr': mmr,
-        'skill_group': skill_group_name(mmr),
+    player = Player(player_id, steam_name,
+                    skill_mean, skill_stdev, impact_rating)
+    overall_record = {
         'rounds_won': rounds_won,
         'rounds_lost': rounds_lost,
     }
+    return player, overall_record
 
 
 def get_player_rounds(skill_db, player_skills, player_id):
@@ -584,25 +559,23 @@ def get_players_in_last_round(skill_db) -> {int}:
     return {row[0] for row in player_ids}
 
 
-def get_team_members(skill_db, team_id: int):
+def get_team_members(skill_db, team_id: int) -> [Player]:
     member_rows = execute(skill_db, '''
     SELECT players.player_id
          , steam_name
-         , skill_mean - 2 * skill_stdev AS mmr
          , skill_mean
          , skill_stdev
+         , impact_rating
     FROM players
     JOIN team_membership m
     ON   players.player_id = m.player_id
     WHERE m.team_id = ?
     ''', (team_id,))
 
-    return [{
-        'player_id': row[0],
-        'steam_name': row[1],
-        'skill_group': skill_group_name(row[2]),
-        'skill': trueskill.Rating(row[3], row[4]),
-    } for row in member_rows]
+    return [
+        Player(int(row[0]), row[1], row[2], row[3], row[4])
+        for row in member_rows
+    ]
 
 
 def get_opponent_records(skill_db, team_id: int):
@@ -612,6 +585,7 @@ def get_opponent_records(skill_db, team_id: int):
          , p.steam_name
          , p.skill_mean
          , p.skill_stdev
+         , p.impact_rating
     FROM team_membership m
     JOIN ( SELECT winner AS team_id
                 , loser AS opponent
@@ -629,11 +603,8 @@ def get_opponent_records(skill_db, team_id: int):
     ''', (team_id,))
 
     opponents = {
-        int(team_id): [{
-            'player_id': row[1],
-            'steam_name': row[2],
-            'skill': trueskill.Rating(row[3], row[4]),
-        } for row in group]
+        int(team_id): [Player(row[1], row[2], row[3], row[4], row[5])
+                       for row in group]
         for team_id, group in itertools.groupby(
             opponent_rows, operator.itemgetter(0))
     }

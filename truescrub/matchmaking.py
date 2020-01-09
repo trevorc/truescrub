@@ -1,4 +1,3 @@
-import bisect
 import math
 import operator
 import itertools
@@ -6,8 +5,8 @@ import itertools
 import trueskill
 from trueskill import Gaussian
 
-SKILL_MEAN = 1000.0
-SKILL_STDEV = SKILL_MEAN / 4.0
+from .models import SKILL_MEAN, SKILL_STDEV, SKILL_GROUPS, Player
+
 BETA = SKILL_STDEV * 2.0
 TAU = SKILL_STDEV / 100.0
 MAX_PLAYERS_PER_TEAM = 5
@@ -16,34 +15,6 @@ trueskill.setup(mu=SKILL_MEAN, sigma=SKILL_STDEV, beta=BETA, tau=TAU,
                 draw_probability=0.0)
 
 CONFIDENCE_LEVEL = 0.90
-SKILL_GROUP_SPACING = SKILL_STDEV * 0.3
-SKILL_GROUP_NAMES = [
-    'Scrub',
-    'Staff Scrub',
-    'Scrub First Class',
-    'Cardboard I',
-    'Cardboard II',
-    'Cardboard III',
-    'Cardboard IV',
-    'Cardboard Elite',
-    'Plastic I',
-    'Plastic II',
-    'Plastic III',
-    'Plastic Elite',
-    'Plastic Elite Master',
-    'Legendary Wood',
-    'Legendary Wood Master',
-    'Supreme Legendary Wood',
-    'Garb Salad',
-    'Master Garbian I',
-    'Master Garbian II',
-    'Master Garbian Elite',
-    'Low-Key Dirty',
-]
-SKILL_GROUPS = ((float('-inf'), SKILL_GROUP_NAMES[0]),) + tuple(
-        (SKILL_GROUP_SPACING * (i + 1), name)
-        for i, name in enumerate(SKILL_GROUP_NAMES[1:])
-)
 
 
 def confidence_interval_z(confidence_level: float) -> float:
@@ -71,12 +42,6 @@ def estimated_skill_range(skill: Gaussian) -> (float, float):
     return standard_normal_percentile_range(normal_estimate)
 
 
-def skill_group_name(mmr: float) -> str:
-    group_ranks = [group[0] for group in SKILL_GROUPS]
-    index = bisect.bisect(group_ranks, mmr)
-    return SKILL_GROUPS[index - 1][1]
-
-
 def skill_group_ranges():
     previous_bound = None
     previous_group = None
@@ -99,16 +64,16 @@ def win_probability(trueskill_env, team1, team2):
 def team1_win_probability(player_skills: {int: trueskill.Rating}, team1, team2):
     return win_probability(
             trueskill.global_env(),
-            [player_skills[player['player_id']] for player in team1],
-            [player_skills[player['player_id']] for player in team2])
+            [player_skills[player.player_id] for player in team1],
+            [player_skills[player.player_id] for player in team2])
 
 
 def match_quality(
         player_skills: {int: trueskill.TrueSkill},
-        team1: [dict], team2: [dict]) -> float:
+        team1: [Player], team2: [Player]) -> float:
     teams = (
-        [player_skills[player['player_id']] for player in team1],
-        [player_skills[player['player_id']] for player in team2],
+        [player_skills[player.player_id] for player in team1],
+        [player_skills[player.player_id] for player in team2],
     )
     return trueskill.quality(teams)
 
@@ -130,9 +95,9 @@ def suggest_teams(player_skills):
             yield team1, team2, quality, p_win
 
 
-def make_player_skills(players):
+def make_player_skills(players: [Player]) -> {int: trueskill.Rating}:
     return {
-        player['player_id']: player['skill']
+        player.player_id: player.skill
         for player in players
     }
 
@@ -152,7 +117,7 @@ def uniquify(matches):
 
 def make_team(players_by_id, player_ids):
     team = [players_by_id[player_id] for player_id in player_ids]
-    team.sort(key=operator.itemgetter('mmr'), reverse=True)
+    team.sort(key=operator.attrgetter('mmr'), reverse=True)
     return team
 
 
@@ -173,9 +138,9 @@ def make_match(players_by_id, team1, team2, quality, p_win):
     }
 
 
-def compute_matches(players):
+def compute_matches(players: [Player]):
     player_skills = make_player_skills(players)
-    players_by_id = {player['player_id']: player for player in players}
+    players_by_id = {player.player_id: player for player in players}
 
     matches = [make_match(players_by_id, *suggestion)
                for suggestion in suggest_teams(player_skills)]

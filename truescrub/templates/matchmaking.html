@@ -22,7 +22,7 @@
     <li>
       <label for="player-{{ player.player_id }}">
         <input type="checkbox" name="player" id="player-{{ player.player_id }}" value="{{ player.player_id }}"
-               {% if player.selected %}checked="checked"{% endif %}>
+               {% if player.player_id in selected_players %}checked="checked"{% endif %}>
         {{ player.steam_name }}
       </label>
     </li>

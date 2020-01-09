@@ -1,5 +1,4 @@
 {% import "macros.html" as macros -%}
-{%- set bar_width = 6 -%}
 <html lang="en">
 <head>
   <title>TrueScrub&trade; Leaderboard</title>
@@ -22,10 +21,8 @@
     <tr>
       <td><a href="/profiles/{{ player.player_id }}">{{ player.steam_name }}</a></td>
       <td title="{{ player.skill.mu|int }} ± {{ player.skill.sigma|int }}σ">{{ player.mmr }}</td>
-      <td title="{{ player.lower_bound }}% &ndash; {{ player.upper_bound }}%">
-        <div style="background: #ddd; width: {{ bar_width }}em; height: 1em; border-radius: 1em;">
-          <div style="background: #444; width: {{ player.rating_width * bar_width }}em; height: 1em; border-radius: 1em; margin-left: {{ player.rating_offset * bar_width }}em;"></div>
-        </div>
+      <td>
+        {{ macros.percentile_estimate(player, 6) }}
       </td>
       <td>{{ player.impact_rating }}</td>
       <td>{{ player.skill_group }}</td>

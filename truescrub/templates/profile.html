@@ -1,25 +1,27 @@
+{% import "macros.html" as macros -%}
 <html lang="en">
 <head>
-  <title>{{ profile.steam_name }}'s Profile</title>
+  <title>{{ player.steam_name }}'s Profile</title>
 </head>
 <body>
-<h1>{{ profile.steam_name }}'s Profile</h1>
+<h1>{{ player.steam_name }}'s Profile</h1>
 
-<p>{{ profile.skill_group }}</p>
+<p title="{{ player.mmr|int }}">{{ player.skill_group }}</p>
+<p>{{ macros.percentile_estimate(player, 8) }}</p>
 
 <h2>Record</h2>
-<p>{{ profile.rounds_won }} : {{ profile.rounds_lost }}</p>
+<p>{{ overall_record.rounds_won }} : {{ overall_record.rounds_lost }}</p>
 
 <h2>Team Records</h2>
 
-<p><a href="/profiles/{{ profile.player_id }}/matches">All matches</a></p>
+<p><a href="/profiles/{{ player.player_id }}/matches">All matches</a></p>
 
 {% for record in team_records %}
 <h3>{{ record.rounds_won }} : {{ record.rounds_lost }}</h3>
 <p><a href="/teams/{{ record.team_id }}">Team details</a></p>
 <ul>
-  {% for player in record.team %}
-  <li>{{ player.steam_name }}</li>
+  {% for teammate in record.team %}
+  <li>{{ teammate.steam_name }}</li>
   {% endfor %}
 </ul>
 {% endfor %}
