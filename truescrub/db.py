@@ -15,10 +15,10 @@ DATA_DIR = os.environ.get('TRUESCRUB_DATA_DIR', 'data')
 GAME_DB_NAME = 'games.db'
 SKILL_DB_NAME = 'skill.db'
 
-KILL_COEFF = 2.778
-DEATH_COEFF = 2.559
-DAMAGE_COEFF = 0.0651
-KAS_COEFF = 0.0633
+KILL_COEFF = 0.2778
+DEATH_COEFF = 0.2559
+DAMAGE_COEFF = 0.00651
+KAS_COEFF = 0.00633
 INTERCEPT = 0.18377
 
 
@@ -928,32 +928,15 @@ def initialize_skill_db(skill_db):
 
     cursor.execute('''
     CREATE VIEW IF NOT EXISTS rating_components AS
-    WITH
-        team_player_counts AS (
-            SELECT team_id
-                 , COUNT(*) AS player_count
-            FROM team_membership
-            GROUP BY team_id
-        ),
-        round_player_counts AS (
-            SELECT round_id AS round_id
-                 , winners.player_count + losers.player_count AS player_count
-            FROM rounds
-            JOIN team_player_counts winners
-              ON rounds.winner = winners.team_id
-            JOIN team_player_counts losers
-              ON rounds.loser = losers.team_id
-        )
     SELECT rs.round_id
          , rs.player_id
-         , ((r.mvp = rs.player_id) * 1.0) / rpc.player_count AS mvp_rating
-         , rs.kills / rpc.player_count AS kill_rating
-         , (rs.survived - 1.0) / rpc.player_count AS death_rating
-         , rs.damage / rpc.player_count AS damage_rating
-         , ((rs.kills OR rs.survived OR rs.assists) * 1.0) / rpc.player_count AS kas_rating
+         , ((r.mvp = rs.player_id) * 1.0) AS mvp_rating
+         , rs.kills AS kill_rating
+         , (rs.survived - 1.0) AS death_rating
+         , rs.damage AS damage_rating
+         , ((rs.kills OR rs.survived OR rs.assists) * 1.0) AS kas_rating
     FROM round_stats rs
-    JOIN rounds r ON rs.round_id = r.round_id
-    JOIN round_player_counts rpc ON rs.round_id = rpc.round_id;
+    JOIN rounds r ON rs.round_id = r.round_id;
     ''')
 
     cursor.execute('''

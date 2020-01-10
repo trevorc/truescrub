@@ -159,8 +159,8 @@ def all_skill_groups():
 def make_rating_component_viewmodel(components):
     return {
         'mvp_rating': '%d%%' % (100 * components['average_mvps']),
-        'kill_rating': '%.1f' % components['average_kills'],
-        'death_rating': '%d%%' % (100 * components['average_deaths']),
+        'kill_rating': '%.2f' % components['average_kills'],
+        'death_rating': '%.2f' % components['average_deaths'],
         'damage_rating': '%d' % components['average_damage'],
         'kas_rating': '%d%%' % (100 * components['average_kas']),
     }
