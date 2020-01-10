@@ -304,6 +304,73 @@ def get_overall_skills(skill_db) -> {int: trueskill.Rating}:
     }
 
 
+def get_player_round_stat_averages(skill_db, player_id) -> dict:
+    (
+        average_mvps,
+        average_kills,
+        average_deaths,
+        average_damage,
+        average_kas,
+    ) = execute_one(skill_db, '''
+    SELECT AVG((r.mvp = rs.player_id) * 1.0)
+         , AVG(rs.kills)
+         , -AVG(rs.survived - 1.0)
+         , AVG(rs.damage)
+         , AVG((rs.kills OR rs.survived OR rs.assists) * 1.0)
+    FROM round_stats rs
+    JOIN rounds r
+      ON rs.round_id = r.round_id
+    WHERE rs.player_id = ?
+    GROUP BY rs.player_id
+    ''', (player_id,))
+
+    return {
+        'average_mvps': average_mvps,
+        'average_kills': average_kills,
+        'average_deaths': average_deaths,
+        'average_damage': average_damage,
+        'average_kas': average_kas,
+    }
+
+
+def get_player_round_stat_averages_by_season(
+        skill_db, player_id) -> {int: dict}:
+    # Call me when SQLite supports WITH ROLLUP
+    stat_rows = execute(skill_db, '''
+    SELECT r.season_id
+         , AVG((r.mvp = rs.player_id) * 1.0)
+         , AVG(rs.kills)
+         , -AVG(rs.survived - 1.0)
+         , AVG(rs.damage)
+         , AVG((rs.kills OR rs.survived OR rs.assists) * 1.0)
+    FROM round_stats rs
+    JOIN rounds r
+      ON rs.round_id = r.round_id
+    WHERE rs.player_id = ?
+    GROUP BY r.season_id
+           , rs.player_id
+    ORDER BY season_id ASC
+    ''', (player_id,))
+
+    return {
+        season_id: {
+            'average_mvps': average_mvps,
+            'average_kills': average_kills,
+            'average_deaths': average_deaths,
+            'average_damage': average_damage,
+            'average_kas': average_kas,
+        }
+        for (
+            season_id,
+            average_mvps,
+            average_kills,
+            average_deaths,
+            average_damage,
+            average_kas,
+        ) in stat_rows
+    }
+
+
 def get_overall_impact_ratings(skill_db) -> {int: float}:
     return dict(execute(skill_db, '''
     SELECT rc.player_id
@@ -342,6 +409,33 @@ def get_impact_ratings_by_season(skill_db) -> {int: {int: float}}:
         }
         for season_id, season_ratings
         in itertools.groupby(rating_rows, operator.itemgetter(0))
+    }
+
+
+def get_player_skills_by_season(skill_db, player_id: int) -> {int: Player}:
+    skill_rows = execute(skill_db, '''
+    SELECT players.player_id
+         , players.steam_name
+         , skills.season_id
+         , skills.mean
+         , skills.stdev
+         , skills.impact_rating
+    FROM players
+    JOIN skills
+    ON players.player_id = skills.player_id
+    WHERE players.player_id = ?
+    ''', (player_id,))
+    return {
+        season_id: Player(int(player_id), steam_name,
+                          skill_mean, skill_stdev, impact_rating)
+        for (
+            player_id,
+            steam_name,
+            season_id,
+            skill_mean,
+            skill_stdev,
+            impact_rating,
+        ) in skill_rows
     }
 
 
@@ -843,7 +937,7 @@ def initialize_skill_db(skill_db):
         ),
         round_player_counts AS (
             SELECT round_id AS round_id
-            , winners.player_count + losers.player_count AS player_count
+                 , winners.player_count + losers.player_count AS player_count
             FROM rounds
             JOIN team_player_counts winners
               ON rounds.winner = winners.team_id

@@ -12,19 +12,46 @@
 <h2>Record</h2>
 <p>{{ overall_record.rounds_won }} : {{ overall_record.rounds_lost }}</p>
 
-<h2>Team Records</h2>
-
+<p><a href="/profiles/{{ player.player_id }}/team_records">Team records</a></p>
 <p><a href="/profiles/{{ player.player_id }}/matches">All matches</a></p>
 
-{% for record in team_records %}
-<h3>{{ record.rounds_won }} : {{ record.rounds_lost }}</h3>
-<p><a href="/teams/{{ record.team_id }}">Team details</a></p>
-<ul>
-  {% for teammate in record.team %}
-  <li>{{ teammate.steam_name }}</li>
+<h2>Player Impact</h2>
+
+<table>
+  <thead>
+  <tr>
+    <th>Season</th>
+    <th><abbr title="Percent of rounds MVP">MVP</abbr></th>
+    <th><abbr title="Average kills per round">K</abbr></th>
+    <th><abbr title="Percent of rounds with deaths">D</abbr></th>
+    <th><abbr title="Average damage per round">ADR</abbr></th>
+    <th><abbr title="Percent of rounds with kills, assists or survived">KAS</abbr></th>
+    <th>Impact</th>
+  </tr>
+  </thead>
+  <tbody>
+  {% for season_id, season_rating in season_ratings %}
+    <tr>
+      <td>{{ season_id }}</td>
+      <td>{{ season_rating.mvp_rating }}</td>
+      <td>{{ season_rating.kill_rating }}</td>
+      <td>{{ season_rating.death_rating }}</td>
+      <td>{{ season_rating.damage_rating }}</td>
+      <td>{{ season_rating.kas_rating }}</td>
+      <td>{{ '%.2f' % skills_by_season[season_id].impact_rating }}</td>
+    </tr>
   {% endfor %}
-</ul>
-{% endfor %}
+  <tr>
+    <td><em>Overall</em></td>
+    <td>{{ overall_rating.mvp_rating }}</td>
+    <td>{{ overall_rating.kill_rating }}</td>
+    <td>{{ overall_rating.death_rating }}</td>
+    <td>{{ overall_rating.damage_rating }}</td>
+    <td>{{ overall_rating.kas_rating }}</td>
+    <td>{{ player.impact_rating }}</td>
+  </tr>
+  </tbody>
+</table>
 
 </body>
 </html>
