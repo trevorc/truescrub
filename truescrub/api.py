@@ -215,13 +215,11 @@ def profile(player_id):
     skills_by_season = db.get_player_skills_by_season(g.conn, player_id)
 
     player_viewmodel = make_player_viewmodel(player)
-    team_records = db.get_team_records(g.conn, player_id)
     return flask.render_template('profile.html', player=player_viewmodel,
                                  overall_record=overall_record,
                                  overall_rating=overall_rating,
                                  season_ratings=season_ratings,
-                                 skills_by_season=skills_by_season,
-                                 team_records=team_records)
+                                 skills_by_season=skills_by_season)
 
 
 @app.route('/matchmaking', methods={'GET'})
