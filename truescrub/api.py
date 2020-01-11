@@ -28,7 +28,7 @@ SHARED_KEY = os.environ.get('TRUESCRUB_KEY', 'afohXaef9ighaeSh')
 LOG_LEVEL = os.environ.get('TRUESCRUB_LOG_LEVEL', 'DEBUG')
 UPDATER_HOST = os.environ.get('TRUESCRUB_UPDATER_HOST', '127.0.0.1')
 UPDATER_PORT = os.environ.get('TRUESCRUB_UPDATER_PORT', 5555)
-TIMEZONE_PATTERN = re.compile('([+-])(\d\d):00')
+TIMEZONE_PATTERN = re.compile(r'([+-])(\d\d):00')
 
 
 logging.basicConfig(format='%(asctime)s.%(msecs).3dZ\t'

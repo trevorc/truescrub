@@ -464,8 +464,8 @@ def get_highest_rated_player_for_day(skill_db, day):
     FROM players
     JOIN impact_ratings rbd
     ON   players.player_id = rbd.player_id
-    AND   rbd.rating = ( SELECT MAX(rbd2.rating)
-                         FROM impact_ratings rbd2 )
+    AND  rbd.rating = ( SELECT MAX(rbd2.rating)
+                        FROM impact_ratings rbd2 )
     '''.format(*COEFFICIENTS), (day, day + datetime.timedelta(days=1)))
     highest_rating_stats = {
         'player_id': highest_rating[0],

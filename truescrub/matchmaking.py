@@ -78,7 +78,7 @@ def match_quality(
     return trueskill.quality(teams)
 
 
-def suggest_teams(player_skills):
+def suggest_teams(player_skills: {int: trueskill.Rating}):
     players = frozenset(player_skills.keys())
     max_team_size = min(len(players) // 2, MAX_PLAYERS_PER_TEAM)
     min_team_size = max(1, len(players) - MAX_PLAYERS_PER_TEAM)
