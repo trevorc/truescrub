@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-
+import re
 import os
 import sys
 import json
 import math
 import logging
+import datetime
 import argparse
 import operator
 import itertools
@@ -27,6 +28,7 @@ SHARED_KEY = os.environ.get('TRUESCRUB_KEY', 'afohXaef9ighaeSh')
 LOG_LEVEL = os.environ.get('TRUESCRUB_LOG_LEVEL', 'DEBUG')
 UPDATER_HOST = os.environ.get('TRUESCRUB_UPDATER_HOST', '127.0.0.1')
 UPDATER_PORT = os.environ.get('TRUESCRUB_UPDATER_PORT', 5555)
+TIMEZONE_PATTERN = re.compile('([+-])(\d\d):00')
 
 
 logging.basicConfig(format='%(asctime)s.%(msecs).3dZ\t'
@@ -92,6 +94,36 @@ def game_state():
                              game_state_id=game_state_id)
         game_db.commit()
     return '<h1>OK</h1>\n'
+
+
+def parse_timezone(tz: str) -> datetime.timezone:
+    match = TIMEZONE_PATTERN.match(tz)
+    if match is None:
+        raise ValueError
+
+    plusminus, offset = match.groups()
+    offset_signum = 1 if plusminus == '+' else -1
+    return datetime.timezone(offset=datetime.timedelta(
+            hours=offset_signum * int(offset)))
+
+
+@app.route('/api/highlights/'
+           '<int:year>-<int:month>-<int:day>T'
+           '<int:hour>:<int:minute>:<int:second>'
+           '<string:tz>', methods={'GET'})
+def highlights(year, month, day, hour, minute, second, tz):
+    try:
+        timezone = parse_timezone(tz)
+    except ValueError:
+        return flask.make_response(
+                'Invalid timezone {}{}'.format(plusminus, offset), 404)
+    date = datetime.datetime(year, month, day, hour, minute, second,
+                             tzinfo=timezone).astimezone(timezone.utc)
+    try:
+        return flask.jsonify(db.get_highlights(g.conn, date))
+    except StopIteration:
+        return flask.make_response(
+                'No rounds on {}\n'.format(date.isoformat()), 404)
 
 
 def make_player_viewmodel(player: Player):

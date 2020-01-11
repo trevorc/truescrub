@@ -5,6 +5,7 @@ import operator
 import datetime
 import itertools
 import collections
+import time
 from typing import Optional
 
 import trueskill
@@ -291,6 +292,7 @@ def rate_players_by_season(
 
 
 def recalculate_ratings(skill_db, new_rounds: (int, int)):
+    start = time.process_time()
     logger.debug('recalculating for rounds between %d and %d', *new_rounds)
 
     all_rounds = db.get_all_rounds(skill_db, new_rounds)
@@ -315,7 +317,9 @@ def recalculate_ratings(skill_db, new_rounds: (int, int)):
 
     db.replace_season_skills(skill_db, skills_by_season, season_impact_ratings)
 
-    logger.debug('recalculation for %d-%d completed', *new_rounds)
+    end = time.process_time()
+    logger.debug('recalculation for %d-%d completed in %d ms',
+                 new_rounds[0], new_rounds[1], (1000 * (end - start)))
 
 
 def compute_skill_db(game_db, skill_db):

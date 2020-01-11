@@ -20,7 +20,7 @@ DEATH_COEFF = 0.2559
 DAMAGE_COEFF = 0.00651
 KAS_COEFF = 0.00633
 INTERCEPT = 0.18377
-
+COEFFICIENTS = KILL_COEFF, DEATH_COEFF, DAMAGE_COEFF, KAS_COEFF, INTERCEPT
 
 logger = logging.getLogger(__name__)
 
@@ -382,7 +382,7 @@ def get_overall_impact_ratings(skill_db) -> {int: float}:
          AS rating
      FROM rating_components rc
      GROUP BY rc.player_id
-     '''.format(KILL_COEFF, DEATH_COEFF, DAMAGE_COEFF, KAS_COEFF, INTERCEPT)))
+     '''.format(*COEFFICIENTS)))
 
 
 def get_impact_ratings_by_season(skill_db) -> {int: {int: float}}:
@@ -400,7 +400,7 @@ def get_impact_ratings_by_season(skill_db) -> {int: {int: float}}:
      GROUP BY r.season_id
             , rc.player_id
      ORDER BY r.season_id
-     '''.format(KILL_COEFF, DEATH_COEFF, DAMAGE_COEFF, KAS_COEFF, INTERCEPT))
+     '''.format(*COEFFICIENTS))
 
     return {
         season_id: {
@@ -409,6 +409,93 @@ def get_impact_ratings_by_season(skill_db) -> {int: {int: float}}:
         }
         for season_id, season_ratings
         in itertools.groupby(rating_rows, operator.itemgetter(0))
+    }
+
+
+def get_highlights(skill_db, day: datetime.datetime) -> dict:
+    rounds_played = execute_one(skill_db, '''
+    SELECT COUNT(*)
+    FROM rounds
+    WHERE created_at BETWEEN ? AND ?
+    ''', (day, day + datetime.timedelta(days=1)))[0]
+
+    highest_rating = get_highest_rated_player_for_day(skill_db, day)
+    most_mvps = get_player_with_most_mvps_for_day(skill_db, day)
+
+    time_window = [day.isoformat(),
+                   (day + datetime.timedelta(days=1)).isoformat()]
+    return {
+        'time_window': time_window,
+        'rounds_played': rounds_played,
+        'highest_rating': highest_rating,
+        'most_mvps': most_mvps,
+    }
+
+
+def get_highest_rated_player_for_day(skill_db, day):
+    highest_rating = execute_one(skill_db, '''
+    WITH components AS (
+            SELECT rc.player_id
+                 , AVG(rc.kill_rating) AS average_kills
+                 , AVG(rc.death_rating) AS average_deaths
+                 , AVG(rc.damage_rating) AS average_damage
+                 , AVG(rc.kas_rating) AS average_kas
+            FROM rating_components rc
+            JOIN rounds r on rc.round_id = r.round_id
+            WHERE r.created_at BETWEEN ? AND ?
+            GROUP BY rc.player_id
+        ), impact_ratings AS (
+            SELECT c.player_id
+                 , {} * c.average_kills
+                 + {} * c.average_deaths
+                 + {} * c.average_damage
+                 + {} * c.average_kas
+                 + {} AS rating
+                 , c.*
+            FROM components c
+        )
+    SELECT players.player_id
+         , players.steam_name
+         , rbd.rating
+         , rbd.average_kills
+         , -rbd.average_deaths AS average_deaths
+         , rbd.average_damage
+         , rbd.average_kas
+    FROM players
+    JOIN impact_ratings rbd
+    ON   players.player_id = rbd.player_id
+    AND   rbd.rating = ( SELECT MAX(rbd2.rating)
+                         FROM impact_ratings rbd2 )
+    '''.format(*COEFFICIENTS), (day, day + datetime.timedelta(days=1)))
+    highest_rating_stats = {
+        'player_id': highest_rating[0],
+        'steam_name': highest_rating[1],
+        'impact_rating': highest_rating[2],
+        'average_kills': highest_rating[3],
+        'average_deaths': highest_rating[4],
+        'average_damage': highest_rating[5],
+        'average_kas': highest_rating[6],
+    }
+    return highest_rating_stats
+
+
+def get_player_with_most_mvps_for_day(skill_db, day: datetime.date) -> dict:
+    mvp = execute_one(skill_db, '''
+    SELECT players.player_id
+         , players.steam_name
+         , COUNT(*) AS mvps
+    FROM players
+    JOIN rounds
+    ON players.player_id = rounds.mvp
+    WHERE rounds.created_at BETWEEN ? AND ?
+    GROUP BY players.player_id
+           , players.steam_name
+    ORDER BY mvps DESC
+    ''', (day, day + datetime.timedelta(days=1)))
+    return {
+        'player_id': mvp[0],
+        'steam_name': mvp[1],
+        'mvps': mvp[2],
     }
 
 
