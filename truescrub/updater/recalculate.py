@@ -278,17 +278,38 @@ def compute_player_skills(rounds: [dict], teams: [dict],
 
 def rate_players_by_season(
         rounds_by_season: {int: [dict]}, teams: [dict],
-        ratings_by_season: {int: {int: trueskill.Rating}} = None) \
+        skills_by_season: {int: {int: trueskill.Rating}} = None) \
         -> {(int, int): trueskill.Rating}:
     skills = {}
-    if ratings_by_season is None:
-        ratings_by_season = {}
+    if skills_by_season is None:
+        skills_by_season = {}
     for season, rounds in rounds_by_season.items():
-        new_ratings = compute_player_skills(
-                rounds, teams, ratings_by_season.get(season))
-        for player_id, rating in new_ratings.items():
+        new_skills = compute_player_skills(
+                rounds, teams, skills_by_season.get(season))
+        for player_id, rating in new_skills.items():
             skills[(player_id, season)] = rating
     return skills
+
+
+def recalculate_overall_ratings(skill_db, all_rounds, teams):
+    player_ratings = db.get_overall_skills(skill_db)
+    skills = compute_player_skills(all_rounds, teams, player_ratings)
+    impact_ratings = db.get_overall_impact_ratings(skill_db)
+    db.update_player_skills(skill_db, skills, impact_ratings)
+
+
+def recalculate_season_ratings(skill_db, all_rounds, teams):
+    rounds_by_season = {
+        season_id: list(rounds)
+        for season_id, rounds in itertools.groupby(
+                all_rounds, operator.itemgetter('season_id'))
+    }
+    current_season_skills = db.get_skills_by_season(
+            skill_db, seasons=list(rounds_by_season.keys()))
+    new_season_skills = rate_players_by_season(
+            rounds_by_season, teams, current_season_skills)
+    season_impact_ratings = db.get_impact_ratings_by_season(skill_db)
+    db.replace_season_skills(skill_db, new_season_skills, season_impact_ratings)
 
 
 def recalculate_ratings(skill_db, new_rounds: (int, int)):
@@ -296,26 +317,11 @@ def recalculate_ratings(skill_db, new_rounds: (int, int)):
     logger.debug('recalculating for rounds between %d and %d', *new_rounds)
 
     all_rounds = db.get_all_rounds(skill_db, new_rounds)
+    # TODO: limit to teams in all_rounds
     teams = db.get_all_teams(skill_db)
 
-    player_ratings = db.get_overall_skills(skill_db)
-    skills = compute_player_skills(all_rounds, teams, player_ratings)
-    impact_ratings = db.get_overall_impact_ratings(skill_db)
-
-    db.update_player_skills(skill_db, skills, impact_ratings)
-
-    rounds_by_season = {
-        season_id: list(rounds)
-        for season_id, rounds in itertools.groupby(
-                all_rounds, operator.itemgetter('season_id'))
-    }
-    season_ratings = db.get_skills_by_season(
-            skill_db, seasons=list(rounds_by_season.keys()))
-    skills_by_season = rate_players_by_season(
-            rounds_by_season, teams, season_ratings)
-    season_impact_ratings = db.get_impact_ratings_by_season(skill_db)
-
-    db.replace_season_skills(skill_db, skills_by_season, season_impact_ratings)
+    recalculate_overall_ratings(skill_db, all_rounds, teams)
+    recalculate_season_ratings(skill_db, all_rounds, teams)
 
     end = time.process_time()
     logger.debug('recalculation for %d-%d completed in %d ms',

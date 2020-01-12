@@ -556,7 +556,7 @@ def get_skills_by_season(skill_db, seasons: [int]) \
         -> {int: {int: trueskill.Rating}}:
     return {
         season_id: {
-            player_row[1]: trueskill.Rating(player_row[4], player_row[5])
+            player_row[1]: trueskill.Rating(player_row[3], player_row[4])
             for player_row in season_players
         }
         for season_id, season_players
