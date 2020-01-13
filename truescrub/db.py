@@ -925,11 +925,11 @@ def initialize_skill_db(skill_db):
     ''')
 
     cursor.execute('''
-    CREATE INDEX ix_rounds_winner ON rounds (winner);
+    CREATE INDEX IF NOT EXISTS ix_rounds_winner ON rounds (winner);
     ''')
 
     cursor.execute('''
-    CREATE INDEX ix_rounds_loser ON rounds (loser);
+    CREATE INDEX IF NOT EXISTS ix_rounds_loser ON rounds (loser);
     ''')
 
     cursor.execute('''
