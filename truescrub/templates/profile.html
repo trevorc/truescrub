@@ -6,14 +6,39 @@
 <body>
 <h1>{{ player.steam_name }}'s Profile</h1>
 
-<p title="{{ player.mmr|int }}">{{ player.skill_group }}</p>
-<p>{{ macros.percentile_estimate(player, 8) }}</p>
-
 <h2>Record</h2>
 <p>{{ overall_record.rounds_won }} : {{ overall_record.rounds_lost }}</p>
 
-<p><a href="/profiles/{{ player.player_id }}/team_records">Team records</a></p>
-<p><a href="/profiles/{{ player.player_id }}/matches">All matches</a></p>
+<h2>Player Skill</h2>
+
+<table>
+  <thead>
+  <tr>
+    <th>Season</th>
+    <th>MMR</th>
+    <th>Percentile</th>
+    <th>Skill Group</th>
+  </tr>
+  </thead>
+  <tbody>
+  {% for season_id, season_player in season_skills %}
+    <tr>
+    <td>{{ season_id }}</td>
+    <td title="{{ season_player.skill.mu|int }} ± {{ season_player.skill.sigma|int }}σ">{{ season_player.mmr|int }}</td>
+    <td>{{ macros.percentile_estimate(season_player, 6) }}</td>
+    <td>{{ season_player.skill_group }}</td>
+    </tr>
+  {% endfor %}
+  <tfoot>
+  <tr>
+    <td><em>Overall</em></td>
+    <td title="{{ player.skill.mu|int }} ± {{ player.skill.sigma|int }}σ">{{ player.mmr|int }}</td>
+    <td>{{ macros.percentile_estimate(player, 6) }}</td>
+    <td>{{ player.skill_group }}</td>
+  </tr>
+  </tfoot>
+  </tbody>
+</table>
 
 <h2>Player Impact</h2>
 
@@ -38,9 +63,11 @@
       <td>{{ season_rating.death_rating }}</td>
       <td>{{ season_rating.damage_rating }}</td>
       <td>{{ season_rating.kas_rating }}</td>
-      <td>{{ '%.2f' % skills_by_season[season_id].impact_rating }}</td>
+      <td>{{ season_rating.impact_rating }}</td>
     </tr>
   {% endfor %}
+  </tbody>
+  <tfoot>
   <tr>
     <td><em>Overall</em></td>
     <td>{{ overall_rating.mvp_rating }}</td>
@@ -48,10 +75,12 @@
     <td>{{ overall_rating.death_rating }}</td>
     <td>{{ overall_rating.damage_rating }}</td>
     <td>{{ overall_rating.kas_rating }}</td>
-    <td>{{ player.impact_rating }}</td>
+    <td>{{ overall_rating.impact_rating }}</td>
   </tr>
-  </tbody>
+  </tfoot>
 </table>
+
+<p><a href="/profiles/{{ player.player_id }}/team_records">Team records</a></p>
 
 </body>
 </html>

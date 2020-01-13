@@ -188,13 +188,14 @@ def all_skill_groups():
     return flask.render_template('skill_groups.html', skill_groups=groups)
 
 
-def make_rating_component_viewmodel(components):
+def make_rating_component_viewmodel(components, impact_rating):
     return {
         'mvp_rating': '%d%%' % (100 * components['average_mvps']),
         'kill_rating': '%.2f' % components['average_kills'],
         'death_rating': '%.2f' % components['average_deaths'],
         'damage_rating': '%d' % components['average_damage'],
         'kas_rating': '%d%%' % (100 * components['average_kas']),
+        'impact_rating': '%.2f' % impact_rating,
     }
 
 
@@ -205,21 +206,30 @@ def profile(player_id):
     except StopIteration:
         return flask.make_response('No such player', 404)
 
-    overall_rating = make_rating_component_viewmodel(
-        db.get_player_round_stat_averages(g.conn, player_id))
-    season_ratings = [
-        (season_id, make_rating_component_viewmodel(components))
-        for season_id, components in db.get_player_round_stat_averages_by_season(
-                g.conn, player_id).items()
-    ]
     skills_by_season = db.get_player_skills_by_season(g.conn, player_id)
+    season_skills = [
+        (season_id, make_player_viewmodel(season_skill))
+        for season_id, season_skill in skills_by_season.items()
+    ]
+    season_skills.sort(reverse=True)
+
+    overall_rating = make_rating_component_viewmodel(
+            db.get_player_round_stat_averages(g.conn, player_id),
+            player.impact_rating)
+    season_ratings = [
+        (season_id, make_rating_component_viewmodel(
+                components, skills_by_season[season_id].impact_rating))
+        for season_id, components
+        in db.get_player_round_stat_averages_by_season(g.conn, player_id).items()
+    ]
+    season_ratings.sort(reverse=True)
 
     player_viewmodel = make_player_viewmodel(player)
     return flask.render_template('profile.html', player=player_viewmodel,
                                  overall_record=overall_record,
                                  overall_rating=overall_rating,
-                                 season_ratings=season_ratings,
-                                 skills_by_season=skills_by_season)
+                                 season_skills=season_skills,
+                                 season_ratings=season_ratings)
 
 
 @app.route('/matchmaking', methods={'GET'})
@@ -264,27 +274,6 @@ def matchmaking0(seasons: [int], selected_players: {int}, season_id: int = None,
                                  seasons=seasons, selected_season=season_id,
                                  selected_players=selected_players,
                                  players=players, teams=teams, latest=latest)
-
-
-@app.route('/profiles/<int:player_id>/matches', methods={'GET'})
-def matches(player_id):
-    all_players = db.get_all_players(g.conn)
-
-    try:
-        steam_name = next(player.steam_name
-                          for player in all_players
-                          if player.player_id == player_id)
-    except StopIteration:
-        return flask.make_response('No such player\n', 404)
-
-    player_skills = make_player_skills(all_players)
-    rounds_by_season = itertools.groupby(
-            db.get_player_rounds(g.conn, player_skills, player_id),
-            operator.itemgetter('season_id'))
-
-    return flask.render_template(
-            'matches.html', steam_name=steam_name,
-            rounds_by_season=rounds_by_season)
 
 
 @app.route('/profiles/<int:player_id>/team_records', methods={'GET'})

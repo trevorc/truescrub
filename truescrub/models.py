@@ -1,4 +1,6 @@
 import bisect
+import datetime
+from typing import Optional
 
 import trueskill
 
@@ -62,3 +64,17 @@ class Player(object):
         self.mmr = int(self.skill.mu - self.skill.sigma * 2)
         self.skill_group = skill_group_name(self.mmr)
         self.impact_rating = impact_rating
+
+
+class RoundRow(object):
+    __slots__ = ('round_id', 'created_at', 'season_id',
+                 'winner', 'loser', 'mvp')
+
+    def __init__(self, round_id: int, created_at: datetime.datetime,
+                 season_id: int, winner: int, loser: int, mvp: Optional[int]):
+        self.season_id = season_id
+        self.created_at = created_at
+        self.round_id = round_id
+        self.winner = winner
+        self.loser = loser
+        self.mvp = mvp

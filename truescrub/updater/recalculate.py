@@ -11,6 +11,7 @@ from typing import Optional
 import trueskill
 
 from .. import db
+from ..models import RoundRow
 
 
 logger = logging.getLogger(__name__)
@@ -255,7 +256,7 @@ def compute_rounds_and_players(game_db, skill_db, game_state_range=None) \
     return max_game_state_id, new_rounds
 
 
-def compute_player_skills(rounds: [dict], teams: [dict],
+def compute_player_skills(rounds: [RoundRow], teams: [dict],
         current_ratings: {int: trueskill.Rating} = None) \
         -> {int: trueskill.Rating}:
     ratings = collections.defaultdict(trueskill.Rating)
@@ -265,19 +266,20 @@ def compute_player_skills(rounds: [dict], teams: [dict],
     for round in rounds:
         rating_groups = (
             {player_id: ratings[player_id]
-             for player_id in teams[round['winner']]},
+             for player_id in teams[round.winner]},
             {player_id: ratings[player_id]
-             for player_id in teams[round['loser']]},
+             for player_id in teams[round.loser]},
         )
         new_ratings = trueskill.rate(rating_groups)
         for rating in new_ratings:
             ratings.update(rating)
+
     ratings.default_factory = None
     return ratings
 
 
 def rate_players_by_season(
-        rounds_by_season: {int: [dict]}, teams: [dict],
+        rounds_by_season: {int: [RoundRow]}, teams: [dict],
         skills_by_season: {int: {int: trueskill.Rating}} = None) \
         -> {(int, int): trueskill.Rating}:
     skills = {}
@@ -302,7 +304,7 @@ def recalculate_season_ratings(skill_db, all_rounds, teams):
     rounds_by_season = {
         season_id: list(rounds)
         for season_id, rounds in itertools.groupby(
-                all_rounds, operator.itemgetter('season_id'))
+                all_rounds, operator.attrgetter('season_id'))
     }
     current_season_skills = db.get_skills_by_season(
             skill_db, seasons=list(rounds_by_season.keys()))

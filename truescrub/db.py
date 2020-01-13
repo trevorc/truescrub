@@ -4,11 +4,11 @@ import logging
 import datetime
 import operator
 import itertools
+from typing import FrozenSet
 
 import trueskill
 
-from .models import Player, ThinPlayer
-from .matchmaking import match_quality
+from .models import Player, ThinPlayer, RoundRow
 from truescrub.models import SKILL_MEAN, SKILL_STDEV
 
 DATA_DIR = os.environ.get('TRUESCRUB_DATA_DIR', 'data')
@@ -109,7 +109,7 @@ def initialize_game_db(game_db):
     CREATE TABLE IF NOT EXISTS game_state(
       game_state_id  INTEGER PRIMARY KEY
     , created_at     DATETIME DEFAULT CURRENT_TIMESTAMP
-    , game_state     TEXT
+    , game_state     TEXT NOT NULL
     );
     ''')
     cursor.execute('''
@@ -501,9 +501,9 @@ def get_player_with_most_mvps_for_day(skill_db, day: datetime.date) -> dict:
 
 def get_player_skills_by_season(skill_db, player_id: int) -> {int: Player}:
     skill_rows = execute(skill_db, '''
-    SELECT players.player_id
+    SELECT skills.season_id
+         , skills.player_id
          , players.steam_name
-         , skills.season_id
          , skills.mean
          , skills.stdev
          , skills.impact_rating
@@ -516,9 +516,9 @@ def get_player_skills_by_season(skill_db, player_id: int) -> {int: Player}:
         season_id: Player(int(player_id), steam_name,
                           skill_mean, skill_stdev, impact_rating)
         for (
+            season_id,
             player_id,
             steam_name,
-            season_id,
             skill_mean,
             skill_stdev,
             impact_rating,
@@ -576,7 +576,7 @@ def get_season_players(skill_db, season: int):
     ]
 
 
-def get_player_teams(skill_db, player_id: int):
+def get_player_teams(skill_db, player_id: int) -> {int: [ThinPlayer]}:
     team_rows = execute(skill_db, '''
     SELECT participants.team_id
          , players.player_id
@@ -599,53 +599,6 @@ def get_player_teams(skill_db, player_id: int):
     ON   players.player_id = participants.player_id
     WHERE m.player_id = ?
     ORDER BY participants.team_id
-    ''', (player_id,))
-
-    return {
-        team_id: list(ThinPlayer(val[1], val[2]) for val in group)
-        for team_id, group in itertools.groupby(
-            team_rows, operator.itemgetter(0))
-    }
-
-
-def get_all_teams_from_player_rounds(skill_db, player_id: int) -> {int: [dict]}:
-    team_rows = execute(skill_db, '''
-    SELECT participants.team_id
-         , participants.player_id
-         , players.steam_name
-    FROM   team_membership player_teams
-    JOIN   ( SELECT player_id
-                  , rounds.loser  AS team_id
-             FROM rounds
-             JOIN team_membership
-             ON team_membership.team_id = rounds.winner
-             UNION
-             SELECT player_id
-                  , winner AS team_id
-             FROM rounds
-             JOIN team_membership
-             ON team_membership.team_id = rounds.loser
-             UNION
-             SELECT player_id
-                  , rounds.winner AS team_id
-             FROM rounds
-             JOIN team_membership
-             ON team_membership.team_id = rounds.winner
-             UNION
-             SELECT player_id
-                  , loser AS team_id
-             FROM rounds
-             JOIN team_membership
-             ON team_membership.team_id = rounds.loser
-    ) matches
-    ON     player_teams.player_id = matches.player_id
-    JOIN   team_membership participants
-    ON     participants.team_id = matches.team_id
-    JOIN   players
-    ON     players.player_id = participants.player_id
-    WHERE player_teams.player_id = ?
-    GROUP BY participants.team_id, participants.player_id
-    ORDER BY participants.team_id, participants.player_id;
     ''', (player_id,))
 
     return {
@@ -692,30 +645,6 @@ def get_player_profile(skill_db, player_id: int):
         'rounds_lost': rounds_lost,
     }
     return player, overall_record
-
-
-def get_player_rounds(skill_db, player_skills, player_id):
-    teams = get_all_teams_from_player_rounds(skill_db, player_id)
-
-    round_rows = execute(skill_db, '''
-    SELECT season_id, created_at, winner, loser, mvp
-    FROM rounds
-    JOIN team_membership m
-    ON m.team_id = rounds.winner OR m.team_id = rounds.loser
-    WHERE m.player_id = ?
-    ORDER BY season_id DESC, created_at DESC
-    ''', (player_id,))
-
-    for season_id, created_at, winner, loser, mvp in round_rows:
-        yield {
-            'season_id': season_id,
-            'created_at': created_at,
-            'winner': teams[winner],
-            'loser': teams[loser],
-            'mvp': mvp,
-            'quality': 100 * match_quality(
-                    player_skills, teams[winner], teams[loser]),
-        }
 
 
 def get_players_in_last_round(skill_db) -> {int}:
@@ -830,7 +759,7 @@ def get_opponent_records(skill_db, team_id: int):
     ]
 
 
-def get_all_rounds(skill_db, round_range: (int, int)):
+def get_all_rounds(skill_db, round_range: (int, int)) -> [RoundRow]:
     if round_range is not None:
         where_clause = 'WHERE round_id BETWEEN ? AND ?'
         params = round_range
@@ -839,22 +768,18 @@ def get_all_rounds(skill_db, round_range: (int, int)):
         params = []
 
     rounds = execute(skill_db, '''
-    SELECT season_id, winner, loser, mvp
+    SELECT round_id, created_at, season_id, winner, loser, mvp
     FROM rounds
     {}
     '''.format(where_clause), params)
     return [
-        {
-            'season_id': season_id,
-            'winner': winner,
-            'loser': loser,
-            'mvp': mvp,
-        }
-        for season_id, winner, loser, mvp in rounds
+        RoundRow(round_id, created_at, season_id, winner, loser, mvp)
+        for round_id, created_at, season_id, winner, loser, mvp
+        in rounds
     ]
 
 
-def get_all_teams(skill_db) -> {int: frozenset}:
+def get_all_teams(skill_db) -> {int: FrozenSet[int]}:
     memberships = execute(skill_db, '''
     SELECT team_id, player_id
     FROM team_membership
