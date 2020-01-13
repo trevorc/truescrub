@@ -925,6 +925,14 @@ def initialize_skill_db(skill_db):
     ''')
 
     cursor.execute('''
+    CREATE INDEX ix_rounds_winner ON rounds (winner);
+    ''')
+
+    cursor.execute('''
+    CREATE INDEX ix_rounds_loser ON rounds (loser);
+    ''')
+
+    cursor.execute('''
     CREATE TABLE IF NOT EXISTS round_stats(
       round_id   INTEGER NOT NULL
     , player_id  INTEGER NOT NULL

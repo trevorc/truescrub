@@ -116,7 +116,7 @@ def highlights(year, month, day, hour, minute, second, tz):
         timezone = parse_timezone(tz)
     except ValueError:
         return flask.make_response(
-                'Invalid timezone {}{}'.format(plusminus, offset), 404)
+                'Invalid timezone {}'.format(tz), 404)
     date = datetime.datetime(year, month, day, hour, minute, second,
                              tzinfo=timezone).astimezone(timezone.utc)
     try:
