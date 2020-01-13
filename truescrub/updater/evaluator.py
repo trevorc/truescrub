@@ -15,7 +15,7 @@ def run_evaluation(connection, beta, tau, sample):
     testing_sample = rounds[offset:]
     environment = trueskill.TrueSkill(SKILL_MEAN, SKILL_STDEV, beta, tau, 0.0)
 
-    ratings = compute_player_skills(training_sample, teams)
+    ratings = compute_player_skills(training_sample, teams)[0]
 
     total = 1.0
 

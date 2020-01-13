@@ -8,7 +8,7 @@ from typing import FrozenSet
 
 import trueskill
 
-from .models import Player, ThinPlayer, RoundRow
+from .models import Player, ThinPlayer, RoundRow, SkillHistory
 from truescrub.models import SKILL_MEAN, SKILL_STDEV
 
 DATA_DIR = os.environ.get('TRUESCRUB_DATA_DIR', 'data')
@@ -421,6 +421,7 @@ def get_highlights(skill_db, day: datetime.datetime) -> dict:
 
     highest_rating = get_highest_rated_player_for_day(skill_db, day)
     most_mvps = get_player_with_most_mvps_for_day(skill_db, day)
+    skill_group_changes = get_skill_changes_for_day(skill_db, day)
 
     time_window = [day.isoformat(),
                    (day + datetime.timedelta(days=1)).isoformat()]
@@ -428,6 +429,22 @@ def get_highlights(skill_db, day: datetime.datetime) -> dict:
         'time_window': time_window,
         'rounds_played': rounds_played,
         'highest_rating': highest_rating,
+        'season_skill_group_changes': [
+            {
+                'player_id': previous_skill.player_id,
+                'steam_name': previous_skill.steam_name,
+                'previous_skill': {
+                    'mmr': previous_skill.mmr,
+                    'skill_group': previous_skill.skill_group,
+                },
+                'next_skill': {
+                    'mmr': next_skill.mmr,
+                    'skill_group': next_skill.skill_group,
+                },
+            }
+            for (previous_skill, next_skill)
+            in skill_group_changes
+        ],
         'most_mvps': most_mvps,
     }
 
@@ -479,7 +496,7 @@ def get_highest_rated_player_for_day(skill_db, day):
     return highest_rating_stats
 
 
-def get_player_with_most_mvps_for_day(skill_db, day: datetime.date) -> dict:
+def get_player_with_most_mvps_for_day(skill_db, day: datetime.datetime) -> dict:
     mvp = execute_one(skill_db, '''
     SELECT players.player_id
          , players.steam_name
@@ -497,6 +514,67 @@ def get_player_with_most_mvps_for_day(skill_db, day: datetime.date) -> dict:
         'steam_name': mvp[1],
         'mvps': mvp[2],
     }
+
+
+def get_skill_changes_for_day(skill_db, day: datetime.datetime) \
+        -> [(Player, Player)]:
+    next_day = day + datetime.timedelta(days=1)
+
+    start_round = execute_one(skill_db, '''
+    SELECT MAX(rounds.round_id)
+    FROM rounds
+    WHERE rounds.created_at <= ?
+    ''', (day,))[0]
+
+    end_round = execute_one(skill_db, '''
+    SELECT MIN(rounds.round_id)
+    FROM rounds
+    WHERE rounds.created_at >= ?;
+    ''', (next_day,))[0]
+
+    skill_change_rows = execute(skill_db, '''
+    SELECT players.player_id
+         , players.steam_name
+         , earlier_ssh.skill_mean  AS earlier_skill_mean
+         , earlier_ssh.skill_stdev AS earlier_skill_stdev
+         , later_ssh.skill_mean    AS later_skill_mean
+         , later_ssh.skill_stdev   AS later_skill_stdev
+    FROM players
+    JOIN season_skill_history earlier_ssh
+    ON players.player_id = earlier_ssh.player_id
+    AND earlier_ssh.round_id =
+        ( SELECT MAX(ssh_before.round_id)
+          FROM season_skill_history ssh_before
+          WHERE ssh_before.round_id <= ?
+          AND ssh_before.player_id = players.player_id
+        )
+    JOIN season_skill_history later_ssh
+    ON players.player_id = later_ssh.player_id
+    AND later_ssh.round_id =
+        ( SELECT MIN(ssh_after.round_id)
+          FROM season_skill_history ssh_after
+          WHERE ssh_after.round_id >= ?
+          AND ssh_after.player_id = players.player_id
+        )
+    ''', (start_round, end_round))
+
+    skill_changes = [
+        (
+            Player(player_id, steam_name, earlier_mean, earlier_stdev, 0.0),
+            Player(player_id, steam_name, later_mean, later_stdev, 0.0),
+        )
+        for player_id, steam_name, earlier_mean, earlier_stdev,
+            later_mean, later_stdev
+        in skill_change_rows
+    ]
+    skill_changes.sort(key=lambda change: -change[1].mmr)
+
+    return [
+        (previous_skill, next_skill)
+        for previous_skill, next_skill
+        in skill_changes
+        if previous_skill.skill_group != next_skill.skill_group
+    ]
 
 
 def get_player_skills_by_season(skill_db, player_id: int) -> {int: Player}:
@@ -826,6 +904,31 @@ def update_player_skills(skill_db, ratings: {int: trueskill.Rating},
         ''', (rating.mu, rating.sigma, impact_ratings[player_id], player_id))
 
 
+def replace_overall_skill_history(skill_db, skill_history: [SkillHistory]):
+    cursor = skill_db.cursor()
+    for batch in make_batches(skill_history, 128):
+        params = [
+            value
+            for history in batch
+            for value in (
+                history.player_id,
+                history.round_id,
+                history.skill.mu,
+                history.skill.sigma,
+            )
+        ]
+        placeholder = make_placeholder(4, len(batch))
+        cursor.execute('''
+        REPLACE INTO overall_skill_history (
+            player_id
+          , round_id
+          , skill_mean
+          , skill_stdev
+        )
+        VALUES {}
+        '''.format(placeholder), params)
+
+
 def replace_season_skills(
         skill_db, season_skills: {(int, int): trueskill.Rating},
         season_impact_ratings: {int: {int: float}}):
@@ -851,6 +954,38 @@ def replace_season_skills(
     , impact_rating
     ) VALUES {}
     '''.format(make_placeholder(5, len(season_skills))), params)
+
+
+def _skill_history_sort_key(history: SkillHistory):
+    return history.player_id, history.round_id
+
+
+def replace_season_skill_history(
+        skill_db, history_by_season: {int: SkillHistory}):
+    skill_history = list(itertools.chain(*history_by_season.values()))
+
+    cursor = skill_db.cursor()
+    for batch in make_batches(skill_history, 128):
+        params = [
+            value
+            for history in batch
+            for value in (
+                history.player_id,
+                history.round_id,
+                history.skill.mu,
+                history.skill.sigma,
+            )
+        ]
+        placeholder = make_placeholder(4, len(batch))
+        cursor.execute('''
+        REPLACE INTO season_skill_history (
+            player_id
+          , round_id
+          , skill_mean
+          , skill_stdev
+        )
+        VALUES {}
+        '''.format(placeholder), params)
 
 
 def get_season_range(skill_db) -> [int]:
@@ -930,6 +1065,30 @@ def initialize_skill_db(skill_db):
 
     cursor.execute('''
     CREATE INDEX IF NOT EXISTS ix_rounds_loser ON rounds (loser);
+    ''')
+
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS overall_skill_history(
+      player_id   INTEGER NOT NULL
+    , round_id    INTEGER NOT NULL
+    , skill_mean  DOUBLE NOT NULL
+    , skill_stdev DOUBLE NOT NULL
+    , PRIMARY KEY (player_id, round_id)
+    , FOREIGN KEY (player_id) REFERENCES players (player_id)
+    , FOREIGN KEY (round_id) REFERENCES rounds (round_id)
+    );
+    ''')
+
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS season_skill_history(
+      player_id   INTEGER NOT NULL
+    , round_id    INTEGER NOT NULL
+    , skill_mean  DOUBLE NOT NULL
+    , skill_stdev DOUBLE NOT NULL
+    , PRIMARY KEY (player_id, round_id)
+    , FOREIGN KEY (player_id) REFERENCES players (player_id)
+    , FOREIGN KEY (round_id) REFERENCES rounds (round_id)
+    );
     ''')
 
     cursor.execute('''

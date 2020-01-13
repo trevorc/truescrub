@@ -66,6 +66,16 @@ class Player(object):
         self.impact_rating = impact_rating
 
 
+class SkillHistory(object):
+    __slots__ = ('round_id', 'player_id', 'skill')
+
+    def __init__(self, round_id: int, player_id: int,
+                 skill: trueskill.Rating):
+        self.round_id = round_id
+        self.player_id = player_id
+        self.skill = skill
+
+
 class RoundRow(object):
     __slots__ = ('round_id', 'created_at', 'season_id',
                  'winner', 'loser', 'mvp')

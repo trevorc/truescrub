@@ -1,18 +1,16 @@
 import json
+import time
 import bisect
 import logging
 import operator
 import datetime
 import itertools
-import collections
-import time
 from typing import Optional
 
 import trueskill
 
 from .. import db
-from ..models import RoundRow
-
+from ..models import RoundRow, SkillHistory
 
 logger = logging.getLogger(__name__)
 
@@ -256,48 +254,57 @@ def compute_rounds_and_players(game_db, skill_db, game_state_range=None) \
     return max_game_state_id, new_rounds
 
 
+# TODO: extract out history tracking for clients that don't need it
 def compute_player_skills(rounds: [RoundRow], teams: [dict],
         current_ratings: {int: trueskill.Rating} = None) \
-        -> {int: trueskill.Rating}:
-    ratings = collections.defaultdict(trueskill.Rating)
+        -> ({int: trueskill.Rating}, [SkillHistory]):
+    ratings = {}
     if current_ratings is not None:
         ratings.update(current_ratings)
+    skill_history = []
 
     for round in rounds:
         rating_groups = (
-            {player_id: ratings[player_id]
+            {player_id: ratings.get(player_id, trueskill.Rating())
              for player_id in teams[round.winner]},
-            {player_id: ratings[player_id]
+            {player_id: ratings.get(player_id, trueskill.Rating())
              for player_id in teams[round.loser]},
         )
         new_ratings = trueskill.rate(rating_groups)
         for rating in new_ratings:
             ratings.update(rating)
+            for player_id, skill in rating.items():
+                skill_history.append(SkillHistory(
+                        round_id=round.round_id,
+                        player_id=player_id,
+                        skill=skill))
 
-    ratings.default_factory = None
-    return ratings
+    return ratings, skill_history
 
 
 def rate_players_by_season(
         rounds_by_season: {int: [RoundRow]}, teams: [dict],
         skills_by_season: {int: {int: trueskill.Rating}} = None) \
-        -> {(int, int): trueskill.Rating}:
+        -> ({(int, int): trueskill.Rating}, {int: SkillHistory}):
     skills = {}
     if skills_by_season is None:
         skills_by_season = {}
+    history_by_season = {}
     for season, rounds in rounds_by_season.items():
-        new_skills = compute_player_skills(
+        new_skills, skill_history = compute_player_skills(
                 rounds, teams, skills_by_season.get(season))
         for player_id, rating in new_skills.items():
             skills[(player_id, season)] = rating
-    return skills
+        history_by_season[season] = skill_history
+    return skills, history_by_season
 
 
 def recalculate_overall_ratings(skill_db, all_rounds, teams):
     player_ratings = db.get_overall_skills(skill_db)
-    skills = compute_player_skills(all_rounds, teams, player_ratings)
+    skills, skill_history = compute_player_skills(all_rounds, teams, player_ratings)
     impact_ratings = db.get_overall_impact_ratings(skill_db)
     db.update_player_skills(skill_db, skills, impact_ratings)
+    db.replace_overall_skill_history(skill_db, skill_history)
 
 
 def recalculate_season_ratings(skill_db, all_rounds, teams):
@@ -308,10 +315,11 @@ def recalculate_season_ratings(skill_db, all_rounds, teams):
     }
     current_season_skills = db.get_skills_by_season(
             skill_db, seasons=list(rounds_by_season.keys()))
-    new_season_skills = rate_players_by_season(
+    new_season_skills, history_by_season = rate_players_by_season(
             rounds_by_season, teams, current_season_skills)
     season_impact_ratings = db.get_impact_ratings_by_season(skill_db)
     db.replace_season_skills(skill_db, new_season_skills, season_impact_ratings)
+    db.replace_season_skill_history(skill_db, history_by_season)
 
 
 def recalculate_ratings(skill_db, new_rounds: (int, int)):
