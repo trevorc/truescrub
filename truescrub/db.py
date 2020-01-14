@@ -166,6 +166,24 @@ def upsert_player_names(skill_db, players: {int: str}):
     '''.format(placeholder), params)
 
 
+def get_map_names_to_ids(skill_db) -> {str: int}:
+    return {
+        map_name: map_id
+        for map_name, map_id
+        in execute(skill_db, '''
+        SELECT map_name, map_id
+        FROM maps
+        ''')
+    }
+
+
+def replace_maps(skill_db, map_names: {str}):
+    execute(skill_db, '''
+    REPLACE INTO maps (map_name)
+    VALUES {}
+    '''.format(make_placeholder(1, len(map_names))), list(map_names))
+
+
 def make_batches(items: list, size: int):
     return (
         items[i:i + size]
@@ -177,6 +195,8 @@ def insert_rounds(skill_db, rounds: [dict]) -> (int, int):
     if len(rounds) == 0:
         raise ValueError
 
+    map_names_to_id = get_map_names_to_ids(skill_db)
+
     cursor = skill_db.cursor()
     for batch in make_batches(rounds, 128):
         params = [
@@ -186,14 +206,17 @@ def insert_rounds(skill_db, rounds: [dict]) -> (int, int):
                 rnd['season_id'],
                 rnd['game_state_id'],
                 rnd['created_at'],
+                map_names_to_id[rnd['map_name']],
                 rnd['winner'],
                 rnd['loser'],
                 rnd['mvp'],
             )
         ]
-        placeholder = make_placeholder(6, len(batch))
+        placeholder = make_placeholder(7, len(batch))
         cursor.execute('''
-        INSERT INTO rounds (season_id, game_state_id, created_at, winner, loser, mvp)
+        INSERT INTO rounds (
+          season_id, game_state_id, created_at, map_id, winner, loser, mvp
+        )
         VALUES {}
         '''.format(placeholder), params)
 
@@ -420,7 +443,12 @@ def get_highlights(skill_db, day: datetime.datetime) -> dict:
     ''', (day, day + datetime.timedelta(days=1)))[0]
 
     highest_rating = get_highest_rated_player_for_day(skill_db, day)
-    most_mvps = get_player_with_most_mvps_for_day(skill_db, day)
+
+    try:
+        most_mvps = get_player_with_most_mvps_for_day(skill_db, day)
+    except StopIteration:
+        most_mvps = None
+
     skill_group_changes = get_skill_changes_for_day(skill_db, day)
 
     time_window = [day.isoformat(),
@@ -445,7 +473,25 @@ def get_highlights(skill_db, day: datetime.datetime) -> dict:
             for (previous_skill, next_skill)
             in skill_group_changes
         ],
+        'most_played_maps': get_most_played_maps_for_day(skill_db, day),
         'most_mvps': most_mvps,
+    }
+
+
+def get_most_played_maps_for_day(skill_db, day: datetime.datetime) -> {str: int}:
+    map_counts = execute(skill_db, '''
+    SELECT map_name
+         , COUNT(*) AS round_count
+    FROM rounds
+    JOIN maps ON rounds.map_id = maps.map_id
+    WHERE rounds.created_at BETWEEN ? AND ?
+    GROUP BY map_name
+    ORDER BY round_count DESC
+    ''', (day, day + datetime.timedelta(days=1)))
+    return {
+        map_name: round_count
+        for map_name, round_count
+        in itertools.islice(map_counts, 3)
     }
 
 
@@ -1044,15 +1090,24 @@ def initialize_skill_db(skill_db):
     ''')
 
     cursor.execute('''
+    CREATE TABLE IF NOT EXISTS maps(
+      map_id     INTEGER PRIMARY KEY
+    , map_name   TEXT NOT NULL UNIQUE
+    );
+    ''')
+
+    cursor.execute('''
     CREATE TABLE IF NOT EXISTS rounds(
       round_id      INTEGER PRIMARY KEY
     , season_id     INTEGER NOT NULL
     , game_state_id INTEGER NOT NULL
     , created_at    DATETIME DEFAULT CURRENT_TIMESTAMP
+    , map_id        INTEGER NOT NULL
     , winner        INTEGER NOT NULL
     , loser         INTEGER NOT NULL
     , mvp           INTEGER
     , FOREIGN KEY (season_id) REFERENCES seasons (season_id)
+    , FOREIGN KEY (map_id) REFERENCES maps (map_id)
     , FOREIGN KEY (winner) REFERENCES teams (team_id)
     , FOREIGN KEY (loser) REFERENCES teams (team_id)
     , FOREIGN KEY (mvp) REFERENCES players (player_id)

@@ -190,6 +190,7 @@ def parse_game_state(
         'winner': team_members[win_team],
         'loser': team_members[lose_team],
         'mvp': mvp,
+        'map_name': state['map']['name'],
         'stats': round_stats,
     }
 
@@ -222,6 +223,9 @@ def compute_rounds(skill_db, rounds, player_states):
     insert_players(skill_db, player_states)
     round_teams = {player_state['teammates'] for player_state in player_states}
     teams_to_ids = replace_teams(skill_db, round_teams)
+
+    db.replace_maps(skill_db, {rnd['map_name'] for rnd in rounds})
+
     fixed_rounds = [
         {
             'created_at': rnd['created_at'],
@@ -230,6 +234,7 @@ def compute_rounds(skill_db, rounds, player_states):
             'winner': teams_to_ids[rnd['winner']],
             'loser': teams_to_ids[rnd['loser']],
             'mvp': rnd['mvp'],
+            'map_name': rnd['map_name'],
         }
         for rnd in rounds
     ]
