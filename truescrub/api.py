@@ -15,6 +15,7 @@ import flask
 from flask import g, request
 
 from . import db
+from .highlights import get_highlights
 from .matchmaking import (
     skill_group_ranges, compute_matches, make_player_skills,
     match_quality, team1_win_probability, estimated_skill_range)
@@ -120,7 +121,7 @@ def highlights(year, month, day, hour, minute, second, tz):
     date = datetime.datetime(year, month, day, hour, minute, second,
                              tzinfo=timezone).astimezone(timezone.utc)
     try:
-        return flask.jsonify(db.get_highlights(g.conn, date))
+        return flask.jsonify(get_highlights(g.conn, date))
     except StopIteration:
         return flask.make_response(
                 'No rounds on {}\n'.format(date.isoformat()), 404)

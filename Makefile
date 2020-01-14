@@ -13,3 +13,7 @@ deploy:
 .PHONY: recalculate
 recalculate:
 	ssh rumia docker exec services_truescrub_1 python -m truescrub --recalculate
+
+.PHONY: serve
+serve:
+	waitress-serve --port 9000 truescrub.api:app
