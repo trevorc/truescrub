@@ -14,7 +14,7 @@ MAX_PLAYERS_PER_TEAM = 5
 trueskill.setup(mu=SKILL_MEAN, sigma=SKILL_STDEV, beta=BETA, tau=TAU,
                 draw_probability=0.0)
 
-CONFIDENCE_LEVEL = 0.90
+CONFIDENCE_LEVEL = 0.95
 
 
 def confidence_interval_z(confidence_level: float) -> float:
