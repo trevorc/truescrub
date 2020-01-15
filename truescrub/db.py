@@ -94,12 +94,16 @@ def get_game_states(game_db, game_state_range):
         where_clause = ''
         params = ()
     else:
-        where_clause = 'WHERE game_state_id BETWEEN ? AND ?'
+        where_clause = 'AND game_state_id BETWEEN ? AND ?'
         params = game_state_range
 
     return execute(game_db, '''
     SELECT game_state_id, created_at, game_state
     FROM game_state
+    WHERE json_extract(game_state, '$.round.phase') = 'over'
+    AND json_extract(game_state, '$.previously.round.phase') = 'live'
+    AND json_type(json_extract(game_state, '$.allplayers')) = 'object'
+    AND json_extract(game_state, '$.round.win_team') IS NOT NULL
     {}
     '''.format(where_clause), params)
 
@@ -112,6 +116,13 @@ def initialize_game_db(game_db):
       game_state_id  INTEGER PRIMARY KEY
     , created_at     DATETIME DEFAULT CURRENT_TIMESTAMP
     , game_state     TEXT NOT NULL
+    );
+    ''')
+    cursor.execute('''
+    CREATE INDEX IF NOT EXISTS ix_game_state_round_phase_transition
+    ON game_state (
+      json_extract(game_state, '$.round.phase')
+    , json_extract(game_state, '$.previously.round.phase')
     );
     ''')
     cursor.execute('''

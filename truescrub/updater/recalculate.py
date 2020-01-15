@@ -26,8 +26,6 @@ def dump_rounds(game_db, outfile, indent=False):
     game_states = db.get_game_states(game_db, None)
     for game_state_id, created_at, game_state_str in game_states:
         state = json.loads(game_state_str)
-        if not is_round_transition(state):
-            continue
         json.dump(state, outfile, indent=2 if indent else None)
         outfile.write('\n')
 
@@ -132,23 +130,12 @@ def compute_mvp(state: dict) -> Optional[int]:
     return mvp
 
 
-def is_round_transition(state):
-    current_phase = state.get('round', {}).get('phase')
-    previously = state.get('previously', {})
-    return current_phase == 'over' \
-           and previously.get('round', {}).get('phase') == 'live' \
-           and 'allplayers' in state \
-           and 'win_team' in state['round']
-
-
 def parse_game_state(
         season_starts: [datetime.datetime],
         season_ids: {datetime.datetime: int},
         game_state_id: int,
         game_state_json: str):
     state = json.loads(game_state_json)
-    if not is_round_transition(state):
-        return
     win_team = state['round']['win_team']
     team_steamids = [(player['team'], int(steamid))
                      for steamid, player in state['allplayers'].items()]
