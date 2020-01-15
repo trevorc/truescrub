@@ -1,19 +1,17 @@
 import datetime
+import operator
 
 from .db import execute_one, execute, COEFFICIENTS
 from .models import Player
 
 
 def get_highlights(skill_db, day: datetime.datetime) -> dict:
-    round_range = get_round_range_for_day(skill_db, day)
+    round_range, rounds_played = get_round_range_for_day(skill_db, day)
 
-    rounds_played = execute_one(skill_db, '''
-    SELECT COUNT(*)
-    FROM rounds
-    WHERE round_id BETWEEN ? AND ?
-    ''', round_range)[0]
+    if rounds_played == 0:
+        raise StopIteration
 
-    highest_rating = get_highest_rated_player_between_rounds(
+    lowest_rating, highest_rating = get_rating_extremes_between_rounds(
             skill_db, round_range)
 
     try:
@@ -26,29 +24,29 @@ def get_highlights(skill_db, day: datetime.datetime) -> dict:
             skill_db, round_range)
     most_played_maps = get_most_played_maps_between_rounds(
             skill_db, round_range)
-
+    skill_group_changes = [
+        {
+            'player_id': previous_skill.player_id,
+            'steam_name': previous_skill.steam_name,
+            'previous_skill': {
+                'mmr': previous_skill.mmr,
+                'skill_group': previous_skill.skill_group,
+            },
+            'next_skill': {
+                'mmr': next_skill.mmr,
+                'skill_group': next_skill.skill_group,
+            },
+        }
+        for (previous_skill, next_skill) in skill_group_changes
+    ]
     time_window = [day.isoformat(),
                    (day + datetime.timedelta(days=1)).isoformat()]
     return {
         'time_window': time_window,
         'rounds_played': rounds_played,
+        'lowest_rating': lowest_rating,
         'highest_rating': highest_rating,
-        'season_skill_group_changes': [
-            {
-                'player_id': previous_skill.player_id,
-                'steam_name': previous_skill.steam_name,
-                'previous_skill': {
-                    'mmr': previous_skill.mmr,
-                    'skill_group': previous_skill.skill_group,
-                },
-                'next_skill': {
-                    'mmr': next_skill.mmr,
-                    'skill_group': next_skill.skill_group,
-                },
-            }
-            for (previous_skill, next_skill)
-            in skill_group_changes
-        ],
+        'season_skill_group_changes': skill_group_changes,
         'most_played_maps': most_played_maps,
         'most_mvps': most_mvps,
     }
@@ -67,14 +65,16 @@ def get_most_played_maps_between_rounds(
     ''', round_range))
 
 
-def get_highest_rated_player_between_rounds(skill_db, round_range: (int, int)):
-    highest_rating = execute_one(skill_db, '''
+def get_rating_extremes_between_rounds(skill_db, round_range: (int, int)) \
+        -> (dict, dict):
+    rating_extreme_rows = execute(skill_db, '''
     WITH components AS (
             SELECT rc.player_id
                  , AVG(rc.kill_rating) AS average_kills
                  , AVG(rc.death_rating) AS average_deaths
                  , AVG(rc.damage_rating) AS average_damage
                  , AVG(rc.kas_rating) AS average_kas
+                 , COUNT(*) AS rounds_played
             FROM rating_components rc
             WHERE rc.round_id BETWEEN ? AND ?
             GROUP BY rc.player_id
@@ -95,22 +95,32 @@ def get_highest_rated_player_between_rounds(skill_db, round_range: (int, int)):
          , -ir.average_deaths AS average_deaths
          , ir.average_damage
          , ir.average_kas
+         , ir.rounds_played
     FROM players
     JOIN impact_ratings ir
     ON   players.player_id = ir.player_id
-    AND  ir.rating = ( SELECT MAX(ir2.rating)
-                       FROM impact_ratings ir2 )
+    AND  ir.rating IN (
+        (SELECT MIN(rating) FROM impact_ratings),
+        (SELECT MAX(rating) FROM impact_ratings)
+    )
     '''.format(*COEFFICIENTS), round_range)
-    highest_rating_stats = {
-        'player_id': highest_rating[0],
-        'steam_name': highest_rating[1],
-        'impact_rating': highest_rating[2],
-        'average_kills': highest_rating[3],
-        'average_deaths': highest_rating[4],
-        'average_damage': highest_rating[5],
-        'average_kas': highest_rating[6],
-    }
-    return highest_rating_stats
+
+    rating_extremes = [
+        {
+            'player_id': rating_row[0],
+            'steam_name': rating_row[1],
+            'impact_rating': rating_row[2],
+            'average_kills': rating_row[3],
+            'average_deaths': rating_row[4],
+            'average_damage': rating_row[5],
+            'average_kas': rating_row[6],
+            'rounds_played': rating_row[7],
+        }
+        for rating_row in rating_extreme_rows
+    ]
+    rating_extremes.sort(key=operator.itemgetter('impact_rating'))
+
+    return rating_extremes[0], rating_extremes[-1]
 
 
 def get_player_with_most_mvps_between_rounds(
@@ -181,12 +191,16 @@ def get_skill_changes_between_rounds(skill_db, round_range: (int, int)) \
     ]
 
 
-def get_round_range_for_day(skill_db, day: datetime.datetime) -> (int, int):
+def get_round_range_for_day(skill_db, day: datetime.datetime) \
+        -> ((int, int), int):
     next_day = day + datetime.timedelta(days=1)
 
-    return execute_one(skill_db, '''
+    first_round, last_round, round_count = execute_one(skill_db, '''
     SELECT MIN(round_id)
          , MAX(round_id)
+         , COUNT(*)
     FROM rounds
     WHERE created_at BETWEEN ? AND ?
     ''', (day, next_day))
+
+    return (first_round, last_round), round_count
