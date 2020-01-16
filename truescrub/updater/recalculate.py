@@ -1,14 +1,12 @@
 import json
 import time
-import bisect
 import logging
 import operator
-import datetime
 import itertools
-from typing import Optional
 
 import trueskill
 
+from .state_parser import parse_game_states
 from .. import db
 from ..models import RoundRow, SkillHistory
 
@@ -20,14 +18,6 @@ class NoRounds(Exception):
 
 
 # Rating2 = 0.2778*Kills - 0.2559*Deaths + 0.00651*ADR + 0.00633*KAST + 0.18377
-
-
-def dump_rounds(game_db, outfile, indent=False):
-    game_states = db.get_game_states(game_db, None)
-    for game_state_id, created_at, game_state_str in game_states:
-        state = json.loads(game_state_str)
-        json.dump(state, outfile, indent=2 if indent else None)
-        outfile.write('\n')
 
 
 def load_seasons(game_db, skill_db):
@@ -75,135 +65,11 @@ def insert_players(skill_db, player_states):
     db.upsert_player_names(skill_db, players)
 
 
-def calculate_round_stats(state: dict) -> {int: dict}:
-    previous_allplayers = state['previously'].get('allplayers', {})
-
-    assist_counts = {
-        steam_id: player['match_stats']['assists']
-        for steam_id, player in state['allplayers'].items()
-    }
-
-    previous_assists = {
-        steam_id: player['match_stats']['assists']
-        for steam_id, player in previous_allplayers.items()
-        if 'assists' in previous_allplayers.get(
-                steam_id, {}).get('match_stats', {})
-    }
-
-    return {
-        int(steam_id): {
-            'kills': player['state']['round_kills'],
-            'assists': assist_counts[steam_id] -
-                       previous_assists.get(steam_id, 0),
-            'survived': player['state']['health'] > 0,
-            'damage': player['state']['round_totaldmg'],
-        }
-        for steam_id, player in state['allplayers'].items()
-    }
-
-
-def compute_mvp(state: dict) -> Optional[int]:
-    previous_allplayers = state['previously'].get('allplayers', {})
-
-    mvp_counts = {
-        steam_id: player['match_stats']['mvps']
-        for steam_id, player in state['allplayers'].items()
-    }
-
-    previous_mvps = {
-        steam_id: player['match_stats']['mvps']
-        for steam_id, player in previous_allplayers.items()
-        if 'mvps' in previous_allplayers.get(steam_id, {}).get('match_stats', {})
-    }
-
-    try:
-        mvp = next(
-                int(steam_id)
-                for steam_id in mvp_counts
-                if steam_id in previous_mvps
-                and mvp_counts[steam_id] - previous_mvps[steam_id] > 0)
-    except StopIteration:
-        # Not sure why, but sometimes there is no MVP data in
-        # the state's previously.allplayers
-        mvp = None
-
-    return mvp
-
-
-def parse_game_state(
-        season_starts: [datetime.datetime],
-        season_ids: {datetime.datetime: int},
-        game_state_id: int,
-        game_state_json: str):
-    state = json.loads(game_state_json)
-    win_team = state['round']['win_team']
-    team_steamids = [(player['team'], int(steamid))
-                     for steamid, player in state['allplayers'].items()]
-    team_steamids.sort()
-    team_members = {
-        team: tuple(sorted(item[1] for item in group))
-        for team, group in itertools.groupby(
-                team_steamids, operator.itemgetter(0))}
-    if len(team_members) != 2:
-        return
-    lose_team = next(iter(set(team_members.keys()) - {win_team}))
-
-    mvp = compute_mvp(state)
-
-    new_player_states = [
-        {
-            'teammates': team_members[player['team']],
-            'round': state['map']['round'],
-            'team': player['team'],
-            'steam_id': steamid,
-            'steam_name': player['name'],
-            'round_won': player['team'] == win_team,
-        }
-        for steamid, player in state['allplayers'].items()
-    ]
-
-    created_at = datetime.datetime.utcfromtimestamp(
-            state['provider']['timestamp'])
-
-    season_index = bisect.bisect_left(season_starts, created_at) - 1
-    season_id = season_ids[season_starts[season_index]]
-
-    round_stats = calculate_round_stats(state)
-
-    new_round = {
-        'game_state_id': game_state_id,
-        'created_at': created_at,
-        'season_id': season_id,
-        'winner': team_members[win_team],
-        'loser': team_members[lose_team],
-        'mvp': mvp,
-        'map_name': state['map']['name'],
-        'stats': round_stats,
-    }
-
-    return new_round, new_player_states
-
-
-def parse_game_states(game_db, game_state_range):
+def extract_game_states(game_db, game_state_range):
     season_ids = db.get_seasons_by_start_date(game_db)
-    season_starts = list(season_ids.keys())
-
     game_states = db.get_game_states(game_db, game_state_range)
 
-    player_states = []
-    rounds = []
-    max_game_state_id = 0
-
-    for (game_state_id, created_at, game_state_json) in game_states:
-        parsed_game_state = parse_game_state(season_starts, season_ids,
-                                             game_state_id, game_state_json)
-        if parsed_game_state is not None:
-            new_round, new_player_states = parsed_game_state
-            rounds.append(new_round)
-            player_states.extend(new_player_states)
-            max_game_state_id = max(max_game_state_id, game_state_id)
-
-    return rounds, player_states, max_game_state_id
+    return parse_game_states(game_states, season_ids)
 
 
 def compute_rounds(skill_db, rounds, player_states):
@@ -239,7 +105,7 @@ def compute_rounds(skill_db, rounds, player_states):
 def compute_rounds_and_players(game_db, skill_db, game_state_range=None) \
         -> (int, (int, int)):
     rounds, player_states, max_game_state_id = \
-        parse_game_states(game_db, game_state_range)
+        extract_game_states(game_db, game_state_range)
     new_rounds = compute_rounds(skill_db, rounds, player_states) \
         if len(rounds) > 0 \
         else None

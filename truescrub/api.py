@@ -20,7 +20,6 @@ from .matchmaking import (
     skill_group_ranges, compute_matches, make_player_skills,
     match_quality, team1_win_probability, estimated_skill_range)
 from .models import Player
-from .updater.recalculate import dump_rounds
 
 app = flask.Flask(__name__)
 app.config['PROPAGATE_EXCEPTIONS'] = True
@@ -333,20 +332,10 @@ arg_parser.add_argument('-c', '--recalculate', action='store_true',
                         help='Recalculate rankings.')
 arg_parser.add_argument('-r', '--use-reloader', action='store_true',
                         help='Use code reloader.')
-arg_parser.add_argument('-d', '--dump-rounds', action='store_true',
-                        help='Print out round JSON.')
-arg_parser.add_argument('-i', '--indent', action='store_true')
-
-
-def print_rounds(indent: bool):
-    with db.get_game_db() as game_db:
-        dump_rounds(game_db, sys.stdout, indent)
 
 
 def main():
     args = arg_parser.parse_args()
-    if args.dump_rounds:
-        return print_rounds(args.indent)
     if args.recalculate:
         return send_updater_message(command='recalculate')
     logger.info('TrueScrub listening on {}:{}'.format(args.addr, args.port))

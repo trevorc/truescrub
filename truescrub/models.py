@@ -1,3 +1,4 @@
+import json
 import bisect
 import datetime
 from typing import Optional
@@ -88,3 +89,19 @@ class RoundRow(object):
         self.winner = winner
         self.loser = loser
         self.mvp = mvp
+
+
+class GameStateRow(object):
+    __slots__ = ('game_state_id', 'map_name', 'win_team', 'timestamp',
+                 'allplayers', 'previous_allplayers')
+
+    def __init__(self, game_state_id: int, map_name: str, win_team: str,
+                 timestamp: int, allplayers: str,
+                 previous_allplayers: Optional[str]):
+        self.game_state_id = game_state_id
+        self.map_name = map_name
+        self.win_team = win_team
+        self.timestamp = timestamp
+        self.allplayers = json.loads(allplayers)
+        self.previous_allplayers = {} if previous_allplayers is None \
+            else json.loads(previous_allplayers)

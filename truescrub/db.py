@@ -8,7 +8,7 @@ from typing import FrozenSet, Iterator
 
 import trueskill
 
-from .models import Player, ThinPlayer, RoundRow, SkillHistory
+from .models import Player, ThinPlayer, RoundRow, SkillHistory, GameStateRow
 from truescrub.models import SKILL_MEAN, SKILL_STDEV
 
 DATA_DIR = os.environ.get('TRUESCRUB_DATA_DIR', 'data')
@@ -89,7 +89,7 @@ def get_seasons_by_start_date(game_db) -> {datetime.datetime: int}:
     }
 
 
-def get_game_states(game_db, game_state_range):
+def get_game_states(game_db, game_state_range) -> Iterator[GameStateRow]:
     if game_state_range is None:
         where_clause = ''
         params = ()
@@ -97,15 +97,20 @@ def get_game_states(game_db, game_state_range):
         where_clause = 'AND game_state_id BETWEEN ? AND ?'
         params = game_state_range
 
-    return execute(game_db, '''
-    SELECT game_state_id, created_at, game_state
+    return itertools.starmap(GameStateRow, execute(game_db, '''
+    SELECT game_state_id
+         , json_extract(game_state, '$.map.name') AS map_name
+         , json_extract(game_state, '$.round.win_team') AS win_team
+         , json_extract(game_state, '$.provider.timestamp') AS timestamp
+         , json_extract(game_state, '$.allplayers') AS allplayers
+         , json_extract(game_state, '$.previously.allplayers') AS previous_allplayers
     FROM game_state
     WHERE json_extract(game_state, '$.round.phase') = 'over'
-    AND json_extract(game_state, '$.previously.round.phase') = 'live'
-    AND json_type(json_extract(game_state, '$.allplayers')) = 'object'
-    AND json_extract(game_state, '$.round.win_team') IS NOT NULL
-    {}
-    '''.format(where_clause), params)
+      AND json_extract(game_state, '$.previously.round.phase') = 'live'
+      AND json_type(allplayers) = 'object'
+      AND win_team IS NOT NULL
+      {}
+    '''.format(where_clause), params))
 
 
 def initialize_game_db(game_db):
