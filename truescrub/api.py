@@ -284,9 +284,9 @@ def team_records(player_id):
         return flask.make_response('No such player', 404)
 
     player_viewmodel = make_player_viewmodel(player)
-    team_records = db.get_team_records(g.conn, player_id)
+    records = db.get_team_records(g.conn, player_id)
     return flask.render_template('team_records.html', player=player_viewmodel,
-                                 team_records=team_records)
+                                 team_records=records)
 
 
 @app.route('/teams/<int:team_id>', methods={'GET'})

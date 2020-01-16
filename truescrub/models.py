@@ -7,27 +7,19 @@ import trueskill
 
 SKILL_MEAN = 1000.0
 SKILL_STDEV = SKILL_MEAN / 4.0
-SKILL_GROUP_SPACING = SKILL_STDEV * 0.3
+SKILL_GROUP_SPACING = SKILL_STDEV * 0.5
 SKILL_GROUP_NAMES = [
-    'Scrub',
-    'Staff Scrub',
-    'Scrub First Class',
     'Cardboard I',
     'Cardboard II',
     'Cardboard III',
     'Cardboard IV',
-    'Cardboard Elite',
     'Plastic I',
     'Plastic II',
     'Plastic III',
     'Plastic Elite',
-    'Plastic Elite Master',
     'Legendary Wood',
-    'Legendary Wood Master',
-    'Supreme Legendary Wood',
     'Garb Salad',
-    'Master Garbian I',
-    'Master Garbian II',
+    'Master Garbian',
     'Master Garbian Elite',
     'Low-Key Dirty',
 ]
