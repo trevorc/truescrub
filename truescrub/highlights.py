@@ -159,18 +159,23 @@ def get_skill_changes_between_rounds(skill_db, round_range: (int, int)) \
     AND earlier_ssh.round_id =
         ( SELECT MAX(ssh_before.round_id)
           FROM season_skill_history ssh_before
-          WHERE ssh_before.round_id <= ?
+          WHERE ssh_before.round_id < ?
           AND ssh_before.player_id = players.player_id
         )
+    JOIN rounds earlier_round
+    ON earlier_ssh.round_id = earlier_round.round_id
     JOIN season_skill_history later_ssh
     ON players.player_id = later_ssh.player_id
     AND later_ssh.round_id =
-        ( SELECT MIN(ssh_after.round_id)
+        ( SELECT MAX(ssh_after.round_id)
           FROM season_skill_history ssh_after
-          WHERE ssh_after.round_id >= ?
+          WHERE ssh_after.round_id BETWEEN ? AND ?
           AND ssh_after.player_id = players.player_id
         )
-    ''', round_range)
+    JOIN rounds later_round
+    ON later_ssh.round_id = later_round.round_id
+    AND earlier_round.season_id = later_round.season_id
+    ''', (round_range[0], round_range[0], round_range[1]))
 
     skill_changes = [
         (
