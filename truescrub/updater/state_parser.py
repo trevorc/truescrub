@@ -75,7 +75,10 @@ def parse_game_state(
                 team_steamids, operator.itemgetter(0))}
     if len(team_members) != 2:
         return
-    lose_team = next(iter(set(team_members.keys()) - {win_team}))
+    lose_team = next(
+            team_name
+            for team_name in team_members
+            if team_name != win_team)
 
     mvp = parse_mvp(state)
 
