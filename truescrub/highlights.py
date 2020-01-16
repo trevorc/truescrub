@@ -11,17 +11,7 @@ def get_highlights(skill_db, day: datetime.datetime) -> dict:
     if rounds_played == 0:
         raise StopIteration
 
-    lowest_rating, highest_rating = get_rating_extremes_between_rounds(
-            skill_db, round_range)
-
-    try:
-        most_mvps = get_player_with_most_mvps_between_rounds(
-                skill_db, round_range)
-    except StopIteration:
-        most_mvps = None
-
-    skill_group_changes = get_skill_changes_between_rounds(
-            skill_db, round_range)
+    player_ratings = get_player_ratings_between_rounds(skill_db, round_range)
     most_played_maps = get_most_played_maps_between_rounds(
             skill_db, round_range)
     skill_group_changes = [
@@ -37,18 +27,17 @@ def get_highlights(skill_db, day: datetime.datetime) -> dict:
                 'skill_group': next_skill.skill_group,
             },
         }
-        for (previous_skill, next_skill) in skill_group_changes
+        for (previous_skill, next_skill)
+        in get_skill_changes_between_rounds(skill_db, round_range)
     ]
     time_window = [day.isoformat(),
                    (day + datetime.timedelta(days=1)).isoformat()]
     return {
         'time_window': time_window,
         'rounds_played': rounds_played,
-        'lowest_rating': lowest_rating,
-        'highest_rating': highest_rating,
-        'season_skill_group_changes': skill_group_changes,
         'most_played_maps': most_played_maps,
-        'most_mvps': most_mvps,
+        'player_ratings': player_ratings,
+        'season_skill_group_changes': skill_group_changes,
     }
 
 
@@ -65,9 +54,9 @@ def get_most_played_maps_between_rounds(
     ''', round_range))
 
 
-def get_rating_extremes_between_rounds(skill_db, round_range: (int, int)) \
+def get_player_ratings_between_rounds(skill_db, round_range: (int, int)) \
         -> (dict, dict):
-    rating_extreme_rows = execute(skill_db, '''
+    rating_details = execute(skill_db, '''
     WITH components AS (
             SELECT rc.player_id
                  , AVG(rc.kill_rating) AS average_kills
@@ -75,6 +64,7 @@ def get_rating_extremes_between_rounds(skill_db, round_range: (int, int)) \
                  , AVG(rc.damage_rating) AS average_damage
                  , AVG(rc.kas_rating) AS average_kas
                  , COUNT(*) AS rounds_played
+                 , SUM(rc.mvp_rating) AS total_mvps
             FROM rating_components rc
             WHERE rc.round_id BETWEEN ? AND ?
             GROUP BY rc.player_id
@@ -96,52 +86,36 @@ def get_rating_extremes_between_rounds(skill_db, round_range: (int, int)) \
          , ir.average_damage
          , ir.average_kas
          , ir.rounds_played
+         , ir.total_mvps
     FROM players
     JOIN impact_ratings ir
     ON   players.player_id = ir.player_id
-    AND  ir.rating IN (
-        (SELECT MIN(rating) FROM impact_ratings),
-        (SELECT MAX(rating) FROM impact_ratings)
-    )
     '''.format(*COEFFICIENTS), round_range)
 
-    rating_extremes = [
+    player_ratings = [
         {
             'player_id': rating_row[0],
             'steam_name': rating_row[1],
             'impact_rating': rating_row[2],
-            'average_kills': rating_row[3],
-            'average_deaths': rating_row[4],
-            'average_damage': rating_row[5],
-            'average_kas': rating_row[6],
+            'rating_details': {
+                'average_kills': rating_row[3],
+                'average_deaths': rating_row[4],
+                'average_damage': rating_row[5],
+                'average_kas': rating_row[6],
+                'total_kills': int(rating_row[3] * rating_row[7]),
+                'total_deaths': int(rating_row[4] * rating_row[7]),
+                'total_damage': int(rating_row[5] * rating_row[7]),
+                'kdr': rating_row[3] / rating_row[4],
+            },
             'rounds_played': rating_row[7],
+            'mvps': rating_row[8],
         }
-        for rating_row in rating_extreme_rows
+        for rating_row in rating_details
     ]
-    rating_extremes.sort(key=operator.itemgetter('impact_rating'))
+    player_ratings.sort(key=operator.itemgetter('impact_rating'),
+                        reverse=True)
 
-    return rating_extremes[0], rating_extremes[-1]
-
-
-def get_player_with_most_mvps_between_rounds(
-        skill_db, round_range: (int, int)) -> dict:
-    mvp = execute_one(skill_db, '''
-    SELECT players.player_id
-         , players.steam_name
-         , COUNT(*) AS mvps
-    FROM players
-    JOIN rounds
-    ON players.player_id = rounds.mvp
-    WHERE rounds.round_id BETWEEN ? AND ?
-    GROUP BY players.player_id
-           , players.steam_name
-    ORDER BY mvps DESC
-    ''', round_range)
-    return {
-        'player_id': mvp[0],
-        'steam_name': mvp[1],
-        'mvps': mvp[2],
-    }
+    return player_ratings
 
 
 def get_skill_changes_between_rounds(skill_db, round_range: (int, int)) \
