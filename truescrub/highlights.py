@@ -54,6 +54,21 @@ def get_most_played_maps_between_rounds(
     ''', round_range))
 
 
+def make_player_rating(player, rating_details, rounds_played, mvps):
+    return {
+        'player_id': player.player_id,
+        'steam_name': player.steam_name,
+        'impact_rating': player.impact_rating,
+        'previous_skill': {
+            'mmr': player.mmr,
+            'skill_group': player.skill_group,
+        },
+        'rating_details': rating_details,
+        'rounds_played': rounds_played,
+        'mvps': mvps,
+    }
+
+
 def get_player_ratings_between_rounds(skill_db, round_range: (int, int)) \
         -> (dict, dict):
     rating_details = execute(skill_db, '''
@@ -77,6 +92,19 @@ def get_player_ratings_between_rounds(skill_db, round_range: (int, int)) \
                  + {} AS rating
                  , c.*
             FROM components c
+        ), starting_skills AS (
+            SELECT ssh.player_id
+                 , ssh.skill_mean
+                 , ssh.skill_stdev
+            FROM season_skill_history ssh
+            JOIN ( SELECT ssh2.player_id
+                        , MAX(ssh2.round_id) AS max_round_id
+                   FROM season_skill_history ssh2
+                   WHERE ssh2.round_id < ?
+                   GROUP BY ssh2.player_id
+               ) ms
+               ON ms.player_id = ssh.player_id
+               AND ssh.round_id = ms.max_round_id
         )
     SELECT players.player_id
          , players.steam_name
@@ -87,30 +115,31 @@ def get_player_ratings_between_rounds(skill_db, round_range: (int, int)) \
          , ir.average_kas
          , ir.rounds_played
          , ir.total_mvps
+         , s.skill_mean
+         , s.skill_stdev
     FROM players
     JOIN impact_ratings ir
     ON   players.player_id = ir.player_id
-    '''.format(*COEFFICIENTS), round_range)
+    LEFT JOIN starting_skills s
+    ON   players.player_id = s.player_id
+    '''.format(*COEFFICIENTS), (round_range[0], round_range[1], round_range[0]))
 
     player_ratings = [
-        {
-            'player_id': rating_row[0],
-            'steam_name': rating_row[1],
-            'impact_rating': rating_row[2],
-            'rating_details': {
-                'average_kills': rating_row[3],
-                'average_deaths': rating_row[4],
-                'average_damage': rating_row[5],
-                'average_kas': rating_row[6],
-                'total_kills': int(rating_row[3] * rating_row[7]),
-                'total_deaths': int(rating_row[4] * rating_row[7]),
-                'total_damage': int(rating_row[5] * rating_row[7]),
-                'kdr': rating_row[3] / rating_row[4],
-            },
-            'rounds_played': rating_row[7],
-            'mvps': rating_row[8],
-        }
-        for rating_row in rating_details
+        make_player_rating(
+                Player(player_id, steam_name,
+                       skill_mean, skill_stdev, impact_rating), {
+                    'average_kills': average_kills,
+                    'average_deaths': average_deaths,
+                    'average_damage': average_damage,
+                    'total_kills': int(average_kills * rounds_played),
+                    'total_deaths': int(average_deaths * rounds_played),
+                    'total_damage': int(average_damage * rounds_played),
+                    'kdr': average_kills / average_deaths,
+                }, rounds_played, mvps)
+        for player_id, steam_name, impact_rating,
+            average_kills, average_deaths, average_damage, average_kas,
+            rounds_played, mvps, skill_mean, skill_stdev
+        in rating_details
     ]
     player_ratings.sort(key=operator.itemgetter('impact_rating'),
                         reverse=True)
