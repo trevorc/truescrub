@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 import re
 import os
-import sys
 import json
 import math
+import time
 import logging
 import datetime
 import argparse
 import operator
 import itertools
+import functools
 
 import zmq
 import flask
@@ -54,6 +55,18 @@ def send_updater_message(**message):
         raise ValueError('missing "command"')
     zmq_socket.send_json(message, flags=zmq.NOBLOCK)
     logger.debug('sent "%s" message', repr(message))
+
+
+@app.before_request
+def start_timer():
+    g.start_time = time.time()
+
+
+@app.after_request
+def end_timer(response):
+    response_time = '%.2fms' % (1000 * (time.time() - g.start_time))
+    response.headers['X-Response-Time'] = response_time
+    return response
 
 
 @app.before_request
