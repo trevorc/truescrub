@@ -65,7 +65,7 @@ def start_timer():
 @app.after_request
 def end_timer(response):
     response_time = '%.2fms' % (1000 * (time.time() - g.start_time))
-    response.headers['X-Response-Time'] = response_time
+    response.headers['X-Processing-Time'] = response_time
     return response
 
 
@@ -138,6 +138,40 @@ def highlights(year, month, day, hour, minute, second, tz):
         return flask.make_response(
                 'No rounds on {}\n'.format(date.isoformat()), 404)
 
+
+def make_thin_player_viewmodel(player: Player) -> dict:
+    return {
+        'player_id': player.player_id,
+        'steam_name': player.steam_name,
+        'skill_group': player.skill_group,
+        'mmr': player.mmr,
+    }
+
+
+@app.route('/api/matchmaking/latest', methods={'GET'})
+def latest_matchmaking_top_result():
+    try:
+        limit = int(request.args.get('limit', 1))
+    except ValueError:
+        return flask.make_response('Invalid limit\n', 400)
+    seasons = db.get_season_range(g.conn)
+    if len(seasons) == 0:
+        return flask.make_response('No seasons found\n', 404)
+    selected_players = db.get_players_in_last_round(g.conn)
+    players, matches = compute_matchmaking(seasons[-1], selected_players)
+
+    results = list(itertools.islice((
+        {
+            'team1': [make_thin_player_viewmodel(player)
+                      for player in match['team1']],
+            'team2': [make_thin_player_viewmodel(player)
+                      for player in match['team2']],
+            'quality': match['quality'],
+            'team1_win_probability': match['team1_win_probability'],
+            'team2_win_probability': match['team2_win_probability'],
+        } for match in matches
+    ), limit))
+    return flask.jsonify(results)
 
 def make_player_viewmodel(player: Player):
     lower_bound, upper_bound = estimated_skill_range(player.skill)
@@ -268,25 +302,30 @@ def matchmaking(season_id):
     return matchmaking0(seasons, selected_players, season_id)
 
 
-def matchmaking0(seasons: [int], selected_players: {int}, season_id: int = None,
-                 latest: bool = False):
+def compute_matchmaking(season_id, selected_players):
     if len(selected_players) > 10:
-        return flask.make_response(
-                'Cannot compute matches for more than 10 players', 403)
-
+        raise ValueError('Cannot compute matches for more than 10 players')
     players = db.get_all_players(g.conn) \
         if season_id is None \
         else db.get_season_players(g.conn, season_id)
     players.sort(key=operator.attrgetter('mmr'), reverse=True)
-
-    teams = compute_matches([
+    matches = compute_matches([
         player for player in players if player.player_id in selected_players
     ]) if len(selected_players) > 0 else None
+    return players, matches
+
+
+def matchmaking0(seasons: [int], selected_players: {int}, season_id: int = None,
+                 latest: bool = False):
+    try:
+        players, matches = compute_matchmaking(season_id, selected_players)
+    except ValueError as e:
+        return flask.make_response(e.args[0], 403)
 
     return flask.render_template('matchmaking.html',
                                  seasons=seasons, selected_season=season_id,
                                  selected_players=selected_players,
-                                 players=players, teams=teams, latest=latest)
+                                 players=players, teams=matches, latest=latest)
 
 
 @app.route('/profiles/<int:player_id>/team_records', methods={'GET'})
