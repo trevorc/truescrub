@@ -1,6 +1,7 @@
 import math
 import operator
 import itertools
+from typing import Iterable
 
 import trueskill
 from trueskill import Gaussian
@@ -9,7 +10,7 @@ from .models import SKILL_MEAN, SKILL_STDEV, SKILL_GROUPS, Player
 
 BETA = SKILL_STDEV * 2.0
 TAU = SKILL_STDEV / 100.0
-MAX_PLAYERS_PER_TEAM = 5
+MAX_PLAYERS_PER_TEAM = 6
 
 trueskill.setup(mu=SKILL_MEAN, sigma=SKILL_STDEV, beta=BETA, tau=TAU,
                 draw_probability=0.0)
@@ -82,11 +83,17 @@ def suggest_teams(player_skills: {int: trueskill.Rating}):
     players = frozenset(player_skills.keys())
     max_team_size = min(len(players) // 2, MAX_PLAYERS_PER_TEAM)
     min_team_size = max(1, len(players) - MAX_PLAYERS_PER_TEAM)
+    teams_seen = set()
 
     for r in range(min_team_size, max_team_size + 1):
         for team1 in itertools.combinations(players, r):
-            team1 = frozenset(team1)
-            team2 = players - team1
+            team2 = tuple(players - frozenset(team1))
+
+            if team1 in teams_seen or team2 in teams_seen:
+                continue
+            teams_seen.add(team1)
+            teams_seen.add(team2)
+
             team1_skills = [player_skills[player_id] for player_id in team1]
             team2_skills = [player_skills[player_id] for player_id in team2]
             quality = trueskill.quality((team1_skills, team2_skills))
@@ -121,7 +128,8 @@ def make_team(players_by_id, player_ids):
     return team
 
 
-def make_match(players_by_id, team1, team2, quality, p_win):
+def make_match(players_by_id, team1: Iterable[int], team2: Iterable[int],
+               quality: float, p_win: float):
     team1 = make_team(players_by_id, team1)
     team2 = make_team(players_by_id, team2)
 
@@ -146,4 +154,4 @@ def compute_matches(players: [Player]):
                for suggestion in suggest_teams(player_skills)]
 
     matches.sort(key=operator.itemgetter('quality'), reverse=True)
-    return list(uniquify(matches))
+    return uniquify(matches)

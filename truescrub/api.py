@@ -18,7 +18,8 @@ from . import db
 from .highlights import get_highlights
 from .matchmaking import (
     skill_group_ranges, compute_matches, make_player_skills,
-    match_quality, team1_win_probability, estimated_skill_range)
+    match_quality, team1_win_probability, estimated_skill_range,
+    MAX_PLAYERS_PER_TEAM)
 from .models import Player
 
 app = flask.Flask(__name__)
@@ -29,7 +30,7 @@ LOG_LEVEL = os.environ.get('TRUESCRUB_LOG_LEVEL', 'DEBUG')
 UPDATER_HOST = os.environ.get('TRUESCRUB_UPDATER_HOST', '127.0.0.1')
 UPDATER_PORT = os.environ.get('TRUESCRUB_UPDATER_PORT', 5555)
 TIMEZONE_PATTERN = re.compile(r'([+-])(\d\d):00')
-
+MAX_MATCHES = 50
 
 logging.basicConfig(format='%(asctime)s.%(msecs).3dZ\t'
                            '%(levelname)s\t%(message)s',
@@ -303,8 +304,10 @@ def matchmaking(season_id):
 
 
 def compute_matchmaking(season_id, selected_players):
-    if len(selected_players) > 10:
-        raise ValueError('Cannot compute matches for more than 10 players')
+    max_players = MAX_PLAYERS_PER_TEAM * 2
+    if len(selected_players) > max_players:
+        raise ValueError('Cannot compute matches for more than '
+                         '{} players'.format(max_players))
     players = db.get_all_players(g.conn) \
         if season_id is None \
         else db.get_season_players(g.conn, season_id)
@@ -312,7 +315,7 @@ def compute_matchmaking(season_id, selected_players):
     matches = compute_matches([
         player for player in players if player.player_id in selected_players
     ]) if len(selected_players) > 0 else None
-    return players, matches
+    return players, itertools.islice(matches, MAX_MATCHES)
 
 
 def matchmaking0(seasons: [int], selected_players: {int}, season_id: int = None,
