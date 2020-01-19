@@ -312,10 +312,14 @@ def compute_matchmaking(season_id, selected_players):
         if season_id is None \
         else db.get_season_players(g.conn, season_id)
     players.sort(key=operator.attrgetter('mmr'), reverse=True)
-    matches = compute_matches([
-        player for player in players if player.player_id in selected_players
-    ]) if len(selected_players) > 0 else None
-    return players, itertools.islice(matches, MAX_MATCHES)
+    if len(selected_players) > 0:
+        matches = itertools.islice(compute_matches([
+            player for player in players if player.player_id in selected_players
+        ]), MAX_MATCHES)
+    else:
+        matches = None
+
+    return players, matches
 
 
 def matchmaking0(seasons: [int], selected_players: {int}, season_id: int = None,
