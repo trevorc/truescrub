@@ -2,7 +2,7 @@ import datetime
 import operator
 
 from .db import execute_one, execute, COEFFICIENTS
-from .models import Player
+from .models import Player, SKILL_STDEV, SKILL_MEAN
 
 
 def get_highlights(skill_db, day: datetime.datetime) -> dict:
@@ -103,8 +103,8 @@ def get_player_ratings_between_rounds(skill_db, round_range: (int, int)) \
                    WHERE ssh2.round_id < ?
                    GROUP BY ssh2.player_id
                ) ms
-               ON ms.player_id = ssh.player_id
-               AND ssh.round_id = ms.max_round_id
+            ON ms.player_id = ssh.player_id
+            AND ssh.round_id = ms.max_round_id
         )
     SELECT players.player_id
          , players.steam_name
@@ -157,16 +157,6 @@ def get_skill_changes_between_rounds(skill_db, round_range: (int, int)) \
          , later_ssh.skill_mean    AS later_skill_mean
          , later_ssh.skill_stdev   AS later_skill_stdev
     FROM players
-    JOIN season_skill_history earlier_ssh
-    ON players.player_id = earlier_ssh.player_id
-    AND earlier_ssh.round_id =
-        ( SELECT MAX(ssh_before.round_id)
-          FROM season_skill_history ssh_before
-          WHERE ssh_before.round_id < ?
-          AND ssh_before.player_id = players.player_id
-        )
-    JOIN rounds earlier_round
-    ON earlier_ssh.round_id = earlier_round.round_id
     JOIN season_skill_history later_ssh
     ON players.player_id = later_ssh.player_id
     AND later_ssh.round_id =
@@ -177,12 +167,25 @@ def get_skill_changes_between_rounds(skill_db, round_range: (int, int)) \
         )
     JOIN rounds later_round
     ON later_ssh.round_id = later_round.round_id
-    AND earlier_round.season_id = later_round.season_id
-    ''', (round_range[0], round_range[0], round_range[1]))
+    LEFT JOIN season_skill_history earlier_ssh
+    ON players.player_id = earlier_ssh.player_id
+    AND earlier_ssh.round_id =
+        ( SELECT MAX(ssh_before.round_id)
+          FROM season_skill_history ssh_before
+          JOIN rounds rounds_before
+          ON ssh_before.round_id = rounds_before.round_id
+          WHERE ssh_before.round_id < ?
+          AND ssh_before.player_id = players.player_id
+          AND rounds_before.season_id = later_round.season_id
+        )
+    ''', (round_range[0], round_range[1], round_range[0]))
 
     skill_changes = [
         (
-            Player(player_id, steam_name, earlier_mean, earlier_stdev, 0.0),
+            Player(player_id, steam_name,
+                   SKILL_MEAN if earlier_mean is None else earlier_mean,
+                   SKILL_STDEV if earlier_stdev is None else earlier_stdev,
+                   0.0),
             Player(player_id, steam_name, later_mean, later_stdev, 0.0),
         )
         for player_id, steam_name, earlier_mean, earlier_stdev,
@@ -193,8 +196,7 @@ def get_skill_changes_between_rounds(skill_db, round_range: (int, int)) \
 
     return [
         (previous_skill, next_skill)
-        for previous_skill, next_skill
-        in skill_changes
+        for previous_skill, next_skill in skill_changes
         if previous_skill.skill_group != next_skill.skill_group
     ]
 

@@ -9,7 +9,6 @@ import datetime
 import argparse
 import operator
 import itertools
-import functools
 
 import zmq
 import flask
@@ -149,7 +148,7 @@ def make_thin_player_viewmodel(player: Player) -> dict:
 
 
 @app.route('/api/matchmaking/latest', methods={'GET'})
-def latest_matchmaking_top_result():
+def latest_matchmaking_api():
     try:
         limit = int(request.args.get('limit', 1))
     except ValueError:
@@ -172,6 +171,7 @@ def latest_matchmaking_top_result():
         } for match in matches
     ), limit))
     return flask.jsonify(results)
+
 
 def make_player_viewmodel(player: Player):
     lower_bound, upper_bound = estimated_skill_range(player.skill)
