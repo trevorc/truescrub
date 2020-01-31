@@ -174,6 +174,14 @@ def latest_matchmaking_api():
     return flask.jsonify(results)
 
 
+@app.route('/api/leaderboard/season/<int:season>', methods={'GET'})
+def leaderboard_api(season):
+    players = [make_thin_player_viewmodel(player)
+               for player in db.get_season_players(g.conn, season)]
+    players.sort(key=operator.itemgetter('mmr'), reverse=True)
+    return {'players': players}
+
+
 def make_player_viewmodel(player: Player):
     lower_bound, upper_bound = estimated_skill_range(player.skill)
     min_width = 0.1
