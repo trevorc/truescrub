@@ -78,6 +78,7 @@ def get_player_ratings_between_rounds(skill_db, round_range: (int, int)) \
                  , AVG(rc.death_rating) AS average_deaths
                  , AVG(rc.damage_rating) AS average_damage
                  , AVG(rc.kas_rating) AS average_kas
+                 , AVG(rc.assists_rating) AS average_assists
                  , COUNT(*) AS rounds_played
                  , SUM(rc.mvp_rating) AS total_mvps
             FROM rating_components rc
@@ -113,6 +114,7 @@ def get_player_ratings_between_rounds(skill_db, round_range: (int, int)) \
          , -ir.average_deaths AS average_deaths
          , ir.average_damage
          , ir.average_kas
+         , ir.average_assists
          , ir.rounds_played
          , ir.total_mvps
          , s.skill_mean
@@ -131,14 +133,16 @@ def get_player_ratings_between_rounds(skill_db, round_range: (int, int)) \
                     'average_kills': average_kills,
                     'average_deaths': average_deaths,
                     'average_damage': average_damage,
+                    'average_assists': average_assists,
                     'total_kills': int(average_kills * rounds_played),
                     'total_deaths': int(average_deaths * rounds_played),
                     'total_damage': int(average_damage * rounds_played),
+                    'total_assists': int(average_assists * rounds_played),
                     'kdr': average_kills / average_deaths,
-                }, rounds_played, mvps)
+                }, rounds_played, int(mvps))
         for player_id, steam_name, impact_rating,
             average_kills, average_deaths, average_damage, average_kas,
-            rounds_played, mvps, skill_mean, skill_stdev
+            average_assists, rounds_played, mvps, skill_mean, skill_stdev
         in rating_details
     ]
     player_ratings.sort(key=operator.itemgetter('impact_rating'),

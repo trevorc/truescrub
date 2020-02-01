@@ -24,7 +24,7 @@ def parse_round_stats(state: GameStateRow) -> {int: dict}:
         int(steam_id): {
             'kills': player['state']['round_kills'],
             'assists': assist_counts[steam_id] -
-                       previous_assists.get(steam_id, 0),
+                       previous_assists.get(steam_id, assist_counts[steam_id]),
             'survived': player['state']['health'] > 0,
             'damage': player['state']['round_totaldmg'],
         }

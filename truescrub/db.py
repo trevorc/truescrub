@@ -999,6 +999,7 @@ def initialize_skill_db(skill_db):
          , (rs.survived - 1.0) AS death_rating
          , rs.damage AS damage_rating
          , ((rs.kills OR rs.survived OR rs.assists) * 1.0) AS kas_rating
+         , rs.assists AS assists_rating
     FROM round_stats rs
     JOIN rounds r ON rs.round_id = r.round_id;
     ''')
