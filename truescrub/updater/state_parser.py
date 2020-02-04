@@ -13,18 +13,10 @@ def parse_round_stats(state: GameStateRow) -> {int: dict}:
         for steam_id, player in state.allplayers.items()
     }
 
-    previous_assists = {
-        steam_id: player['match_stats']['assists']
-        for steam_id, player in state.previous_allplayers.items()
-        if 'assists' in state.previous_allplayers.get(
-                steam_id, {}).get('match_stats', {})
-    }
-
     return {
         int(steam_id): {
             'kills': player['state']['round_kills'],
-            'assists': assist_counts[steam_id] -
-                       previous_assists.get(steam_id, assist_counts[steam_id]),
+            'match_assists': assist_counts[steam_id],
             'survived': player['state']['health'] > 0,
             'damage': player['state']['round_totaldmg'],
         }
@@ -108,6 +100,7 @@ def parse_game_state(
         'mvp': mvp,
         'map_name': state.map_name,
         'stats': round_stats,
+        'last_round': state.map_phase == 'gameover',
     }
 
     return new_round, new_player_states

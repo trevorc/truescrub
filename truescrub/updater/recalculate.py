@@ -71,6 +71,20 @@ def extract_game_states(game_db, game_state_range):
     return parse_game_states(game_states, season_ids)
 
 
+def compute_assists(rounds):
+    last_assists = {}
+
+    # Assumes that players aren't in concurrent matches
+    for rnd in rounds:
+        for player_id, round_stats in rnd['stats'].items():
+            assists = round_stats['match_assists'] - \
+                      last_assists.get(player_id, 0)
+            round_stats['assists'] = assists
+            last_assists[player_id] = round_stats['match_assists']
+        if rnd['last_round']:
+            last_assists = {}
+
+
 def compute_rounds(skill_db, rounds, player_states):
     insert_players(skill_db, player_states)
     round_teams = {player_state['teammates'] for player_state in player_states}
@@ -92,6 +106,7 @@ def compute_rounds(skill_db, rounds, player_states):
     ]
     round_range = db.insert_rounds(skill_db, fixed_rounds)
 
+    compute_assists(rounds)
     round_stats = {
         rnd['game_state_id']: rnd['stats']
         for rnd in rounds

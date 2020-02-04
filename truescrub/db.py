@@ -100,6 +100,7 @@ def get_game_states(game_db, game_state_range) -> Iterator[GameStateRow]:
     return itertools.starmap(GameStateRow, execute(game_db, '''
     SELECT game_state_id
          , json_extract(game_state, '$.map.name') AS map_name
+         , json_extract(game_state, '$.map.phase') AS map_phase
          , json_extract(game_state, '$.round.win_team') AS win_team
          , json_extract(game_state, '$.provider.timestamp') AS timestamp
          , json_extract(game_state, '$.allplayers') AS allplayers
