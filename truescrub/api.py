@@ -13,6 +13,7 @@ import itertools
 import zmq
 import flask
 from flask import g, request
+from werkzeug.middleware.shared_data import SharedDataMiddleware
 
 from . import db
 from .highlights import get_highlights
@@ -446,6 +447,11 @@ def team_details(team_id):
             member_names=member_names, members=members,
             rounds_won=rounds_won, rounds_lost=rounds_lost,
             opponent_records=opponent_records)
+
+
+app.wsgi_app = SharedDataMiddleware(app.wsgi_app, {
+    '/htdocs': (__name__, 'htdocs'),
+}, cache_timeout=3600 * 24 * 14)
 
 
 arg_parser = argparse.ArgumentParser()

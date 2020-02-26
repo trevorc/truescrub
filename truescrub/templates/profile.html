@@ -90,8 +90,8 @@
 
 <p><a href="/profiles/{{ player.player_id }}/team_records">Team records</a></p>
 
-<script type="application/javascript" src="https://code.highcharts.com/8.0.0/highcharts.js"></script>
-<script type="application/javascript" src="https://code.highcharts.com/8.0.0/highcharts-more.js"></script>
+<script type="application/javascript" src="/htdocs/vendor/highcharts-8.0.0.js"></script>
+<script type="application/javascript" src="/htdocs/vendor/highcharts-more-8.0.0.js"></script>
 
 <script type="application/javascript">
   (function() {
@@ -157,7 +157,7 @@
           name: 'Confidence Interval',
           data: confidenceIntervals,
           animation: false,
-          type: 'arearange',
+          type: 'areasplinerange',
           lineWidth: 0,
           linkedTo: ':previous',
           color: Highcharts.getOptions().colors[0],
