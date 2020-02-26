@@ -865,6 +865,70 @@ def replace_season_skill_history(
         '''.format(placeholder), params)
 
 
+def make_skill_history(player_id: int, skill_history):
+    return {
+        date: Player(player_id, '', skill_mean, skill_stdev, 0.0)
+        for date, skill_mean, skill_stdev
+        in skill_history
+    }
+
+
+def adapt_timezone(tz: datetime.timezone) -> str:
+    utcoffset = tz.utcoffset(None)
+    signum = '+' if utcoffset.days == 0 else '-'
+    hours = utcoffset.seconds // 3600
+    minutes = utcoffset.seconds % 3600 // 60
+    return f'{signum}{hours:02}:{minutes:02}'
+
+
+def get_overall_skill_history(skill_db, player_id: int, tz: datetime.timezone) \
+        -> {str: Player}:
+    tz_offset = adapt_timezone(tz)
+    skill_history = execute(skill_db, '''
+    SELECT DISTINCT date(created_at, ?) AS skill_date
+         , LAST_VALUE(osh.skill_mean) OVER (
+             PARTITION BY date(created_at, ?)
+             ORDER BY osh.round_id
+             RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING
+         ) AS skill_mean
+         , LAST_VALUE(osh.skill_stdev) OVER (
+             PARTITION BY date(created_at, ?)
+             ORDER BY osh.round_id
+             RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING
+        ) AS skill_stdev
+    FROM overall_skill_history osh
+    JOIN rounds
+    ON osh.round_id = rounds.round_id
+    WHERE osh.player_id = ?
+    ''', (tz_offset, tz_offset, tz_offset, player_id))
+    return make_skill_history(player_id, skill_history)
+
+
+def get_season_skill_history(skill_db, season: int, player_id: int,
+                             tz: datetime.timezone) \
+        -> {str: Player}:
+    tz_offset = adapt_timezone(tz)
+    skill_history = execute(skill_db, '''
+    SELECT DISTINCT date(created_at, ?) AS skill_date
+         , LAST_VALUE(ssh.skill_mean) OVER (
+             PARTITION BY date(created_at, ?)
+             ORDER BY ssh.round_id
+             RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING
+         ) AS skill_mean
+         , LAST_VALUE(ssh.skill_stdev) OVER (
+             PARTITION BY date(created_at, ?)
+             ORDER BY ssh.round_id
+             RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING
+        ) AS skill_stdev
+    FROM season_skill_history ssh
+    JOIN rounds
+    ON ssh.round_id = rounds.round_id
+    AND season_id = ?
+    WHERE ssh.player_id = ?
+    ''', (tz_offset, tz_offset, tz_offset, season, player_id))
+    return make_skill_history(player_id, skill_history)
+
+
 def get_season_range(skill_db) -> [int]:
     [season_count] = execute_one(skill_db, 'SELECT COUNT(*) FROM seasons')
     return list(range(1, season_count + 1))

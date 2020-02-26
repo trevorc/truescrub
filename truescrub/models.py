@@ -5,6 +5,10 @@ from typing import Optional
 
 import trueskill
 
+
+__all__ = ['SKILL_MEAN', 'SKILL_STDEV', 'SKILL_GROUPS',
+           'Player', 'ThinPlayer', 'SkillHistory', 'RoundRow', 'GameStateRow']
+
 SKILL_MEAN = 1000.0
 SKILL_STDEV = SKILL_MEAN / 4.0
 SKILL_GROUP_SPACING = SKILL_STDEV * 0.5
@@ -29,10 +33,10 @@ SKILL_GROUPS = ((float('-inf'), SKILL_GROUP_NAMES[0]),) + tuple(
 )
 
 
-def skill_group_name(mmr: float) -> str:
+def find_skill_group(mmr: float) -> int:
     group_ranks = [group[0] for group in SKILL_GROUPS]
     index = bisect.bisect(group_ranks, mmr)
-    return SKILL_GROUPS[index - 1][1]
+    return index - 1
 
 
 class ThinPlayer(object):
@@ -46,7 +50,7 @@ class ThinPlayer(object):
 class Player(object):
     __slots__ = (
         'player_id', 'steam_name', 'skill',
-        'mmr', 'skill_group', 'impact_rating'
+        'mmr', 'skill_group_index', 'impact_rating'
     )
 
     def __init__(self, player_id: int, steam_name: str,
@@ -55,8 +59,18 @@ class Player(object):
         self.steam_name = steam_name
         self.skill = trueskill.Rating(skill_mean, skill_stdev)
         self.mmr = int(self.skill.mu - self.skill.sigma * 2)
-        self.skill_group = skill_group_name(self.mmr)
+        self.skill_group_index = find_skill_group(self.mmr)
         self.impact_rating = impact_rating
+
+    def __lt__(self, other):
+        return self.player_id < other.player_id
+
+    def __repr__(self):
+        return f'<Player "{self.steam_name}">'
+
+    @property
+    def skill_group(self):
+        return SKILL_GROUPS[self.skill_group_index][1]
 
 
 class SkillHistory(object):

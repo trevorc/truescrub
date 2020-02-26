@@ -8,17 +8,19 @@
   <p>
     Season
     {% if selected_season %}
-      <a href="{{ url_prefix }}">all</a>
+      <span class="season-selector"><a href="{{ url_prefix }}">all</a></span>
     {% else %}
       <strong>all</strong>
     {% endif %}
     {% for season in season_list %}
       |
-      {% if selected_season == season %}
+      <span class="season-selector">
+      {%- if selected_season == season -%}
         <strong>{{ season }}</strong>
-      {% else %}
+      {%- else -%}
         <a href="{{ url_prefix }}/season/{{ season }}">{{ season }}</a>
-      {% endif %}
+      {%- endif -%}
+      </span>
     {% endfor %}
   </p>
 {%- endmacro %}
