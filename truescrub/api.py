@@ -450,7 +450,7 @@ def team_details(team_id):
 
 
 app.wsgi_app = SharedDataMiddleware(app.wsgi_app, {
-    '/htdocs': (__name__, 'htdocs'),
+    '/htdocs': ('truescrub', 'htdocs'),
 }, cache_timeout=3600 * 24 * 14)
 
 
