@@ -4,7 +4,7 @@ import logging
 import datetime
 import operator
 import itertools
-from typing import FrozenSet, Iterator
+from typing import FrozenSet, Iterator, Optional
 
 import trueskill
 
@@ -879,6 +879,36 @@ def adapt_timezone(tz: datetime.timezone) -> str:
     hours = utcoffset.seconds // 3600
     minutes = utcoffset.seconds % 3600 // 60
     return f'{signum}{hours:02}:{minutes:02}'
+
+
+def get_impact_ratings_by_day(
+        skill_db, player_id: int, tz: datetime.timezone,
+        season_id: Optional[int] = None) \
+        -> {str: float}:
+    tz_offset = adapt_timezone(tz)
+
+    format_args = list(COEFFICIENTS)
+    params = [tz_offset, player_id]
+    if season_id is not None:
+        format_args.append('AND r.season_id = ?')
+        params.append(season_id)
+    else:
+        format_args.append('')
+
+    ratings = execute(skill_db, '''
+    SELECT date(r.created_at, ?) as round_date
+         , {} * AVG(rc.kill_rating)
+         + {} * AVG(rc.death_rating)
+         + {} * AVG(rc.damage_rating)
+         + {} * AVG(rc.kas_rating)
+         + {} AS rating
+     FROM rating_components rc
+     JOIN rounds r on rc.round_id = r.round_id
+     WHERE rc.player_id = ?
+     {}
+     GROUP BY round_date;
+     '''.format(*format_args), params)
+    return {date: rating for date, rating in ratings}
 
 
 def get_overall_skill_history(skill_db, player_id: int, tz: datetime.timezone) \

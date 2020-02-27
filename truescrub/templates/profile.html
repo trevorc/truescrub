@@ -82,8 +82,12 @@
 
 <h2>Skill History</h2>
 
-<div id="skill-history-season-selector">
-  {{ macros.season_menu("#", current_season, seasons) }}
+<div style="width: 36em; display: flex; justify-content: space-between;">
+  <div id="skill-history-season-selector">
+    {{ macros.season_menu("#", current_season, seasons) }}
+  </div>
+
+  <input id="toggle-rating" type="button" value="Show impact" />
 </div>
 
 <div id="skill-history" style="width: 36em; height: 18em;"></div>
@@ -100,9 +104,29 @@
     const seasonSelectors = document
       .getElementById('skill-history-season-selector')
       .querySelectorAll('span.season-selector');
+    const ratingToggle = document
+      .getElementById('toggle-rating');
     const SKILL_GROUPS = ({{ skill_groups|tojson(indent=2) }});
-    let selectedSeason = ({{ current_season }});
     SKILL_GROUPS[0][0] = 0;
+    const fetchCache = new Map();
+
+    let selectedSeason = ({{ current_season }});
+    let skillChart = null;
+
+    function getJson(url) {
+      if (fetchCache.has(url)) {
+        const cached = fetchCache.get(url);
+        return new Promise(() => cached);
+      }
+      return window.fetch(url).then(response => {
+        if (!response.ok) {
+          throw Error(response.statusText);
+        }
+        const responseJson = response.json();
+        fetchCache.set(url, responseJson);
+        return responseJson;
+      })
+    }
 
 
     function findSkillGroup(mmr) {
@@ -110,7 +134,7 @@
       return index < 0 ? SKILL_GROUPS[SKILL_GROUPS.length - 1][1] : SKILL_GROUPS[index - 1][1];
     }
 
-    function formatChart(confidenceIntervals, mmrs) {
+    function formatChart(confidenceIntervals, mmrs, ratings) {
       const skillGroups = Object.fromEntries(SKILL_GROUPS);
 
       return {
@@ -130,18 +154,36 @@
           type: 'datetime'
         },
 
-        yAxis: {
+        yAxis: [{
           title: {
             text: null
           },
           tickPositions: Object.keys(skillGroups).map(key => parseInt(key))
+        }, {
+          opposite: true,
+          secondary: true,
+          title: {
+            text: null
+          },
+          min: 0,
+          max: 2
+        }],
+
+        plotOptions: {
+          scatter: {
+            marker: {
+              symbol: 'circle',
+              radius: 2,
+              fillColor: '#692429'
+            }
+          }
         },
 
         series: [{
           name: 'MMR',
           data: mmrs,
           animation: false,
-          zIndex: 1,
+          zIndex: 2,
           type: 'spline',
           marker: {
             fillColor: 'white',
@@ -169,6 +211,17 @@
           tooltip: {
             enabled: false
           }
+        }, {
+          name: 'Impact Rating',
+          data: ratings,
+          visible: false,
+          animation: false,
+          type: 'scatter',
+          zIndex: 1,
+          yAxis: 1,
+          tooltip: {
+            pointFormat: '<strong>{point.y:.2f}</strong>'
+          }
         }]
       };
     }
@@ -188,6 +241,13 @@
       ]);
     }
 
+    function makeRatings(ratingHistory) {
+      return Object.keys(ratingHistory).map(ratingDate => [
+        +new Date(ratingDate),
+        ratingHistory[ratingDate]
+      ]);
+    }
+
     function loadChart(seasonId) {
       const url = seasonId === 0
           ? '/api/profiles/{{ player.player_id }}/skill_history'
@@ -195,17 +255,11 @@
 
       const container = document.getElementById('skill-history');
 
-      window.fetch(url)
-      .then(response => {
-        if (!response.ok) {
-          throw Error(response.statusText);
-        }
-        return response.json();
-      })
-      .then(responseJson => {
+      return getJson(url).then(responseJson => {
         const confidenceIntervals = makeConfidenceIntervals(responseJson.skill_history);
         const mmrs = makeMMRs(responseJson.skill_history);
-        Highcharts.chart(container, formatChart(confidenceIntervals, mmrs));
+        const ratings = makeRatings(responseJson.rating_history);
+        skillChart = Highcharts.chart(container, formatChart(confidenceIntervals, mmrs, ratings));
       });
     }
 
@@ -230,15 +284,32 @@
         unselectSeason(selectedSeason);
         selectSeason(selection);
         selectedSeason = selection;
-        loadChart(selectedSeason);
+        loadChart(selectedSeason).then(() => toggleRatings(false));
       }
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
-      seasonSelectors.forEach(element => {
-        element.addEventListener('click', onSelectSeason);
-      });
+    function toggleRatings(showRatings) {
+      if (showRatings) {
+        ratingToggle.value = 'Hide impact';
+        skillChart.series[2].show();
+      } else {
+        ratingToggle.value = 'Show impact';
+        skillChart.series[2].hide();
+      }
+    }
 
+    function onRatingsToggle(event) {
+      if (skillChart == null) {
+        return;
+      }
+      toggleRatings(!skillChart.series[2].visible);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      seasonSelectors.forEach(element =>
+          element.addEventListener('click', onSelectSeason));
+      document.getElementById('toggle-rating')
+        .addEventListener('click', onRatingsToggle);
       loadChart({{ current_season }});
     });
   }).call(window);

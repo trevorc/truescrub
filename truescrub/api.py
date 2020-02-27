@@ -228,10 +228,12 @@ def overall_skill_history(player_id):
 
     skill_history = make_skill_history_viewmodel(
             db.get_overall_skill_history(g.conn, player_id, timezone))
+    rating_history = db.get_impact_ratings_by_day(g.conn, player_id, timezone)
 
     return {
         'player_id': player_id,
         'skill_history': skill_history,
+        'rating_history': rating_history,
     }
 
 
@@ -246,11 +248,14 @@ def player_skill_history(player_id, season):
 
     skill_history = make_skill_history_viewmodel(
             db.get_season_skill_history(g.conn, season, player_id, timezone))
+    rating_history = db.get_impact_ratings_by_day(
+            g.conn, player_id, timezone, season)
 
     return {
         'player_id': player_id,
         'season': season,
         'skill_history': skill_history,
+        'rating_history': rating_history,
     }
 
 
