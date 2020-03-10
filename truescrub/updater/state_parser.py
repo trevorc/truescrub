@@ -52,10 +52,89 @@ def parse_mvp(state: GameStateRow) -> Optional[int]:
     return mvp
 
 
-def parse_game_state(
+PRIMARY_WEAPONS = {
+    'weapon_famas',
+    'weapon_ak47',
+    'weapon_m4a1_silencer',
+    'weapon_sawedoff',
+    'weapon_ump45',
+    'weapon_p90',
+    'weapon_m4a1',
+    'weapon_mp9',
+    'weapon_nova',
+    'weapon_negev',
+    'weapon_g3sg1',
+    'weapon_mp7',
+    'weapon_mag7',
+    'weapon_ssg08',
+    'weapon_sg556',
+    'weapon_bizon',
+    'weapon_m249',
+    'weapon_galilar',
+    'weapon_scar20',
+    'weapon_aug',
+    'weapon_mac10',
+    'weapon_awp',
+    'weapon_xm1014',
+}
+
+SECONDARY_WEAPONS = {
+    'weapon_tec9',
+    'weapon_p250',
+    'weapon_usp_silencer',
+    'weapon_hkp2000',
+    'weapon_cz75a',
+    'weapon_fiveseven',
+    'weapon_elite',
+    'weapon_glock',
+    'weapon_deagle',
+    'weapon_revolver',
+}
+
+GRENADE_WEAPONS = {
+    'weapon_flashbang',
+    'weapon_smokegrenade',
+    'weapon_hegrenade',
+    'weapon_incgrenade',
+    'weapon_decoy',
+    'weapon_molotov',
+}
+
+
+def filter_weapons(allplayers, weapon_set):
+    for player_id, player in allplayers.items():
+        for weapon in player['weapons'].values():
+            if weapon['name'] in weapon_set:
+                yield int(player_id), weapon['name']
+
+
+def parse_freezetime_transition(state: GameStateRow):
+    if state.round_phase != 'live':
+        raise ValueError('Expected round_phase "live"')
+
+    round_weapons = {}
+    for player_id, player in state.allplayers.items():
+        player_weapons = round_weapons.setdefault(int(player_id), {})
+        for weapon in player['weapons'].values():
+            weapon_name = weapon['name']
+            if weapon_name in PRIMARY_WEAPONS:
+                player_weapons['primary'] = weapon_name
+            elif weapon_name in SECONDARY_WEAPONS:
+                player_weapons['secondary'] = weapon_name
+            elif weapon_name == 'weapon_taser':
+                player_weapons['taser'] = True
+            elif weapon_name in GRENADE_WEAPONS:
+                player_weapons[weapon_name[len('weapon_'):]] = True
+    return round_weapons
+
+
+def parse_roundover_transition(
         season_starts: [datetime.datetime],
         season_ids: {datetime.datetime: int},
         state: GameStateRow):
+    if state.round_phase != 'over':
+        raise ValueError('Expected round_phase "over"')
+
     win_team = state.win_team
     team_steamids = [(player['team'], int(steamid))
                      for steamid, player in state.allplayers.items()]
@@ -111,11 +190,12 @@ def parse_game_states(game_states: Iterable[GameStateRow], season_ids):
     player_states = []
     rounds = []
     max_game_state_id = 0
+
     for game_state in game_states:
-        parsed_game_state = parse_game_state(season_starts, season_ids,
-                                             game_state)
-        if parsed_game_state is not None:
-            new_round, new_player_states = parsed_game_state
+        roundover_state = parse_roundover_transition(
+                season_starts, season_ids, game_state)
+        if roundover_state is not None:
+            new_round, new_player_states = roundover_state
             rounds.append(new_round)
             player_states.extend(new_player_states)
             max_game_state_id = max(max_game_state_id,

@@ -99,6 +99,7 @@ def get_game_states(game_db, game_state_range) -> Iterator[GameStateRow]:
 
     return itertools.starmap(GameStateRow, execute(game_db, '''
     SELECT game_state_id
+         , json_extract(game_state, '$.round.phase') AS round_phase
          , json_extract(game_state, '$.map.name') AS map_name
          , json_extract(game_state, '$.map.phase') AS map_phase
          , json_extract(game_state, '$.round.win_team') AS win_team
@@ -106,10 +107,10 @@ def get_game_states(game_db, game_state_range) -> Iterator[GameStateRow]:
          , json_extract(game_state, '$.allplayers') AS allplayers
          , json_extract(game_state, '$.previously.allplayers') AS previous_allplayers
     FROM game_state
-    WHERE json_extract(game_state, '$.round.phase') = 'over'
-      AND json_extract(game_state, '$.previously.round.phase') = 'live'
-      AND json_type(allplayers) = 'object'
+    WHERE json_type(allplayers) = 'object'
       AND win_team IS NOT NULL
+      AND json_extract(game_state, '$.round.phase') = 'over'
+      AND json_extract(game_state, '$.previously.round.phase') = 'live'
       {}
     '''.format(where_clause), params))
 
@@ -1045,6 +1046,24 @@ def initialize_skill_db(skill_db):
 
     cursor.execute('''
     CREATE INDEX IF NOT EXISTS ix_rounds_loser ON rounds (loser);
+    ''')
+
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS player_weapons(
+      player_id        INTEGER NOT NULL
+    , round_id         INTEGER NOT NULL
+    , primary_weapon   TEXT
+    , secondary_weapon TEXT
+    , taser            BOOLEAN NOT NULL
+    , flashbang        BOOLEAN NOT NULL
+    , smokegrenade     BOOLEAN NOT NULL
+    , hegrenade        BOOLEAN NOT NULL
+    , decoy            BOOLEAN NOT NULL
+    , molotov          BOOLEAN NOT NULL
+    , PRIMARY KEY (player_id, round_id)
+    , FOREIGN KEY (player_id) REFERENCES players (player_id)
+    , FOREIGN KEY (round_id) REFERENCES rounds (round_id)
+    );
     ''')
 
     cursor.execute('''

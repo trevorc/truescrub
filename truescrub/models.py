@@ -98,13 +98,14 @@ class RoundRow(object):
 
 
 class GameStateRow(object):
-    __slots__ = ('game_state_id', 'map_name', 'map_phase', 'win_team',
-                 'timestamp', 'allplayers', 'previous_allplayers')
+    __slots__ = ('game_state_id', 'round_phase', 'map_name', 'map_phase',
+                 'win_team', 'timestamp', 'allplayers', 'previous_allplayers')
 
-    def __init__(self, game_state_id: int, map_name: str, map_phase: str,
-                 win_team: str, timestamp: int, allplayers: str,
+    def __init__(self, game_state_id: int, round_phase: str, map_name: str,
+                 map_phase: str, win_team: str, timestamp: int, allplayers: str,
                  previous_allplayers: Optional[str]):
         self.game_state_id = game_state_id
+        self.round_phase = round_phase
         self.map_name = map_name
         self.map_phase = map_phase
         self.win_team = win_team
