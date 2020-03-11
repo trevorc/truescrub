@@ -15,9 +15,9 @@
 <p>Proposes evenly matched teams for a given set of players.</p>
 {% endif %}
 
-<div style="display: flex; justify-content: space-between; width: 42em;">
+<div style="display: flex;">
 
-<form action="/matchmaking{{ macros.season_path(selected_season) }}" method="GET">
+<form action="/matchmaking{{ macros.season_path(selected_season) }}" method="GET" style="min-width: 24em;">
   <h2>Who is playing?</h2>
 
   <ul>
