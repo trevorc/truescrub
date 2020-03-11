@@ -6,13 +6,16 @@
 <body>
 <h1>TrueScrub&trade; Matchmaking</h1>
 
+{{ macros.season_menu("/matchmaking", selected_season, seasons) }}
+
 
 {% if latest %}
 <p>Proposes evenly matched teams given the players in the last round.</p>
 {% else %}
-{{ macros.season_menu("/matchmaking", selected_season, seasons) }}
-
 <p>Proposes evenly matched teams for a given set of players.</p>
+{% endif %}
+
+<div style="display: flex; justify-content: space-between; width: 42em;">
 
 <form action="/matchmaking{{ macros.season_path(selected_season) }}" method="GET">
   <h2>Who is playing?</h2>
@@ -32,7 +35,6 @@
   <div><button id="toggle" type="button">Toggle selection</button> <input type="submit"></div>
 
 </form>
-{% endif %}
 
 {% if teams %}
 <div>
@@ -67,6 +69,8 @@
 </div>
 
 {% endif %}
+
+</div>
 
 <script>
   document.getElementById('toggle').addEventListener('click', function() {
