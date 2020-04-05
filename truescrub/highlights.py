@@ -138,7 +138,7 @@ def get_player_ratings_between_rounds(skill_db, round_range: (int, int)) \
                     'total_deaths': int(average_deaths * rounds_played),
                     'total_damage': int(average_damage * rounds_played),
                     'total_assists': int(average_assists * rounds_played),
-                    'kdr': average_kills / average_deaths,
+                    'kdr': average_kills / max(1.0, average_deaths),
                 }, rounds_played, int(mvps))
         for player_id, steam_name, impact_rating,
             average_kills, average_deaths, average_damage, average_kas,
