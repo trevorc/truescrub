@@ -156,7 +156,7 @@ def parse_roundover_transition(
         {
             'teammates': team_members[player['team']],
             'team': player['team'],
-            'steam_id': steamid,
+            'steam_id': int(steamid),
             'steam_name': player['name'],
             'round_won': player['team'] == win_team,
         }

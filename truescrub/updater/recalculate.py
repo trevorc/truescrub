@@ -2,6 +2,10 @@ import time
 import logging
 import operator
 import itertools
+import configparser
+from typing import Dict, Set
+
+import pkg_resources
 
 import trueskill
 
@@ -17,6 +21,31 @@ class NoRounds(Exception):
 
 
 # Rating2 = 0.2778*Kills - 0.2559*Deaths + 0.00651*ADR + 0.00633*KAST + 0.18377
+
+
+def parse_player_configuration(resource_string: str) \
+        -> (Dict[str, Set[str]], Dict[str, str], Set[str]):
+    parser = configparser.RawConfigParser()
+    parser.optionxform = str
+    parser.read_string(resource_string)
+    roles = {}
+    aliases = {}
+    ignores = set()
+    for key, value in parser.items('Players'):
+        player_id, prop = key.split('.', 1)
+        player_id = int(player_id)
+        if prop == 'roles':
+            roles.setdefault(player_id, set()).update(value.split(','))
+        elif prop == 'aliases':
+            for alias in value.split(','):
+                aliases[int(alias)] = player_id
+        elif prop == 'ignored':
+            ignores.add(player_id)
+    return roles, aliases, ignores
+
+
+ROLES, ALIASES, IGNORES = parse_player_configuration(
+        pkg_resources.resource_string(__name__, 'players.ini').decode('UTF-8'))
 
 
 def load_seasons(game_db, skill_db):
@@ -116,10 +145,57 @@ def compute_rounds(skill_db, rounds, player_states):
     return round_range
 
 
+def remap_player_ids(teammates):
+    return tuple(sorted(
+            teammate if teammate not in ALIASES else ALIASES[teammate]
+            for teammate in teammates
+            if teammate not in IGNORES
+    ))
+
+
+def remap_player_state(player_state: dict) -> dict:
+    orig = player_state
+    player_state = player_state.copy()
+    if player_state['steam_id'] in ALIASES:
+        player_state['steam_id'] = ALIASES[player_state['steam_id']]
+    player_state['teammates'] = remap_player_ids(player_state['teammates'])
+    if not player_state['teammates']:
+        print(orig)
+    return player_state
+
+
+def remap_round(round: dict) -> dict:
+    round = round.copy()
+    round['winner'] = remap_player_ids(round['winner'])
+    round['loser'] = remap_player_ids(round['loser'])
+    return round
+
+
+def remap_rounds(rounds: [dict]) -> [dict]:
+    new_rounds = []
+    for round in rounds:
+        remapped_round = remap_round(round)
+        if len(remapped_round['winner']) > 0 and \
+                len(remapped_round['loser']) > 0:
+            new_rounds.append(remapped_round)
+    return new_rounds
+
+
+def apply_player_configurations(player_states) -> [dict]:
+    new_player_states = [
+        remap_player_state(player_state)
+        for player_state in player_states
+        if player_state['steam_id'] not in IGNORES
+    ]
+    return new_player_states
+
+
 def compute_rounds_and_players(game_db, skill_db, game_state_range=None) \
         -> (int, (int, int)):
     rounds, player_states, max_game_state_id = \
         extract_game_states(game_db, game_state_range)
+    rounds = remap_rounds(rounds)
+    player_states = apply_player_configurations(player_states)
     new_rounds = compute_rounds(skill_db, rounds, player_states) \
         if len(rounds) > 0 \
         else None

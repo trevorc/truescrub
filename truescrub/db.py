@@ -1067,6 +1067,14 @@ def initialize_skill_db(skill_db):
     ''')
 
     cursor.execute('''
+    CREATE TABLE IF NOT EXISTS player_roles(
+      player_id INTEGER NOT NULL
+    , role      TEXT NOT NULL
+    , PRIMARY KEY (player_id, role)
+    );
+    ''')
+
+    cursor.execute('''
     CREATE TABLE IF NOT EXISTS overall_skill_history(
       player_id   INTEGER NOT NULL
     , round_id    INTEGER NOT NULL
