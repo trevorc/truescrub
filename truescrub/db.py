@@ -392,7 +392,7 @@ def get_player_round_stat_averages_by_season(
     WHERE rs.player_id = ?
     GROUP BY r.season_id
            , rs.player_id
-    ORDER BY season_id ASC
+    ORDER BY season_id
     ''', (player_id,))
 
     return {
@@ -907,7 +907,7 @@ def get_impact_ratings_by_day(
      JOIN rounds r on rc.round_id = r.round_id
      WHERE rc.player_id = ?
      {}
-     GROUP BY round_date;
+     GROUP BY round_date
      '''.format(*format_args), params)
     return {date: rating for date, rating in ratings}
 

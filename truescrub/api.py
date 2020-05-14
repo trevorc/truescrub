@@ -308,6 +308,12 @@ def make_rating_component_viewmodel(components, impact_rating):
     }
 
 
+SKILL_GROUPS_VIEWMODEL = [
+    [cutoff if math.isfinite(cutoff) else None, skill_group] for
+    cutoff, skill_group in SKILL_GROUPS
+]
+
+
 @app.route('/profiles/<int:player_id>', methods={'GET'})
 def profile(player_id):
     seasons = db.get_season_range(g.conn)
@@ -325,6 +331,8 @@ def profile(player_id):
     ]
     season_skills.sort(reverse=True)
 
+    # TODO: show percentiles of rating, DPR, KAS, ADR, MVP, KPR
+
     overall_rating = make_rating_component_viewmodel(
             db.get_player_round_stat_averages(g.conn, player_id),
             player.impact_rating)
@@ -335,11 +343,6 @@ def profile(player_id):
         in db.get_player_round_stat_averages_by_season(g.conn, player_id).items()
     ]
     season_ratings.sort(reverse=True)
-    skill_groups = [
-        [cutoff if math.isfinite(cutoff) else None, skill_group] for
-        cutoff, skill_group in SKILL_GROUPS
-    ]
-
     player_viewmodel = make_player_viewmodel(player)
     return flask.render_template('profile.html',
                                  seasons=seasons,
@@ -349,7 +352,7 @@ def profile(player_id):
                                  overall_rating=overall_rating,
                                  season_skills=season_skills,
                                  season_ratings=season_ratings,
-                                 skill_groups=skill_groups)
+                                 skill_groups=SKILL_GROUPS_VIEWMODEL)
 
 
 @app.route('/matchmaking', methods={'GET'})
