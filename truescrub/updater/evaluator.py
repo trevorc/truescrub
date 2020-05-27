@@ -1,8 +1,8 @@
 import trueskill
 
 from ..db import get_skill_db, get_all_teams, get_all_rounds
-from ..matchmaking import win_probability, BETA, TAU
-from truescrub.models import SKILL_MEAN, SKILL_STDEV
+from ..matchmaking import win_probability
+from ..models import SKILL_MEAN, SKILL_STDEV, BETA, TAU
 from .recalculate import compute_player_skills
 
 

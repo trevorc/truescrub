@@ -148,7 +148,9 @@ def initialize_game_db(game_db):
 ###########################
 
 def get_skill_db(name: str = SKILL_DB_NAME):
-    return sqlite3.connect(os.path.join(DATA_DIR, name))
+    connection = sqlite3.connect(os.path.join(DATA_DIR, name))
+    connection.cursor().execute('PRAGMA foreign_keys = ON')
+    return connection
 
 
 def replace_skill_db(new_db_name: str):

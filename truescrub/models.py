@@ -11,6 +11,9 @@ __all__ = ['SKILL_MEAN', 'SKILL_STDEV', 'SKILL_GROUPS',
 
 SKILL_MEAN = 1000.0
 SKILL_STDEV = SKILL_MEAN / 4.0
+BETA = SKILL_STDEV * 2.0
+TAU = SKILL_STDEV / 100.0
+
 SKILL_GROUP_SPACING = SKILL_STDEV * 0.5
 SKILL_GROUP_NAMES = [
     'Cardboard I',
@@ -31,6 +34,13 @@ SKILL_GROUPS = ((float('-inf'), SKILL_GROUP_NAMES[0]),) + tuple(
         (SKILL_GROUP_SPACING * (i + 1), name)
         for i, name in enumerate(SKILL_GROUP_NAMES[1:])
 )
+
+
+def setup_trueskill():
+    # TODO: move away from global env
+
+    trueskill.setup(mu=SKILL_MEAN, sigma=SKILL_STDEV, beta=BETA, tau=TAU,
+                    draw_probability=0.0)
 
 
 def find_skill_group(mmr: float) -> int:

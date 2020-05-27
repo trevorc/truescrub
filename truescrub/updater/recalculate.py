@@ -11,9 +11,10 @@ import trueskill
 
 from .state_parser import parse_game_states
 from .. import db
-from ..models import RoundRow, SkillHistory
+from ..models import RoundRow, SkillHistory, setup_trueskill
 
 logger = logging.getLogger(__name__)
+setup_trueskill()
 
 
 class NoRounds(Exception):
@@ -85,10 +86,8 @@ def insert_players(skill_db, player_states):
     if len(player_states) == 0:
         return
 
-    players = {}
-    for state in player_states:
-        if state['steam_name'] != 'unconnected':
-            players[int(state['steam_id'])] = state['steam_name']
+    players = {int(state['steam_id']): state['steam_name']
+               for state in player_states}
 
     db.upsert_player_names(skill_db, players)
 
@@ -153,14 +152,20 @@ def remap_player_ids(teammates):
     ))
 
 
+def remap_round_stats(round_stats: {int: dict}):
+    # Assumes that a player and his aliases are in a round together
+    return {
+        (steam_id if steam_id not in ALIASES else ALIASES[steam_id]): stats
+        for steam_id, stats in round_stats.items()
+        if steam_id not in IGNORES
+    }
+
+
 def remap_player_state(player_state: dict) -> dict:
-    orig = player_state
     player_state = player_state.copy()
     if player_state['steam_id'] in ALIASES:
         player_state['steam_id'] = ALIASES[player_state['steam_id']]
     player_state['teammates'] = remap_player_ids(player_state['teammates'])
-    if not player_state['teammates']:
-        print(orig)
     return player_state
 
 
@@ -168,6 +173,11 @@ def remap_round(round: dict) -> dict:
     round = round.copy()
     round['winner'] = remap_player_ids(round['winner'])
     round['loser'] = remap_player_ids(round['loser'])
+    round['stats'] = remap_round_stats(round['stats'])
+    round['mvp'] = None \
+        if round['mvp'] in IGNORES \
+        else round['mvp'] if round['mvp'] not in ALIASES \
+        else ALIASES[round['mvp']]
     return round
 
 

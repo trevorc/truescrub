@@ -7,10 +7,10 @@ from typing import Optional, Iterable
 from ..models import GameStateRow
 
 
-def parse_round_stats(state: GameStateRow) -> {int: dict}:
+def parse_round_stats(allplayers: {int: dict}) -> {int: dict}:
     assist_counts = {
         steam_id: player['match_stats']['assists']
-        for steam_id, player in state.allplayers.items()
+        for steam_id, player in allplayers.items()
     }
 
     return {
@@ -20,7 +20,7 @@ def parse_round_stats(state: GameStateRow) -> {int: dict}:
             'survived': player['state']['health'] > 0,
             'damage': player['state']['round_totaldmg'],
         }
-        for steam_id, player in state.allplayers.items()
+        for steam_id, player in allplayers.items()
     }
 
 
@@ -135,9 +135,13 @@ def parse_roundover_transition(
     if state.round_phase != 'over':
         raise ValueError('Expected round_phase "over"')
 
+    allplayers = {steamid: player
+                  for steamid, player in state.allplayers.items()
+                  if player['name'] != 'unconnected'}
+
     win_team = state.win_team
     team_steamids = [(player['team'], int(steamid))
-                     for steamid, player in state.allplayers.items()]
+                     for steamid, player in allplayers.items()]
     team_steamids.sort()
     team_members = {
         team: tuple(sorted(item[1] for item in group))
@@ -160,7 +164,7 @@ def parse_roundover_transition(
             'steam_name': player['name'],
             'round_won': player['team'] == win_team,
         }
-        for steamid, player in state.allplayers.items()
+        for steamid, player in allplayers.items()
     ]
 
     created_at = datetime.datetime.utcfromtimestamp(state.timestamp)
@@ -168,7 +172,7 @@ def parse_roundover_transition(
     season_index = bisect.bisect_left(season_starts, created_at) - 1
     season_id = season_ids[season_starts[season_index]]
 
-    round_stats = parse_round_stats(state)
+    round_stats = parse_round_stats(allplayers)
 
     new_round = {
         'game_state_id': state.game_state_id,
@@ -177,7 +181,7 @@ def parse_roundover_transition(
         'winner': team_members[win_team],
         'loser': team_members[lose_team],
         'mvp': mvp,
-        'map_name': state.map_name,
+        'map_name': state.map_name.lower(),
         'stats': round_stats,
         'last_round': state.map_phase == 'gameover',
     }

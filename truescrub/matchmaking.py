@@ -6,14 +6,11 @@ from typing import Iterable
 import trueskill
 from trueskill import Gaussian
 
-from .models import SKILL_MEAN, SKILL_STDEV, SKILL_GROUPS, Player
+from .models import SKILL_MEAN, SKILL_STDEV, SKILL_GROUPS, Player, setup_trueskill
 
-BETA = SKILL_STDEV * 2.0
-TAU = SKILL_STDEV / 100.0
 MAX_PLAYERS_PER_TEAM = 6
 
-trueskill.setup(mu=SKILL_MEAN, sigma=SKILL_STDEV, beta=BETA, tau=TAU,
-                draw_probability=0.0)
+setup_trueskill()
 
 CONFIDENCE_LEVEL = 0.95
 
