@@ -18,9 +18,8 @@ from werkzeug.middleware.shared_data import SharedDataMiddleware
 from . import db
 from .highlights import get_highlights
 from .matchmaking import (
-    skill_group_ranges, compute_matches, make_player_skills,
-    match_quality, team1_win_probability, estimated_skill_range,
-    MAX_PLAYERS_PER_TEAM)
+    skill_group_ranges, compute_matches,
+    estimated_skill_range, MAX_PLAYERS_PER_TEAM)
 from .models import Player, SKILL_GROUPS
 
 app = flask.Flask(__name__)
@@ -408,53 +407,6 @@ def matchmaking0(seasons: [int], selected_players: {int}, season_id: int = None,
                                  seasons=seasons, selected_season=season_id,
                                  selected_players=selected_players,
                                  players=players, teams=matches, latest=latest)
-
-
-@app.route('/profiles/<int:player_id>/team_records', methods={'GET'})
-def team_records(player_id):
-    try:
-        player = db.get_player_profile(g.conn, player_id)[0]
-    except StopIteration:
-        return flask.make_response('No such player', 404)
-
-    player_viewmodel = make_player_viewmodel(player)
-    records = db.get_team_records(g.conn, player_id)
-    return flask.render_template('team_records.html', player=player_viewmodel,
-                                 team_records=records)
-
-
-@app.route('/teams/<int:team_id>', methods={'GET'})
-def team_details(team_id):
-    members = db.get_team_members(g.conn, team_id)
-    if len(members) == 0:
-        return flask.make_response('No such team\n', 404)
-
-    member_names = str.join(', ', [member.steam_name for member in members])
-    opponent_records = db.get_opponent_records(g.conn, team_id)
-
-    player_skills = make_player_skills(itertools.chain(
-            members, *(record['opponent_team']
-                       for record in opponent_records)))
-
-    for record in opponent_records:
-        record.update(
-                quality=match_quality(
-                        player_skills, members, record['opponent_team']),
-                win_probability=team1_win_probability(
-                        player_skills, members, record['opponent_team'])
-        )
-
-    rounds_won = 0
-    rounds_lost = 0
-    for record in opponent_records:
-        rounds_won += record['rounds_won']
-        rounds_lost += record['rounds_lost']
-
-    return flask.render_template(
-            'team_details.html',
-            member_names=member_names, members=members,
-            rounds_won=rounds_won, rounds_lost=rounds_lost,
-            opponent_records=opponent_records)
 
 
 app.wsgi_app = SharedDataMiddleware(app.wsgi_app, {

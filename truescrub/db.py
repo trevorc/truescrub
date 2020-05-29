@@ -290,40 +290,6 @@ def insert_round_stats(skill_db, round_stats_by_game_state_id: {int: dict}):
         '''.format(placeholder), params)
 
 
-def get_team_records(skill_db, player_id):
-    teams = get_player_teams(skill_db, player_id)
-
-    team_record_rows = execute(skill_db, '''
-    SELECT m.team_id
-         , IFNULL(rounds_won.num_rounds, 0)
-         , IFNULL(rounds_lost.num_rounds, 0)
-    FROM team_membership m
-    LEFT JOIN ( SELECT r.winner AS team_id
-                     , COUNT(*) AS num_rounds
-                FROM rounds r
-                GROUP BY r.winner
-              ) rounds_won
-    ON m.team_id = rounds_won.team_id
-    LEFT JOIN ( SELECT r.loser AS team_id
-                     , COUNT(*) AS num_rounds
-                FROM rounds r
-                GROUP BY r.loser
-              ) rounds_lost
-    ON m.team_id = rounds_lost.team_id
-    WHERE m.player_id = ?
-    ''', (player_id,))
-
-    return [
-        {
-            'team_id': team_id,
-            'team': teams[team_id],
-            'rounds_won': rounds_won,
-            'rounds_lost': rounds_lost,
-        }
-        for team_id, rounds_won, rounds_lost in team_record_rows
-    ]
-
-
 def get_all_players(skill_db) -> [Player]:
     player_rows = execute(skill_db, '''
     SELECT player_id
@@ -534,38 +500,6 @@ def get_season_players(skill_db, season: int):
     ]
 
 
-def get_player_teams(skill_db, player_id: int) -> {int: [ThinPlayer]}:
-    team_rows = execute(skill_db, '''
-    SELECT participants.team_id
-         , players.player_id
-         , players.steam_name
-    FROM ( SELECT winners.player_id
-                , rounds.winner AS team_id
-           FROM   rounds
-           JOIN   team_membership winners
-           ON     rounds.winner = winners.team_id
-           UNION
-           SELECT losers.player_id
-                , rounds.loser AS team_id
-           FROM   rounds
-           JOIN   team_membership losers
-           ON     rounds.loser = losers.team_id
-         ) m
-    JOIN team_membership participants
-    ON   participants.team_id = m.team_id
-    JOIN players
-    ON   players.player_id = participants.player_id
-    WHERE m.player_id = ?
-    ORDER BY participants.team_id
-    ''', (player_id,))
-
-    return {
-        team_id: list(ThinPlayer(val[1], val[2]) for val in group)
-        for team_id, group in itertools.groupby(
-            team_rows, operator.itemgetter(0))
-    }
-
-
 def get_player_profile(skill_db, player_id: int):
     (
         steam_name,
@@ -625,96 +559,6 @@ def get_players_in_last_round(skill_db) -> {int}:
             FROM rounds )
     ''')
     return {row[0] for row in player_ids}
-
-
-def get_team_members(skill_db, team_id: int) -> [Player]:
-    member_rows = execute(skill_db, '''
-    SELECT players.player_id
-         , steam_name
-         , skill_mean
-         , skill_stdev
-         , impact_rating
-    FROM players
-    JOIN team_membership m
-    ON   players.player_id = m.player_id
-    WHERE m.team_id = ?
-    ''', (team_id,))
-
-    return [
-        Player(int(row[0]), row[1], row[2], row[3], row[4])
-        for row in member_rows
-    ]
-
-
-def get_opponent_records(skill_db, team_id: int):
-    opponent_rows = execute(skill_db, '''
-    SELECT m.team_id
-         , m.player_id
-         , p.steam_name
-         , p.skill_mean
-         , p.skill_stdev
-         , p.impact_rating
-    FROM team_membership m
-    JOIN ( SELECT winner AS team_id
-                , loser AS opponent
-           FROM   rounds
-           UNION
-           SELECT loser AS team_id
-                , winner AS opponent
-           FROM   rounds
-         ) matches
-    ON   m.team_id = matches.opponent
-    JOIN players p
-    ON   m.player_id = p.player_id
-    WHERE matches.team_id = ?
-    ORDER BY m.team_id
-    ''', (team_id,))
-
-    opponents = {
-        int(team_id): [Player(row[1], row[2], row[3], row[4], row[5])
-                       for row in group]
-        for team_id, group in itertools.groupby(
-            opponent_rows, operator.itemgetter(0))
-    }
-
-    opponent_record_rows = execute(skill_db, '''
-    SELECT t.team_id
-         , opponent.team_id AS opponent_team_id
-         , IFNULL(rounds_won.num_rounds, 0) AS rounds_won
-         , IFNULL(rounds_lost.num_rounds, 0) AS rounds_lost
-    FROM teams t
-    CROSS JOIN teams opponent
-    LEFT JOIN ( SELECT winner
-                     , loser
-                     , COUNT(*) AS num_rounds
-                FROM rounds r
-                GROUP BY winner, loser
-              ) rounds_won
-    ON t.team_id = rounds_won.winner
-    AND opponent.team_id = rounds_won.loser
-    LEFT JOIN ( SELECT winner
-                     , loser
-                     , COUNT(*) AS num_rounds
-                FROM rounds r
-                GROUP BY winner, loser
-              ) rounds_lost
-    ON t.team_id = rounds_lost.loser
-    AND opponent.team_id = rounds_lost.winner
-    WHERE t.team_id = ?
-    AND   (rounds_won.num_rounds IS NOT NULL
-           OR rounds_lost.num_rounds IS NOT NULL)
-    ''', (team_id,))
-
-    return [
-        {
-            'opponent_team_id': opponent_team_id,
-            'opponent_team': opponents[opponent_team_id],
-            'rounds_won': rounds_won,
-            'rounds_lost': rounds_lost,
-        }
-        for team_id, opponent_team_id, rounds_won, rounds_lost
-        in opponent_record_rows
-    ]
 
 
 def get_all_rounds(skill_db, round_range: (int, int)) -> [RoundRow]:
