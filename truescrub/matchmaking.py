@@ -6,7 +6,8 @@ from typing import Iterable
 import trueskill
 from trueskill import Gaussian
 
-from .models import SKILL_MEAN, SKILL_STDEV, SKILL_GROUPS, Player, setup_trueskill
+from .models import SKILL_MEAN, SKILL_STDEV, Player, \
+    setup_trueskill, skill_groups
 
 MAX_PLAYERS_PER_TEAM = 6
 
@@ -43,7 +44,7 @@ def estimated_skill_range(skill: Gaussian) -> (float, float):
 def skill_group_ranges():
     previous_bound = None
     previous_group = None
-    for lower_bound, group_name in SKILL_GROUPS:
+    for lower_bound, group_name in skill_groups():
         if previous_group is not None:
             yield previous_group, previous_bound, lower_bound
         previous_bound = lower_bound

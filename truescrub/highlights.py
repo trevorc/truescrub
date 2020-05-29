@@ -201,7 +201,7 @@ def get_skill_changes_between_rounds(skill_db, round_range: (int, int)) \
     return [
         (previous_skill, next_skill)
         for previous_skill, next_skill in skill_changes
-        if previous_skill.skill_group != next_skill.skill_group
+        if previous_skill.skill_group_index != next_skill.skill_group_index
     ]
 
 

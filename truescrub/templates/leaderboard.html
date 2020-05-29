@@ -2,10 +2,14 @@
 <html lang="en">
 <head>
   <title>TrueScrub&trade; Leaderboard</title>
+  <style>
+    th { text-align: left; }
+  </style>
 </head>
 <body>
 <h1>TrueScrub&trade; Leaderboard</h1>
 {{ macros.season_menu("/leaderboard", selected_season, seasons) }}
+
 <table>
   <thead>
   <tr>
@@ -13,23 +17,48 @@
     <th>MMR</th>
     <th>Percentile</th>
     <th>Impact</th>
-    <th>Skill Group</th>
+    <th>
+      Skill Group
+      {% if selected_season == 4 -%}
+        <span class="bell" style="cursor: pointer;">🔔</span>
+      {%- endif %}
+    </th>
   </tr>
   </thead>
   <tbody>
   {% for player in leaderboard %}
     <tr>
-      <td><a href="/profiles/{{ player.player_id }}">{{ player.steam_name }}</a></td>
+      <td><a href="/profiles/{{ player.player_id }}">{{ player.steam_name|truncate(18, '…') }}</a></td>
       <td title="{{ player.skill.mu|int }} ± {{ player.skill.sigma|int }}σ">{{ player.mmr }}</td>
       <td>
         {{ macros.percentile_estimate(player, 6) }}
       </td>
       <td>{{ player.impact_rating }}</td>
-      <td>{{ player.skill_group }}</td>
+      <td>
+        <span class="skill">{{ player.skill_group }}</span>
+        <span class="skill taco" style="display: none">{{ player.special_skill_group }}</span>
+      </td>
     </tr>
   {% endfor %}
   </tbody>
 </table>
 <p><a href="/skill_groups">Skill Groups</a></p>
+
+{% if selected_season == 4 -%}
+<script>
+  (function() {
+    'use strict';
+    const bell = document.getElementsByClassName('bell')[0];
+
+    function toggleSkillGroups() {
+      document.querySelectorAll('.skill').forEach(element => {
+        element.style.display = element.style.display === 'none' ? 'inline' : 'none';
+      });
+    }
+
+    bell.addEventListener('click', toggleSkillGroups);
+  })();
+</script>
+{%- endif %}
 </body>
 </html>

@@ -20,7 +20,7 @@ from .highlights import get_highlights
 from .matchmaking import (
     skill_group_ranges, compute_matches,
     estimated_skill_range, MAX_PLAYERS_PER_TEAM)
-from .models import Player, SKILL_GROUPS
+from .models import Player, skill_groups, skill_group_name
 
 app = flask.Flask(__name__)
 app.config['PROPAGATE_EXCEPTIONS'] = True
@@ -143,7 +143,7 @@ def make_thin_player_viewmodel(player: Player) -> dict:
     return {
         'player_id': player.player_id,
         'steam_name': player.steam_name,
-        'skill_group': player.skill_group,
+        'skill_group': skill_group_name(player.skill_group_index),
         'mmr': player.mmr,
     }
 
@@ -193,7 +193,8 @@ def make_player_viewmodel(player: Player):
         'player_id': player.player_id,
         'steam_name': player.steam_name,
         'skill': player.skill,
-        'skill_group': player.skill_group,
+        'skill_group': skill_group_name(player.skill_group_index),
+        'special_skill_group': skill_group_name(player.skill_group_index, True),
         'mmr': player.mmr,
         'rating_offset': left_offset,
         'rating_width': right_offset - left_offset,
@@ -309,7 +310,7 @@ def make_rating_component_viewmodel(components, impact_rating):
 
 SKILL_GROUPS_VIEWMODEL = [
     [cutoff if math.isfinite(cutoff) else None, skill_group] for
-    cutoff, skill_group in SKILL_GROUPS
+    cutoff, skill_group in skill_groups()
 ]
 
 

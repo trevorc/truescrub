@@ -6,7 +6,7 @@ from typing import Optional
 import trueskill
 
 
-__all__ = ['SKILL_MEAN', 'SKILL_STDEV', 'SKILL_GROUPS',
+__all__ = ['SKILL_MEAN', 'SKILL_STDEV', 'skill_groups', 'skill_group_name',
            'Player', 'ThinPlayer', 'SkillHistory', 'RoundRow', 'GameStateRow']
 
 SKILL_MEAN = 1000.0
@@ -30,10 +30,35 @@ SKILL_GROUP_NAMES = [
     'Master Garbian Elite',
     'Low-Key Dirty',
 ]
-SKILL_GROUPS = ((float('-inf'), SKILL_GROUP_NAMES[0]),) + tuple(
-        (SKILL_GROUP_SPACING * (i + 1), name)
-        for i, name in enumerate(SKILL_GROUP_NAMES[1:])
+SPECIAL_SKILL_GROUP_NAMES = [
+    'Mild Sauce',
+    'Soft Taco',
+    'Crunchy Taco',
+    'Crunchy Taco Supreme',
+    'Doritos Locos Taco',
+    'Triple Layer Nachos',
+    'Nachos Supreme',
+    'Nachos Bell Grande',
+    'Cheesy Gordita Crunch',
+    'Chalupa Supreme',
+    'Crunchwrap Supreme',
+    'Crunchwrap Supreme Combo',
+    'Triplelupa',
+]
+SKILL_GROUP_CUTOFFS = (float('-inf'),) + tuple(
+        SKILL_GROUP_SPACING * (i + 1)
+        for i in range(len(SKILL_GROUP_NAMES))
 )
+
+
+def skill_groups():
+    return zip(SKILL_GROUP_CUTOFFS, SKILL_GROUP_NAMES)
+
+
+def skill_group_name(skill_group_index, special_name=False):
+    return (SPECIAL_SKILL_GROUP_NAMES
+            if special_name
+            else SKILL_GROUP_NAMES)[skill_group_index]
 
 
 def setup_trueskill():
@@ -44,8 +69,7 @@ def setup_trueskill():
 
 
 def find_skill_group(mmr: float) -> int:
-    group_ranks = [group[0] for group in SKILL_GROUPS]
-    index = bisect.bisect(group_ranks, mmr)
+    index = bisect.bisect(SKILL_GROUP_CUTOFFS, mmr)
     return index - 1
 
 
@@ -77,10 +101,6 @@ class Player(object):
 
     def __repr__(self):
         return f'<Player "{self.steam_name}">'
-
-    @property
-    def skill_group(self):
-        return SKILL_GROUPS[self.skill_group_index][1]
 
 
 class SkillHistory(object):
