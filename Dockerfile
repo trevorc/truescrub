@@ -15,4 +15,4 @@ WORKDIR /app
 
 EXPOSE 9000
 
-CMD ["waitress-serve", "--port", "9000", "truescrub.api:app"]
+CMD ["waitress-serve", "--port", "9000", "truescrub.wsgi:app"]

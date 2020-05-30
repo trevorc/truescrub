@@ -11,6 +11,7 @@ import trueskill
 from .models import Player, RoundRow, SkillHistory, GameStateRow
 from truescrub.models import SKILL_MEAN, SKILL_STDEV
 
+
 DATA_DIR = os.environ.get('TRUESCRUB_DATA_DIR', 'data')
 GAME_DB_NAME = 'games.db'
 SKILL_DB_NAME = 'skill.db'

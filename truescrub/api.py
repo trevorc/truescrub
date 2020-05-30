@@ -22,6 +22,7 @@ from .matchmaking import (
     estimated_skill_range, MAX_PLAYERS_PER_TEAM)
 from .models import Player, skill_groups, skill_group_name
 
+
 app = flask.Flask(__name__)
 app.config['PROPAGATE_EXCEPTIONS'] = True
 
@@ -45,9 +46,6 @@ def initialize():
     zmq_addr = 'tcp://{}:{}'.format(UPDATER_HOST, UPDATER_PORT)
     logger.info('Connecting ZeroMQ socket to {}'.format(zmq_addr))
     zmq_socket.connect(zmq_addr)
-
-
-initialize()
 
 
 def send_updater_message(**message):
@@ -410,9 +408,12 @@ def matchmaking0(seasons: [int], selected_players: {int}, season_id: int = None,
                                  players=players, teams=matches, latest=latest)
 
 
-app.wsgi_app = SharedDataMiddleware(app.wsgi_app, {
-    '/htdocs': ('truescrub', 'htdocs'),
-}, cache_timeout=3600 * 24 * 14)
+def create_app():
+    initialize()
+    app.wsgi_app = SharedDataMiddleware(app.wsgi_app, {
+        '/htdocs': ('truescrub', 'htdocs'),
+    }, cache_timeout=3600 * 24 * 14)
+    return app
 
 
 arg_parser = argparse.ArgumentParser()
@@ -431,4 +432,4 @@ def main():
     if args.recalculate:
         return send_updater_message(command='recalculate')
     logger.info('TrueScrub listening on {}:{}'.format(args.addr, args.port))
-    app.run(args.addr, args.port, app, use_reloader=args.use_reloader)
+    create_app().run(args.addr, args.port, app, use_reloader=args.use_reloader)

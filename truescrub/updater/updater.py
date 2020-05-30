@@ -77,10 +77,8 @@ arg_parser.add_argument('--tau', type=float)
 arg_parser.add_argument('--sample', type=float)
 
 
-db.initialize_dbs()
-
-
 def main():
+    db.initialize_dbs()
     args = arg_parser.parse_args()
     if args.recalculate:
         return recalculate()

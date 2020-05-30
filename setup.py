@@ -24,6 +24,11 @@ setup(
 	'truescrub-app=truescrub.api:app',
 	'truescrub-updater=truescrub.updater.updater:main'
       ]
-    }
+    },
+    classifiers=[
+      'Programming Language :: Python :: 3',
+      'License :: OSI Approved :: MIT License',
+      'Operating System :: OS Independent',
+    ],
 )
 
