@@ -8,7 +8,7 @@ from typing import FrozenSet, Iterator, Optional
 
 import trueskill
 
-from .models import Player, ThinPlayer, RoundRow, SkillHistory, GameStateRow
+from .models import Player, RoundRow, SkillHistory, GameStateRow
 from truescrub.models import SKILL_MEAN, SKILL_STDEV
 
 DATA_DIR = os.environ.get('TRUESCRUB_DATA_DIR', 'data')
@@ -201,8 +201,9 @@ def get_map_names_to_ids(skill_db) -> {str: int}:
 
 def replace_maps(skill_db, map_names: {str}):
     execute(skill_db, '''
-    REPLACE INTO maps (map_name)
+    INSERT INTO maps (map_name)
     VALUES {}
+    ON CONFLICT (map_name) DO NOTHING
     '''.format(make_placeholder(1, len(map_names))), list(map_names))
 
 
