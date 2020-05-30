@@ -17,3 +17,17 @@ recalculate:
 .PHONY: serve
 serve:
 	waitress-serve --port 9000 truescrub.api:app
+
+.PHONY: upload
+upload:
+	venv/bin/python3 setup.py sdist bdist_wheel
+	twine upload dist/*
+
+.PHONY: clean
+clean:
+	venv/bin/python3 setup.py clean --all
+
+.PHONY: distclean
+distclean: clean
+	rm -Rf dist
+	rm -Rf truescrub.egg-info
