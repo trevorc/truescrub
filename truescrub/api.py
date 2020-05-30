@@ -9,6 +9,7 @@ import datetime
 import argparse
 import operator
 import itertools
+from typing import List, Optional
 
 import zmq
 import flask
@@ -20,7 +21,7 @@ from .highlights import get_highlights
 from .matchmaking import (
     skill_group_ranges, compute_matches,
     estimated_skill_range, MAX_PLAYERS_PER_TEAM)
-from .models import Player, skill_groups, skill_group_name
+from .models import Match, Player, skill_groups, skill_group_name
 
 
 app = flask.Flask(__name__)
@@ -146,6 +147,18 @@ def make_thin_player_viewmodel(player: Player) -> dict:
     }
 
 
+def make_match_viewmodel(match: Match) -> dict:
+    return {
+        'team1': [make_thin_player_viewmodel(player)
+                  for player in match.team1],
+        'team2': [make_thin_player_viewmodel(player)
+                  for player in match.team2],
+        'quality': match.quality,
+        'team1_win_probability': match.team1_win_probability,
+        'team2_win_probability': match.team2_win_probability,
+    }
+
+
 @app.route('/api/matchmaking/latest', methods={'GET'})
 def latest_matchmaking_api():
     try:
@@ -158,17 +171,7 @@ def latest_matchmaking_api():
     selected_players = db.get_players_in_last_round(g.conn)
     players, matches = compute_matchmaking(seasons[-1], selected_players)
 
-    results = list(itertools.islice((
-        {
-            'team1': [make_thin_player_viewmodel(player)
-                      for player in match['team1']],
-            'team2': [make_thin_player_viewmodel(player)
-                      for player in match['team2']],
-            'quality': match['quality'],
-            'team1_win_probability': match['team1_win_probability'],
-            'team2_win_probability': match['team2_win_probability'],
-        } for match in matches
-    ), limit))
+    results = list(itertools.islice(map(make_match_viewmodel, matches), limit))
     return flask.jsonify(results)
 
 
@@ -376,7 +379,8 @@ def matchmaking(season_id):
     return matchmaking0(seasons, selected_players, season_id)
 
 
-def compute_matchmaking(season_id, selected_players):
+def compute_matchmaking(season_id, selected_players) \
+        -> ([Player], Optional[List[Match]]):
     max_players = MAX_PLAYERS_PER_TEAM * 2
     if len(selected_players) > max_players:
         raise ValueError('Cannot compute matches for more than '
@@ -385,6 +389,7 @@ def compute_matchmaking(season_id, selected_players):
         if season_id is None \
         else db.get_season_players(g.conn, season_id)
     players.sort(key=operator.attrgetter('mmr'), reverse=True)
+
     if len(selected_players) > 0:
         matches = itertools.islice(compute_matches([
             player for player in players if player.player_id in selected_players

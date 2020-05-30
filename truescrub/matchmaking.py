@@ -6,7 +6,7 @@ from typing import Iterable
 import trueskill
 from trueskill import Gaussian
 
-from .models import SKILL_MEAN, SKILL_STDEV, Player, \
+from .models import SKILL_MEAN, SKILL_STDEV, Match, Player, \
     setup_trueskill, skill_groups
 
 MAX_PLAYERS_PER_TEAM = 6
@@ -112,22 +112,23 @@ def uniquify(matches):
     last_team2 = None
 
     for match in matches:
-        if match['team1'] == last_team1 and match['team2'] == last_team2 or \
-                match['team1'] == last_team2 and match['team2'] == last_team1:
+        if match.team1 == last_team1 and match.team2 == last_team2 or \
+                match.team1 == last_team2 and match.team2 == last_team1:
             continue
         yield match
-        last_team1 = match['team1']
-        last_team2 = match['team2']
+        last_team1 = match.team1
+        last_team2 = match.team2
 
 
-def make_team(players_by_id, player_ids):
+def make_team(players_by_id: {int: Player}, player_ids) -> [Player]:
     team = [players_by_id[player_id] for player_id in player_ids]
     team.sort(key=operator.attrgetter('mmr'), reverse=True)
     return team
 
 
-def make_match(players_by_id, team1: Iterable[int], team2: Iterable[int],
-               quality: float, p_win: float):
+def make_match(players_by_id: {int: Player},
+               team1: Iterable[int], team2: Iterable[int],
+               quality: float, p_win: float) -> Match:
     team1 = make_team(players_by_id, team1)
     team2 = make_team(players_by_id, team2)
 
@@ -135,21 +136,15 @@ def make_match(players_by_id, team1: Iterable[int], team2: Iterable[int],
         team1, team2 = team2, team1
         p_win = 1.0 - p_win
 
-    return {
-        'team1': team1,
-        'team2': team2,
-        'quality': quality,
-        'team1_win_probability': p_win,
-        'team2_win_probability': 1.0 - p_win,
-    }
+    return Match(team1, team2, quality, p_win)
 
 
-def compute_matches(players: [Player]):
+def compute_matches(players: [Player]) -> Iterable[Match]:
     player_skills = make_player_skills(players)
     players_by_id = {player.player_id: player for player in players}
 
     matches = [make_match(players_by_id, *suggestion)
                for suggestion in suggest_teams(player_skills)]
 
-    matches.sort(key=operator.itemgetter('quality'), reverse=True)
+    matches.sort(key=operator.attrgetter('quality'), reverse=True)
     return uniquify(matches)

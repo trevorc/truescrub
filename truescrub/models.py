@@ -6,8 +6,9 @@ from typing import Optional
 import trueskill
 
 
-__all__ = ['SKILL_MEAN', 'SKILL_STDEV', 'skill_groups', 'skill_group_name',
-           'Player', 'ThinPlayer', 'SkillHistory', 'RoundRow', 'GameStateRow']
+__all__ = ['SKILL_MEAN', 'SKILL_STDEV', 'Match', 'Player', 'ThinPlayer',
+           'SkillHistory', 'RoundRow', 'GameStateRow',
+           'skill_groups', 'skill_group_name', 'setup_trueskill']
 
 SKILL_MEAN = 1000.0
 SKILL_STDEV = SKILL_MEAN / 4.0
@@ -143,3 +144,15 @@ class GameStateRow(object):
         self.allplayers = json.loads(allplayers)
         self.previous_allplayers = {} if previous_allplayers is None \
             else json.loads(previous_allplayers)
+
+
+class Match(object):
+    __slots__ = ('team1', 'team2', 'quality',
+                 'team1_win_probability', 'team2_win_probability')
+
+    def __init__(self, team1, team2, quality, p_win):
+        self.team1 = team1
+        self.team2 = team2
+        self.quality = quality
+        self.team1_win_probability = round(p_win, 2)
+        self.team2_win_probability = round(1.0 - p_win, 2)
