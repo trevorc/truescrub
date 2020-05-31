@@ -17,7 +17,7 @@ setup(
       'waitress==1.2.1',
       'trueskill==0.4.5',
       'pyzmq==19.0.0',
-      'werkzeug==0.12.2',
+      'werkzeug==0.15.3',
     ],
     entry_points={
       'console_scripts': [
