@@ -2,7 +2,7 @@ import datetime
 import operator
 
 from .db import execute_one, execute, COEFFICIENTS
-from .models import Player, SKILL_STDEV, SKILL_MEAN
+from .models import Player, SKILL_STDEV, SKILL_MEAN, skill_group_name
 
 
 def get_highlights(skill_db, day: datetime.datetime) -> dict:
@@ -20,11 +20,11 @@ def get_highlights(skill_db, day: datetime.datetime) -> dict:
             'steam_name': previous_skill.steam_name,
             'previous_skill': {
                 'mmr': previous_skill.mmr,
-                'skill_group': previous_skill.skill_group,
+                'skill_group': skill_group_name(previous_skill.skill_group_index),
             },
             'next_skill': {
                 'mmr': next_skill.mmr,
-                'skill_group': next_skill.skill_group,
+                'skill_group': skill_group_name(next_skill.skill_group_index),
             },
         }
         for (previous_skill, next_skill)
@@ -61,7 +61,7 @@ def make_player_rating(player, rating_details, rounds_played, mvps):
         'impact_rating': player.impact_rating,
         'previous_skill': {
             'mmr': player.mmr,
-            'skill_group': player.skill_group,
+            'skill_group': skill_group_name(player.skill_group_index),
         },
         'rating_details': rating_details,
         'rounds_played': rounds_played,
