@@ -17,7 +17,7 @@ setup(
       'waitress==1.4.3',
       'trueskill==0.4.5',
       'pyzmq==19.0.0',
-      'werkzeug==0.15.3',
+      'werkzeug==0.15.6',
     ],
     classifiers=[
       'Programming Language :: Python :: 3',
