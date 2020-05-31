@@ -13,18 +13,12 @@ setup(
       'truescrub.updater': ['*.ini'],
     },
     install_requires=[
-      'Flask==1.1.1',
+      'Flask==1.0.0',
       'waitress==1.4.3',
       'trueskill==0.4.5',
       'pyzmq==19.0.0',
-      'werkzeug==1.0.0',
+      'werkzeug==0.15.3',
     ],
-    entry_points={
-      'console_scripts': [
-	'truescrub-app=truescrub.api:app',
-	'truescrub-updater=truescrub.updater.updater:main'
-      ]
-    },
     classifiers=[
       'Programming Language :: Python :: 3',
       'License :: OSI Approved :: MIT License',

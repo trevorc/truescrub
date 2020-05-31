@@ -14,7 +14,7 @@ from typing import List, Optional
 import zmq
 import flask
 from flask import g, request
-from werkzeug.middleware.shared_data import SharedDataMiddleware
+from werkzeug.wsgi import SharedDataMiddleware
 
 from . import db
 from .highlights import get_highlights
@@ -180,7 +180,7 @@ def leaderboard_api(season):
     players = [make_thin_player_viewmodel(player)
                for player in db.get_season_players(g.conn, season)]
     players.sort(key=operator.itemgetter('mmr'), reverse=True)
-    return {'players': players}
+    return flask.jsonify({'players': players})
 
 
 def make_player_viewmodel(player: Player):
@@ -231,11 +231,11 @@ def overall_skill_history(player_id):
             db.get_overall_skill_history(g.conn, player_id, timezone))
     rating_history = db.get_impact_ratings_by_day(g.conn, player_id, timezone)
 
-    return {
+    return flask.jsonify({
         'player_id': player_id,
         'skill_history': skill_history,
         'rating_history': rating_history,
-    }
+    })
 
 
 @app.route('/api/profiles/<int:player_id>/skill_history/season/<int:season>',
@@ -252,12 +252,12 @@ def player_skill_history(player_id, season):
     rating_history = db.get_impact_ratings_by_day(
             g.conn, player_id, timezone, season)
 
-    return {
+    return flask.jsonify({
         'player_id': player_id,
         'season': season,
         'skill_history': skill_history,
         'rating_history': rating_history,
-    }
+    })
 
 
 @app.route('/leaderboard', methods={'GET'})
