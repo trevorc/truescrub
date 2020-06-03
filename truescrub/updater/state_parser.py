@@ -189,7 +189,8 @@ def parse_roundover_transition(
     return new_round, new_player_states
 
 
-def parse_game_states(game_states: Iterable[GameStateRow], season_ids):
+def parse_game_states(game_states: Iterable[GameStateRow],
+                      season_ids: {datetime.datetime: int}):
     season_starts = list(season_ids.keys())
     player_states = []
     rounds = []

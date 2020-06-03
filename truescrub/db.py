@@ -85,7 +85,7 @@ def get_seasons_by_start_date(game_db) -> {datetime.datetime: int}:
     ''')
 
     return {
-        start_date: season_id
+        datetime.datetime.fromisoformat(start_date): season_id
         for season_id, start_date in season_rows
     }
 
