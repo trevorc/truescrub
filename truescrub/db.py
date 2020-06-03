@@ -80,7 +80,7 @@ def get_season_rows(game_db):
 
 def get_seasons_by_start_date(game_db) -> {datetime.datetime: int}:
     season_rows = execute(game_db, '''
-    SELECT season_id, start_date
+    SELECT season_id, CAST(start_date AS text)
     FROM seasons
     ''')
 
