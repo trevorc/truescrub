@@ -85,7 +85,7 @@ def get_seasons_by_start_date(game_db) -> {datetime.datetime: int}:
     ''')
 
     return {
-        datetime.datetime.fromisoformat(start_date): season_id
+        datetime.datetime.strptime(start_date, '%Y-%m-%d'): season_id
         for season_id, start_date in season_rows
     }
 
@@ -149,8 +149,7 @@ def initialize_game_db(game_db):
 ###########################
 
 def get_skill_db(name: str = SKILL_DB_NAME):
-    connection = sqlite3.connect(os.path.join(DATA_DIR, name),
-                                 detect_types=sqlite3.PARSE_DECLTYPES)
+    connection = sqlite3.connect(os.path.join(DATA_DIR, name))
     connection.cursor().execute('PRAGMA foreign_keys = ON')
     return connection
 
