@@ -204,8 +204,9 @@ def compute_rounds_and_players(game_db, skill_db, game_state_range=None) \
         -> (int, (int, int)):
     rounds, player_states, max_game_state_id = \
         extract_game_states(game_db, game_state_range)
-    rounds = remap_rounds(rounds)
     player_states = apply_player_configurations(player_states)
+
+    rounds = remap_rounds(rounds)
     new_rounds = compute_rounds(skill_db, rounds, player_states) \
         if len(rounds) > 0 \
         else None

@@ -1,8 +1,8 @@
 import os
+import queue
 import logging
 import argparse
-
-import zmq
+import threading
 
 from .. import db
 from .recalculate import recalculate, compute_rounds_and_players, \
@@ -10,7 +10,9 @@ from .recalculate import recalculate, compute_rounds_and_players, \
 from .evaluator import evaluate_parameters
 
 
-zmq_socket = zmq.Context().socket(zmq.PULL)
+QUEUE_DONE = object()
+_message_queue = queue.SimpleQueue()
+
 
 logging.basicConfig(format='%(asctime)s.%(msecs).3dZ\t'
                            '%(levelname)s\t%(message)s',
@@ -34,18 +36,31 @@ def process_game_states(game_states):
         skill_db.commit()
 
 
+def send_message(message: dict):
+    _message_queue.put(message)
+
+
 def drain_queue():
-    messages = [zmq_socket.recv_json()]
+    messages = [_message_queue.get()]
     try:
         while True:
-            messages.append(zmq_socket.recv_json(zmq.NOBLOCK))
-    except zmq.Again:
+            messages.append(_message_queue.get_nowait())
+    except queue.Empty:
         return messages
 
 
 def run_updater():
-    while True:
+    done = False
+
+    while not done:
         messages = drain_queue()
+        if QUEUE_DONE in messages:
+            logger.info('got done message')
+            del messages[messages.index(QUEUE_DONE):]
+            if len(messages) == 0:
+                return
+            done = True
+
         logger.debug('processing %d messages', len(messages))
         if any(message['command'] == 'recalculate' for message in messages):
             recalculate()
@@ -56,18 +71,18 @@ def run_updater():
             ])
 
 
-def start_updater(addr: str, port: int):
-    endpoint = 'tcp://{}:{}'.format(addr, port)
-    logger.info('Binding ZeroMQ to {}'.format(endpoint))
-    zmq_socket.bind(endpoint)
-    run_updater()
+class UpdaterThread(threading.Thread):
+    def __init__(self):
+        super().__init__(name='updater')
+
+    def run(self) -> None:
+        run_updater()
+
+    def stop(self):
+        _message_queue.put(QUEUE_DONE)
 
 
 arg_parser = argparse.ArgumentParser()
-arg_parser.add_argument('-y', '--zmq-addr', metavar='HOST', default='0.0.0.0',
-                        help='Bind zeromq on this address.')
-arg_parser.add_argument('-z', '--zmq-port', type=int,
-                        default=5555, help='Bind zeromq on this port.')
 arg_parser.add_argument('-c', '--recalculate', action='store_true',
                         help='Recalculate rankings.')
 arg_parser.add_argument('-e', '--evaluate', action='store_true',
@@ -91,7 +106,8 @@ def main():
         if args.sample:
             params['sample'] = args.sample
         return evaluate_parameters(**params)
-    start_updater(args.zmq_addr, args.zmq_port)
+    else:
+        raise SystemExit('no action given')
 
 
 if __name__ == '__main__':

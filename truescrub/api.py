@@ -11,10 +11,10 @@ import operator
 import itertools
 from typing import List, Optional
 
-import zmq
 import flask
 from flask import g, request
 from werkzeug.wsgi import SharedDataMiddleware
+import waitress
 
 from . import db
 from .highlights import get_highlights
@@ -22,6 +22,7 @@ from .matchmaking import (
     skill_group_ranges, compute_matches,
     estimated_skill_range, MAX_PLAYERS_PER_TEAM)
 from .models import Match, Player, skill_groups, skill_group_name
+from .updater import updater
 
 
 app = flask.Flask(__name__)
@@ -39,20 +40,17 @@ logging.basicConfig(format='%(asctime)s.%(msecs).3dZ\t'
                     datefmt='%Y-%m-%dT%H:%M:%S',
                     level=LOG_LEVEL)
 logger = logging.getLogger(__name__)
-zmq_socket = zmq.Context().socket(zmq.PUSH)
 
 
 def initialize():
     db.initialize_dbs()
-    zmq_addr = 'tcp://{}:{}'.format(UPDATER_HOST, UPDATER_PORT)
-    logger.info('Connecting ZeroMQ socket to {}'.format(zmq_addr))
-    zmq_socket.connect(zmq_addr)
+
 
 
 def send_updater_message(**message):
     if 'command' not in message:
         raise ValueError('missing "command"')
-    zmq_socket.send_json(message, flags=zmq.NOBLOCK)
+    updater.send_message(message)
     logger.debug('sent "%s" message', repr(message))
 
 
@@ -413,14 +411,6 @@ def matchmaking0(seasons: [int], selected_players: {int}, season_id: int = None,
                                  players=players, teams=matches, latest=latest)
 
 
-def create_app():
-    initialize()
-    app.wsgi_app = SharedDataMiddleware(app.wsgi_app, {
-        '/htdocs': ('truescrub', 'htdocs'),
-    }, cache_timeout=3600 * 24 * 14)
-    return app
-
-
 arg_parser = argparse.ArgumentParser()
 arg_parser.add_argument('-a', '--addr', metavar='HOST', default='0.0.0.0',
                         help='Bind to this address.')
@@ -428,13 +418,26 @@ arg_parser.add_argument('-p', '--port', metavar='PORT', type=int,
                         default=9000, help='Listen on this TCP port.')
 arg_parser.add_argument('-c', '--recalculate', action='store_true',
                         help='Recalculate rankings.')
-arg_parser.add_argument('-r', '--use-reloader', action='store_true',
-                        help='Use code reloader.')
+arg_parser.add_argument('-s', '--serve-htdocs', action='store_true',
+                        help='Serve static files.')
 
 
 def main():
     args = arg_parser.parse_args()
+    initialize()
+    updater_thread = updater.UpdaterThread()
+    updater_thread.start()
+
     if args.recalculate:
-        return send_updater_message(command='recalculate')
-    logger.info('TrueScrub listening on {}:{}'.format(args.addr, args.port))
-    create_app().run(args.addr, args.port, app, use_reloader=args.use_reloader)
+        send_updater_message(command='recalculate')
+    else:
+        logger.info('TrueScrub listening on {}:{}'.format(args.addr, args.port))
+        if args.serve_htdocs:
+            app.wsgi_app = SharedDataMiddleware(app.wsgi_app, {
+                '/htdocs': ('truescrub', 'htdocs'),
+            }, cache_timeout=3600 * 24 * 14)
+        waitress.serve(app, host=args.addr, port=args.port)
+
+    updater_thread.stop()
+    logger.debug('joining updater')
+    updater_thread.join()

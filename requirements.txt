@@ -1,5 +1,4 @@
 Flask==1.0.0
 waitress==1.4.3
 trueskill==0.4.5
-pyzmq==19.0.0
 werkzeug==0.15.6

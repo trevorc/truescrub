@@ -14,10 +14,12 @@ setup(
     },
     install_requires=[
       'Flask==1.0.0',
-      'waitress==1.4.3',
+      'waitress==2.0.0',
       'trueskill==0.4.5',
-      'pyzmq==19.0.0',
       'werkzeug==0.15.6',
+    ],
+    tests_require=[
+      'pytest==6.2.4',
     ],
     classifiers=[
       'Programming Language :: Python :: 3',
