@@ -100,6 +100,12 @@ class Player(object):
     def __lt__(self, other):
         return self.player_id < other.player_id
 
+    def __eq__(self, other):
+        return self.player_id == other.player_id
+
+    def __hash__(self):
+        return self.player_id
+
     def __repr__(self):
         return f'<Player "{self.steam_name}">'
 
