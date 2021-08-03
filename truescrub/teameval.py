@@ -7,9 +7,9 @@ from typing import List, Iterable, Set, Dict
 
 import trueskill
 
-from .db import get_skill_db, get_season_players
-from .matchmaking import win_probability
-from .models import Player
+from truescrub.db import get_skill_db, get_season_players
+from truescrub.matchmaking import win_probability
+from truescrub.models import Player
 
 
 def get_assignment_quality(teams: List[List[trueskill.Rating]]):

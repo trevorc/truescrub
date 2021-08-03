@@ -1,0 +1,9 @@
+directories:
+  truescrub
+  tests
+
+targets:
+  //truescrub:all
+  //tests:all
+
+workspace_type: python

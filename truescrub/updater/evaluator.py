@@ -1,9 +1,12 @@
 import trueskill
 
-from ..db import get_skill_db, get_all_teams, get_all_rounds
-from ..matchmaking import win_probability
-from ..models import SKILL_MEAN, SKILL_STDEV, BETA, TAU
-from .recalculate import compute_player_skills
+from truescrub.db import get_skill_db, get_all_teams, get_all_rounds
+from truescrub.matchmaking import win_probability
+from truescrub.models import SKILL_MEAN, SKILL_STDEV, BETA, TAU
+from truescrub.updater.recalculate import compute_player_skills
+
+
+__all__ = ["evaluate_parameters"]
 
 
 def run_evaluation(connection, beta, tau, sample):

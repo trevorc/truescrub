@@ -1,0 +1,60 @@
+syntax = "proto3";
+package life.truescrub.proto;
+import "google/protobuf/timestamp.proto";
+
+// Next ID: 6
+message GameState {
+  int64 game_state_id = 1;
+  Map map = 2;
+  Provider provider = 3;
+  AllPlayers allplayers = 4;
+  Previously previously = 5;
+
+  reserved 6 to max;
+}
+
+
+// Next ID: 6
+message Provider {
+  int32 app_id = 1;
+  string name = 2;
+  int64 steam_id = 3;
+  google.protobuf.Timestamp timestamp = 4;
+  int32 version = 5;
+
+  reserved 6 to max;
+}
+
+
+// Next ID: 2
+message Map {
+  string name = 1;
+
+  reserved 2 to max;
+}
+
+message Player {
+  enum Team {
+    T = 0;
+    CT = 1;
+  }
+
+  int64 steam_id = 1;
+  string name = 2;
+  Team team = 3;
+
+  reserved 4 to max;
+}
+
+message MatchStats {
+}
+
+message AllPlayers {
+  repeated Player players = 1;
+
+  reserved 2 to max;
+}
+
+message Previously {
+
+}

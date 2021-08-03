@@ -1,8 +1,8 @@
 import datetime
 import operator
 
-from .db import execute_one, execute, COEFFICIENTS
-from .models import Player, SKILL_STDEV, SKILL_MEAN, skill_group_name
+from truescrub.db import execute_one, execute, COEFFICIENTS
+from truescrub.models import Player, SKILL_STDEV, SKILL_MEAN, skill_group_name
 
 
 def get_highlights(skill_db, day: datetime.datetime) -> dict:

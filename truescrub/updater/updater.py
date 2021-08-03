@@ -1,23 +1,14 @@
-import os
 import queue
 import logging
-import argparse
 import threading
 
-from .. import db
-from .recalculate import recalculate, compute_rounds_and_players, \
-    recalculate_ratings
-from .evaluator import evaluate_parameters
+from truescrub import db
+from truescrub.updater.recalculate import recalculate, \
+    compute_rounds_and_players, recalculate_ratings
 
 
 QUEUE_DONE = object()
 _message_queue = queue.SimpleQueue()
-
-
-logging.basicConfig(format='%(asctime)s.%(msecs).3dZ\t'
-                           '%(levelname)s\t%(message)s',
-                    datefmt='%Y-%m-%dT%H:%M:%S',
-                    level=os.environ.get('TRUESCRUB_LOG_LEVEL', 'DEBUG'))
 logger = logging.getLogger(__name__)
 
 
@@ -80,35 +71,3 @@ class UpdaterThread(threading.Thread):
 
     def stop(self):
         _message_queue.put(QUEUE_DONE)
-
-
-arg_parser = argparse.ArgumentParser()
-arg_parser.add_argument('-c', '--recalculate', action='store_true',
-                        help='Recalculate rankings.')
-arg_parser.add_argument('-e', '--evaluate', action='store_true',
-                        help='Evaluate parameters')
-arg_parser.add_argument('--beta', type=float)
-arg_parser.add_argument('--tau', type=float)
-arg_parser.add_argument('--sample', type=float)
-
-
-def main():
-    args = arg_parser.parse_args()
-    db.initialize_dbs()
-    if args.recalculate:
-        return recalculate()
-    elif args.evaluate:
-        params = {}
-        if args.beta:
-            params['beta'] = args.beta
-        if args.tau:
-            params['tau'] = args.tau
-        if args.sample:
-            params['sample'] = args.sample
-        return evaluate_parameters(**params)
-    else:
-        raise SystemExit('no action given')
-
-
-if __name__ == '__main__':
-    main()

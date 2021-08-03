@@ -4,7 +4,7 @@ import operator
 import itertools
 from typing import Optional, Iterable
 
-from ..models import GameStateRow
+from truescrub.models import GameStateRow
 
 
 def parse_round_stats(allplayers: {int: dict}) -> {int: dict}:

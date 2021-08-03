@@ -8,7 +8,7 @@ from typing import FrozenSet, Iterator, Optional
 
 import trueskill
 
-from .models import Player, RoundRow, SkillHistory, GameStateRow
+from truescrub.models import Player, RoundRow, SkillHistory, GameStateRow
 from truescrub.models import SKILL_MEAN, SKILL_STDEV
 
 

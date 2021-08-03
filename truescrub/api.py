@@ -16,13 +16,12 @@ from flask import g, request
 from werkzeug.wsgi import SharedDataMiddleware
 import waitress
 
-from . import db
-from .highlights import get_highlights
-from .matchmaking import (
+from truescrub import db, updater
+from truescrub.highlights import get_highlights
+from truescrub.matchmaking import (
     skill_group_ranges, compute_matches,
     estimated_skill_range, MAX_PLAYERS_PER_TEAM)
-from .models import Match, Player, skill_groups, skill_group_name
-from .updater import updater
+from truescrub.models import Match, Player, skill_groups, skill_group_name
 
 
 app = flask.Flask(__name__)
@@ -40,11 +39,6 @@ logging.basicConfig(format='%(asctime)s.%(msecs).3dZ\t'
                     datefmt='%Y-%m-%dT%H:%M:%S',
                     level=LOG_LEVEL)
 logger = logging.getLogger(__name__)
-
-
-def initialize():
-    db.initialize_dbs()
-
 
 
 def send_updater_message(**message):
@@ -424,7 +418,7 @@ arg_parser.add_argument('-s', '--serve-htdocs', action='store_true',
 
 def main():
     args = arg_parser.parse_args()
-    initialize()
+    db.initialize_dbs()
     updater_thread = updater.UpdaterThread()
     updater_thread.start()
 

@@ -6,7 +6,7 @@ from typing import Iterable
 import trueskill
 from trueskill import Gaussian
 
-from .models import SKILL_MEAN, SKILL_STDEV, Match, Player, \
+from truescrub.models import SKILL_MEAN, SKILL_STDEV, Match, Player, \
     setup_trueskill, skill_groups
 
 MAX_PLAYERS_PER_TEAM = 6
