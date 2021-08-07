@@ -12,10 +12,12 @@ import itertools
 from typing import List, Optional
 
 import flask
+import jinja2
 from flask import g, request
 from werkzeug.wsgi import SharedDataMiddleware
 import waitress
 
+import truescrub
 from truescrub import db, updater
 from truescrub.highlights import get_highlights
 from truescrub.matchmaking import (
@@ -26,6 +28,10 @@ from truescrub.models import Match, Player, skill_groups, skill_group_name
 
 app = flask.Flask(__name__)
 app.config['PROPAGATE_EXCEPTIONS'] = True
+
+jinja2_env = jinja2.Environment(
+    loader=jinja2.PackageLoader(truescrub.__name__))
+
 
 SHARED_KEY = os.environ.get('TRUESCRUB_KEY', 'afohXaef9ighaeSh')
 LOG_LEVEL = os.environ.get('TRUESCRUB_LOG_LEVEL', 'DEBUG')
@@ -47,6 +53,8 @@ def send_updater_message(**message):
     updater.send_message(message)
     logger.debug('sent "%s" message', repr(message))
 
+def render_template(template_name, **context):
+    return jinja2_env.get_template(template_name).render(**context)
 
 @app.before_request
 def start_timer():
@@ -80,7 +88,7 @@ def db_close(exc):
 def index():
     seasons = len(db.get_season_range(g.conn))
     season_path = '/season/{}'.format(seasons) if seasons > 1 else ''
-    return flask.render_template('index.html', season_path=season_path)
+    return render_template('index.html', season_path=season_path)
 
 
 @app.route('/api/game_state', methods={'POST'})
@@ -258,8 +266,8 @@ def default_leaderboard():
                for player in db.get_all_players(g.conn)]
     players.sort(key=operator.itemgetter('mmr'), reverse=True)
     seasons = db.get_season_range(g.conn)
-    return flask.render_template('leaderboard.html', leaderboard=players,
-                                 seasons=seasons, selected_season=None)
+    return render_template('leaderboard.html', leaderboard=players,
+                           seasons=seasons, selected_season=None)
 
 
 @app.route('/leaderboard/season/<int:season>', methods={'GET'})
@@ -268,8 +276,8 @@ def leaderboard(season):
                for player in db.get_season_players(g.conn, season)]
     players.sort(key=operator.itemgetter('mmr'), reverse=True)
     seasons = db.get_season_range(g.conn)
-    return flask.render_template('leaderboard.html', leaderboard=players,
-                                 seasons=seasons, selected_season=season)
+    return render_template('leaderboard.html', leaderboard=players,
+                           seasons=seasons, selected_season=season)
 
 
 def format_bound(bound):
@@ -287,7 +295,7 @@ def all_skill_groups():
         'lower_bound': format_bound(lower_bound),
         'upper_bound': format_bound(upper_bound),
     } for skill_group, lower_bound, upper_bound in skill_group_ranges()]
-    return flask.render_template('skill_groups.html', skill_groups=groups)
+    return render_template('skill_groups.html', skill_groups=groups)
 
 
 def make_rating_component_viewmodel(components, impact_rating):
@@ -337,15 +345,15 @@ def profile(player_id):
     ]
     season_ratings.sort(reverse=True)
     player_viewmodel = make_player_viewmodel(player)
-    return flask.render_template('profile.html',
-                                 seasons=seasons,
-                                 current_season=current_season,
-                                 player=player_viewmodel,
-                                 overall_record=overall_record,
-                                 overall_rating=overall_rating,
-                                 season_skills=season_skills,
-                                 season_ratings=season_ratings,
-                                 skill_groups=SKILL_GROUPS_VIEWMODEL)
+    return render_template('profile.html',
+                           seasons=seasons,
+                           current_season=current_season,
+                           player=player_viewmodel,
+                           overall_record=overall_record,
+                           overall_rating=overall_rating,
+                           season_skills=season_skills,
+                           season_ratings=season_ratings,
+                           skill_groups=SKILL_GROUPS_VIEWMODEL)
 
 
 @app.route('/matchmaking', methods={'GET'})
@@ -399,10 +407,10 @@ def matchmaking0(seasons: [int], selected_players: {int}, season_id: int = None,
     except ValueError as e:
         return flask.make_response(e.args[0], 403)
 
-    return flask.render_template('matchmaking.html',
-                                 seasons=seasons, selected_season=season_id,
-                                 selected_players=selected_players,
-                                 players=players, teams=matches, latest=latest)
+    return render_template('matchmaking.html',
+                           seasons=seasons, selected_season=season_id,
+                           selected_players=selected_players,
+                           players=players, teams=matches, latest=latest)
 
 
 arg_parser = argparse.ArgumentParser()

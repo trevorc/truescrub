@@ -8,7 +8,7 @@ from truescrub.updater.recalculate import recalculate, \
 
 
 QUEUE_DONE = object()
-_message_queue = queue.SimpleQueue()
+_message_queue = queue.Queue()
 logger = logging.getLogger(__name__)
 
 

@@ -1,6 +1,7 @@
 load("@rules_python//python:defs.bzl", "py_binary")
 load("@pip_requirements//:requirements.bzl", "requirement")
 load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
+load("@subpar//:subpar.bzl", "par_binary")
 
 py_library(
     name = "models",
@@ -83,10 +84,9 @@ py_library(
     ],
 )
 
-py_binary(
+par_binary(
     name = "truescrub",
     srcs = ["__main__.py"],
     main = "__main__.py",
-    srcs_version = "PY3",
     deps = [":api"],
 )

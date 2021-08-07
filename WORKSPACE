@@ -45,3 +45,15 @@ load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
 rules_proto_dependencies()
 rules_proto_toolchains()
 protobuf_deps()
+
+
+
+### Subpar
+http_archive(
+    name = "subpar",
+    sha256 = "b80297a1b8d38027a86836dbadc22f55dc3ecad56728175381aa6330705ac10f",
+    strip_prefix = "subpar-2.0.0",
+    urls = [
+      "https://github.com/google/subpar/archive/refs/tags/2.0.0.tar.gz",
+    ]
+)
