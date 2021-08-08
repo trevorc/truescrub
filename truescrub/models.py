@@ -162,3 +162,7 @@ class Match(object):
         self.quality = quality
         self.team1_win_probability = round(p_win, 2)
         self.team2_win_probability = round(1.0 - p_win, 2)
+
+    def __eq__(self, other):
+        return self.team1 == other.team1 \
+            and self.team2 == other.team2

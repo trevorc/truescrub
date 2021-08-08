@@ -18,7 +18,10 @@ py_library(
 py_library(
     name = "matchmaking",
     srcs = ["matchmaking.py"],
-    visibility = ["//truescrub/updater:__pkg__"],
+    visibility = [
+        "//tests:__pkg__",
+        "//truescrub/updater:__pkg__",
+    ],
     deps = [
         ":models",
         requirement("trueskill"),

@@ -14,7 +14,7 @@ from typing import List, Optional
 import flask
 import jinja2
 from flask import g, request
-from werkzeug.wsgi import SharedDataMiddleware
+from werkzeug.middleware.shared_data import SharedDataMiddleware
 import waitress
 
 import truescrub
@@ -53,8 +53,10 @@ def send_updater_message(**message):
     updater.send_message(message)
     logger.debug('sent "%s" message', repr(message))
 
+
 def render_template(template_name, **context):
     return jinja2_env.get_template(template_name).render(**context)
+
 
 @app.before_request
 def start_timer():
@@ -436,7 +438,7 @@ def main():
         logger.info('TrueScrub listening on {}:{}'.format(args.addr, args.port))
         if args.serve_htdocs:
             app.wsgi_app = SharedDataMiddleware(app.wsgi_app, {
-                '/htdocs': ('truescrub', 'htdocs'),
+                '/htdocs': (truescrub.__name__, 'htdocs'),
             }, cache_timeout=3600 * 24 * 14)
         waitress.serve(app, host=args.addr, port=args.port)
 
