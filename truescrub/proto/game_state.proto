@@ -1,60 +1,246 @@
 syntax = "proto3";
+
 package life.truescrub.proto;
+
 import "google/protobuf/timestamp.proto";
 
-// Next ID: 6
-message GameState {
+
+// Unofficial reference:
+// https://old.reddit.com/r/GlobalOffensive/comments/cjhcpy/game_state_integration_a_very_large_and_indepth/
+
+
+message GameStateEntry {
   int64 game_state_id = 1;
-  Map map = 2;
-  Provider provider = 3;
-  AllPlayers allplayers = 4;
-  Previously previously = 5;
-
-  reserved 6 to max;
-}
-
-
-// Next ID: 6
-message Provider {
-  int32 app_id = 1;
-  string name = 2;
-  int64 steam_id = 3;
-  google.protobuf.Timestamp timestamp = 4;
-  int32 version = 5;
-
-  reserved 6 to max;
-}
-
-
-// Next ID: 2
-message Map {
-  string name = 1;
-
-  reserved 2 to max;
-}
-
-message Player {
-  enum Team {
-    T = 0;
-    CT = 1;
-  }
-
-  int64 steam_id = 1;
-  string name = 2;
-  Team team = 3;
+  google.protobuf.Timestamp created_at = 2;
+  GameState game_state = 3;
 
   reserved 4 to max;
 }
 
-message MatchStats {
+
+// Next ID: 9
+message GameState {
+  Map map = 1;
+  Player player = 2;
+  Provider provider = 3;
+  Round round = 4;
+  repeated ThinPlayer allplayers = 5;
+  Previously previously = 6;
+  Added added = 7;
+
+  reserved 8 to max;
 }
 
-message AllPlayers {
-  repeated Player players = 1;
+// Next ID: 6
+message Provider {
+  string name = 1;
+  int32 app_id = 2;
+  int32 version = 3;
+  int64 steam_id = 4;
+  google.protobuf.Timestamp timestamp = 5;
 
-  reserved 2 to max;
+  reserved 6 to max;
+}
+
+enum Team {
+  TEAM_T = 0;
+  TEAM_CT = 1;
+}
+
+// Next ID: 9
+message Player {
+  enum Activity {
+    ACTIVITY_UNSPECIFIED = 0;
+    ACTIVITY_PLAYING = 1;
+    ACTIVITY_MENU = 2;
+    ACTIVITY_TEXT_INPUT = 3;
+  }
+
+  int64 steam_id = 1;
+  string clan = 2;
+  string name = 3;
+  int32 observer_slot = 4;
+  Team team = 5;
+  Activity activity = 6;
+  MatchStats match_stats = 7;
+  PlayerState state = 8;
+
+  reserved 9 to max;
+}
+
+// Next ID: 6
+message MatchStats {
+  int32 kills = 1;
+  int32 assists = 2;
+  int32 deaths = 3;
+  int32 mvps = 4;
+  int32 score = 5;
+
+  reserved 6 to max;
+}
+
+// Next ID: 13
+message PlayerState {
+  int32 health = 1;
+  int32 armor = 2;
+  bool helmet = 3;
+  int32 flashed = 4;
+  int32 smoked = 5;
+  int32 burning = 6;
+  int32 money = 7;
+  int32 round_kills = 8;
+  int32 round_killhs = 9;
+  int32 round_totaldmg = 10;
+  int32 equip_value = 11;
+  bool defusekit = 12;
+
+  reserved 13 to max;
+}
+
+// Next ID: 4
+message Round {
+  enum RoundPhase {
+    ROUND_PHASE_UNSPECIFIED = 0;
+    ROUND_PHASE_FREEZETIME = 1;
+    ROUND_PHASE_LIVE = 2;
+    ROUND_PHASE_OVER = 3;
+  }
+
+  enum Bomb {
+    BOMB_UNSPECIFIED = 0;
+    BOMB_PLANTED = 1;
+    BOMB_DEFUSED = 2;
+    BOMB_EXPLODED = 3;
+  }
+
+  RoundPhase phase = 1;
+  Team win_team = 2;
+  Bomb bomb = 3;
+
+  reserved 4 to max;
+}
+
+enum Mode {
+  MODE_UNSPECIFIED = 0;
+  MODE_SCRIMCOMP2V2 = 1;
+  MODE_COMPETITIVE = 2;
+  MODE_DEATHMATCH = 3;
+  MODE_CASUAL = 4;
+  MODE_GUNGAMEPROGRESSIVE = 5;
+  MODE_CUSTOM = 6;
+  MODE_GUNGAMETRBOMB = 7;
+  MODE_SURVIVAL = 8;
+  MODE_COOPERATIVE = 9;
+}
+
+enum MapPhase {
+  MAP_PHASE_UNSPECIFIED = 0;
+  MAP_PHASE_WARMUP = 1;
+  MAP_PHASE_LIVE = 2;
+  MAP_PHASE_INTERMISSION = 3;
+  MAP_PHASE_GAMEOVER = 4;
+}
+
+message RoundWin {
+  enum WinCondition {
+    WIN_CONDITION_UNSPECIFIED = 0;
+    WIN_CONDITION_T_WIN_BOMB = 1;
+    WIN_CONDITION_T_WIN_ELIMINATION = 2;
+    WIN_CONDITION_T_WIN_TIME = 3;
+    WIN_CONDITION_CT_WIN_DEFUSE = 4;
+    WIN_CONDITION_CT_WIN_ELIMINATION = 5;
+    WIN_CONDITION_CT_WIN_TIME = 6;
+    WIN_CONDITION_CT_WIN_RESCUE = 7;
+  }
+
+  int32 round_num = 1;
+  WinCondition win_condition = 2;
+
+  reserved 3 to max;
+}
+
+
+// Next ID: 11
+message Map {
+  Mode mode = 1;
+  string name = 2;
+  MapPhase phase = 3;
+  int32 round = 4;
+  TeamState team_t = 5;
+  TeamState team_ct = 6;
+  int32 num_matches_to_win_series = 7;
+  int32 current_spectators = 8;
+  int32 souvenirs_total = 9;
+  repeated RoundWin round_wins = 10;
+
+  reserved 11 to max;
+}
+
+// Next ID: 5
+message TeamState {
+  int32 score = 1;
+  int32 consecutive_round_losses = 2;
+  int32 timeouts_remaining = 3;
+  int32 matches_won_this_series = 4;
+
+  reserved 5 to max;
+}
+
+
+message ThinPlayer {
+  int64 steam_id = 1;
+  string name = 2;
+  int32 observer_slot = 3;
+  Team team = 4;
+  MatchStats match_stats = 5;
+  PlayerState state = 6;
+
+  reserved 7 to max;
 }
 
 message Previously {
+  Map map = 1;
+  Player player = 2;
 
+  oneof previous_round {
+    bool round_present = 3;
+    Round round = 4;
+  }
+
+  oneof previous_allplayers {
+    bool allplayers_present = 5;
+    PreviousAllPlayers allplayers = 6;
+  }
+
+  reserved 7 to max;
 }
+
+message PreviousAllPlayers {
+  repeated ThinPlayer allplayers = 1;
+  reserved 2 to max;
+}
+
+
+message Added {
+  MapAdded map = 1;
+  PlayerAdded player = 2;
+  RoundAdded round = 3;
+  repeated ThinPlayerAdded allplayers = 4;
+  reserved 5 to max;
+}
+
+message MapAdded {}
+
+message PlayerAdded {
+  bool clan = 1;
+  bool observer_slot = 2;
+  bool team = 3;
+  bool match_stats = 4;
+  bool state = 5;
+
+  reserved 6 to max;
+}
+
+message RoundAdded {}
+
+message ThinPlayerAdded {}

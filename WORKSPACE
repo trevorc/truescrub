@@ -1,7 +1,6 @@
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
-
 ### Python
 
 http_archive(
@@ -14,9 +13,9 @@ load("@rules_python//python:pip.bzl", "pip_install")
 
 pip_install(
     name = "pip_requirements",
+    quiet = False,
     requirements = "//:requirements.txt",
 )
-
 
 ### Protobuf
 
@@ -36,17 +35,17 @@ http_archive(
     strip_prefix = "protobuf-3.17.3",
     urls = [
         "https://github.com/protocolbuffers/protobuf/releases/download/v3.17.3/protobuf-python-3.17.3.tar.gz",
-    ]
+    ],
 )
 
 load("@rules_proto//proto:repositories.bzl", "rules_proto_dependencies", "rules_proto_toolchains")
 load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
 
 rules_proto_dependencies()
+
 rules_proto_toolchains()
+
 protobuf_deps()
-
-
 
 ### Subpar
 http_archive(
@@ -54,6 +53,6 @@ http_archive(
     sha256 = "b80297a1b8d38027a86836dbadc22f55dc3ecad56728175381aa6330705ac10f",
     strip_prefix = "subpar-2.0.0",
     urls = [
-      "https://github.com/google/subpar/archive/refs/tags/2.0.0.tar.gz",
-    ]
+        "https://github.com/google/subpar/archive/refs/tags/2.0.0.tar.gz",
+    ],
 )

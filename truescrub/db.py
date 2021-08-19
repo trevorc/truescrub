@@ -1,10 +1,11 @@
 import os
+import json
 import sqlite3
 import logging
 import datetime
 import operator
 import itertools
-from typing import FrozenSet, Iterator, Optional
+from typing import FrozenSet, Iterator, Optional, Tuple
 
 import trueskill
 
@@ -88,6 +89,15 @@ def get_seasons_by_start_date(game_db) -> {datetime.datetime: int}:
         datetime.datetime.strptime(start_date, '%Y-%m-%d'): season_id
         for season_id, start_date in season_rows
     }
+
+
+def get_raw_game_states(game_db) -> \
+      Iterator[Tuple[int, int, dict]]:
+    for game_state_id, created_at, game_state in execute(game_db, '''
+    SELECT game_state_id, strftime('%s', created_at), game_state
+    FROM game_state 
+    '''):
+        yield game_state_id, created_at, json.loads(game_state)
 
 
 def get_game_states(game_db, game_state_range) -> Iterator[GameStateRow]:

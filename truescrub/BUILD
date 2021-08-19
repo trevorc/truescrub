@@ -8,6 +8,7 @@ py_library(
     srcs = ["models.py"],
     visibility = [
         "//tests:__pkg__",
+        "//truescrub/tools:__pkg__",
         "//truescrub/updater:__pkg__",
     ],
     deps = [
@@ -20,6 +21,7 @@ py_library(
     srcs = ["matchmaking.py"],
     visibility = [
         "//tests:__pkg__",
+        "//truescrub/tools:__pkg__",
         "//truescrub/updater:__pkg__",
     ],
     deps = [
@@ -31,7 +33,10 @@ py_library(
 py_library(
     name = "db",
     srcs = ["db.py"],
-    visibility = ["//truescrub/updater:__pkg__"],
+    visibility = [
+        "//truescrub/tools:__pkg__",
+        "//truescrub/updater:__pkg__",
+    ],
     deps = [
         ":models",
         requirement("trueskill"),
@@ -41,22 +46,13 @@ py_library(
 py_library(
     name = "state_serialization",
     srcs = ["state_serialization.py"],
-    visibility = ["//tests:__pkg__"],
+    visibility = [
+        "//tests:__pkg__",
+        "//truescrub/tools:__pkg__",
+    ],
     deps = [
         ":models",
         "//truescrub/proto:game_state_py_proto",
-    ],
-)
-
-py_binary(
-    name = "teameval",
-    srcs = [
-        "teameval.py",
-    ],
-    deps = [
-        ":db",
-        ":matchmaking",
-        ":models",
     ],
 )
 

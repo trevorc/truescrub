@@ -9,13 +9,14 @@ import datetime
 import argparse
 import operator
 import itertools
+import concurrent.futures
 from typing import List, Optional
 
 import flask
 import jinja2
 from flask import g, request
 from werkzeug.middleware.shared_data import SharedDataMiddleware
-import waitress
+import waitress.server
 
 import truescrub
 from truescrub import db, updater
@@ -83,7 +84,8 @@ def db_commit(response):
 
 @app.teardown_request
 def db_close(exc):
-    g.conn.close()
+    if hasattr(g, 'conn'):
+        g.conn.close()
 
 
 @app.route('/', methods={'GET'})
@@ -426,22 +428,53 @@ arg_parser.add_argument('-s', '--serve-htdocs', action='store_true',
                         help='Serve static files.')
 
 
+class UpdaterService:
+    def __call__(self):
+        logger.info('running %s', type(self).__name__)
+        updater.run_updater()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc_info):
+        logger.info('stopping %s', type(self).__name__)
+        updater.stop_updater()
+
+
+class WaitressService:
+    def __init__(self, app, host, port):
+        self.server = waitress.server.create_server(app, host=host, port=port)
+
+    def __call__(self):
+        logger.info('running %s', type(self).__name__)
+        self.server.run()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc_info):
+        logger.info('stopping %s', type(self).__name__)
+        self.server.close()
+
+
 def main():
     args = arg_parser.parse_args()
+    executor = concurrent.futures.ThreadPoolExecutor(max_workers=2)
     db.initialize_dbs()
-    updater_thread = updater.UpdaterThread()
-    updater_thread.start()
 
-    if args.recalculate:
-        send_updater_message(command='recalculate')
-    else:
-        logger.info('TrueScrub listening on {}:{}'.format(args.addr, args.port))
-        if args.serve_htdocs:
-            app.wsgi_app = SharedDataMiddleware(app.wsgi_app, {
-                '/htdocs': (truescrub.__name__, 'htdocs'),
-            }, cache_timeout=3600 * 24 * 14)
-        waitress.serve(app, host=args.addr, port=args.port)
+    if args.serve_htdocs:
+        app.wsgi_app = SharedDataMiddleware(app.wsgi_app, {
+            '/htdocs': (truescrub.__name__, 'htdocs'),
+        }, cache_timeout=3600 * 24 * 14)
 
-    updater_thread.stop()
-    logger.debug('joining updater')
-    updater_thread.join()
+    with UpdaterService() as updater_service, \
+         WaitressService(app, host=args.addr, port=args.port) \
+            as waitress_service:
+        futures = [executor.submit(updater_service)]
+        if args.recalculate:
+            send_updater_message(command='recalculate')
+        else:
+            logger.info('listening on %s:%s', args.addr, args.port)
+            futures.append(executor.submit(waitress_service))
+        for future in concurrent.futures.as_completed(futures):
+            future.result()

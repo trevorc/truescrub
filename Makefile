@@ -1,19 +1,24 @@
+TRUESCRUB_PAR	:= /opt/truescrub/truescrub.par
+
 .PHONY: build
 build:
 	bazel build //truescrub:truescrub.par
 
 .PHONY: deploy
 deploy: build
-	scp bazel-bin/truescrub/truescrub.par rumia:/opt/truescrub/
-	ssh rumia sudo systemctl restart truescrub
+	rsync -auvh --progress bazel-bin/truescrub/truescrub.par rumia:${TRUESCRUB_PAR}
 
 .PHONY: recalculate
 recalculate:
-	ssh rumia docker exec services_truescrub_1 python -m truescrub --recalculate
+	ssh rumia TRUESCRUB_DATA_DIR=/var/db/truescrub ${TRUESCRUB_PAR} --recalculate
+
+.PHONY: test
+test:
+	bazel test //tests:all
 
 .PHONY: serve
 serve:
-	TRUESCRUB_DATA_DIR=data bazel run //truecrub -s
+	TRUESCRUB_DATA_DIR=${PWD}/data bazel run //truescrub -s
 
 .PHONY: upload
 upload:

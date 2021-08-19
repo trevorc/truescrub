@@ -52,14 +52,19 @@ def run_updater():
                 return
             done = True
 
-        logger.debug('processing %d messages', len(messages))
         if any(message['command'] == 'recalculate' for message in messages):
+            logger.debug('processing recalculate message')
             recalculate()
         else:
+            logger.debug('processing %d game states', len(messages))
             process_game_states([
                 message['game_state_id']
                 for message in messages
             ])
+
+
+def stop_updater():
+    _message_queue.put(QUEUE_DONE)
 
 
 class UpdaterThread(threading.Thread):
@@ -70,4 +75,4 @@ class UpdaterThread(threading.Thread):
         run_updater()
 
     def stop(self):
-        _message_queue.put(QUEUE_DONE)
+        stop_updater()
