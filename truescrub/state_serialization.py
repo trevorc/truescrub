@@ -1,4 +1,6 @@
 import itertools
+import json
+import logging
 from typing import Optional
 
 from google.protobuf.timestamp_pb2 import Timestamp
@@ -8,6 +10,13 @@ from truescrub.proto import game_state_pb2
 
 class DeserializationError(RuntimeError):
   pass
+
+
+class InvalidGameStateException(RuntimeError):
+  pass
+
+
+logger = logging.getLogger(__name__)
 
 
 def translate_enum(enum, prefix):
@@ -39,6 +48,8 @@ def parse_team_state(ts_json: dict) -> game_state_pb2.TeamState:
 
 
 def parse_round_win(round_num: str, win_condition: str) -> game_state_pb2.RoundWin:
+  if win_condition == '':
+    raise InvalidRoundException(f'empty win condition for round {round_num}')
   return game_state_pb2.RoundWin(
       round_num=int(round_num),
       win_condition=WIN_CONDITIONS[win_condition])
@@ -70,12 +81,15 @@ def parse_player(player_json: Optional[dict]) -> Optional[game_state_pb2.Player]
     return None
   steam_id = int(player_json['steamid']) if 'steamid' in player_json else None
   team = TEAMS[player_json['team']] if 'team' in player_json else None
-  activity = ACTIVITIES[player_json['activity']] \
-    if 'activity' in player_json else None
-  match_stats = parse_match_stats(player_json['match_stats']) \
-    if 'match_stats' in player_json else None
-  player_state = parse_player_state(player_json['state']) \
-    if 'state' in player_json else None
+  try:
+    activity = ACTIVITIES[player_json['activity']] \
+      if 'activity' in player_json else None
+    match_stats = parse_match_stats(player_json['match_stats']) \
+      if 'match_stats' in player_json else None
+    player_state = parse_player_state(player_json['state']) \
+      if 'state' in player_json else None
+  except KeyError as e:
+    raise DeserializationError(e)
 
   return game_state_pb2.Player(
       steam_id=steam_id,
@@ -166,8 +180,8 @@ def parse_player_added(paj: dict) -> game_state_pb2.PlayerAdded:
       clan=paj.get('clan'),
       observer_slot=paj.get('observer_slot'),
       team=paj.get('team'),
-      match_stats=paj.get('match_stats') == True,
-      state=paj.get('state') == True,
+      match_stats=paj.get('match_stats') is True,
+      state=paj.get('state') is True,
   )
 
 
@@ -180,18 +194,24 @@ def parse_added(added: dict) -> game_state_pb2.Added:
 def parse_game_state(gs_json: dict) -> game_state_pb2.GameState:
   """Deserialize a JSON-formatted game state to protobuf."""
 
-  map_ = parse_map(gs_json.get('map'))
-  provider = parse_provider(gs_json.get('provider', {}))
-  round_ = parse_round(gs_json.get('round'))
-  player = parse_player(gs_json['player'])
-  allplayers = [
-    parse_allplayers_entry(steam_id, allplayers_entry)
-    for steam_id, allplayers_entry in gs_json.get('allplayers', {}).items()
-  ]
-  previously = parse_previously(gs_json['previously']) \
-    if 'previously' in gs_json else None
-  added = parse_added(gs_json['added']) if 'added' in gs_json else None
-  game_state_proto = game_state_pb2.GameState(
-      provider=provider, map=map_, round=round_, player=player,
-      allplayers=allplayers, previously=previously, added=added)
-  return game_state_proto
+  if 'provider' not in gs_json:
+    raise InvalidGameStateException(gs_json)
+
+  try:
+    map_ = parse_map(gs_json.get('map'))
+    provider = parse_provider(gs_json['provider'])
+    round_ = parse_round(gs_json.get('round'))
+    player = parse_player(gs_json['player'])
+    allplayers = [
+      parse_allplayers_entry(steam_id, allplayers_entry)
+      for steam_id, allplayers_entry in gs_json.get('allplayers', {}).items()
+    ]
+    previously = parse_previously(gs_json['previously']) \
+      if 'previously' in gs_json else None
+    added = parse_added(gs_json['added']) if 'added' in gs_json else None
+    return game_state_pb2.GameState(
+        provider=provider, map=map_, round=round_, player=player,
+        allplayers=allplayers, previously=previously, added=added)
+  except DeserializationError as e:
+    logger.error('Failed to deserialize game_state: %s', json.dumps(gs_json))
+    raise e

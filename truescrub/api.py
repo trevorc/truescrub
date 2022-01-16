@@ -34,10 +34,9 @@ jinja2_env = jinja2.Environment(
     loader=jinja2.PackageLoader(truescrub.__name__))
 
 
+TRUESCRUB_BRAND = os.environ.get('TRUESCRUB_BRAND', 'TrueScrub™')
 SHARED_KEY = os.environ.get('TRUESCRUB_KEY', 'afohXaef9ighaeSh')
 LOG_LEVEL = os.environ.get('TRUESCRUB_LOG_LEVEL', 'DEBUG')
-UPDATER_HOST = os.environ.get('TRUESCRUB_UPDATER_HOST', '127.0.0.1')
-UPDATER_PORT = os.environ.get('TRUESCRUB_UPDATER_PORT', 5555)
 TIMEZONE_PATTERN = re.compile(r'([+-])(\d\d):00')
 MAX_MATCHES = 50
 
@@ -92,7 +91,8 @@ def db_close(exc):
 def index():
     seasons = len(db.get_season_range(g.conn))
     season_path = '/season/{}'.format(seasons) if seasons > 1 else ''
-    return render_template('index.html', season_path=season_path)
+    return render_template('index.html', brand=TRUESCRUB_BRAND,
+                           season_path=season_path)
 
 
 @app.route('/api/game_state', methods={'POST'})
@@ -270,8 +270,9 @@ def default_leaderboard():
                for player in db.get_all_players(g.conn)]
     players.sort(key=operator.itemgetter('mmr'), reverse=True)
     seasons = db.get_season_range(g.conn)
-    return render_template('leaderboard.html', leaderboard=players,
-                           seasons=seasons, selected_season=None)
+    return render_template('leaderboard.html', brand=TRUESCRUB_BRAND,
+                           leaderboard=players, seasons=seasons,
+                           selected_season=None)
 
 
 @app.route('/leaderboard/season/<int:season>', methods={'GET'})
@@ -299,7 +300,8 @@ def all_skill_groups():
         'lower_bound': format_bound(lower_bound),
         'upper_bound': format_bound(upper_bound),
     } for skill_group, lower_bound, upper_bound in skill_group_ranges()]
-    return render_template('skill_groups.html', skill_groups=groups)
+    return render_template('skill_groups.html', brand=TRUESCRUB_BRAND,
+                           skill_groups=groups)
 
 
 def make_rating_component_viewmodel(components, impact_rating):
@@ -412,6 +414,7 @@ def matchmaking0(seasons: [int], selected_players: {int}, season_id: int = None,
         return flask.make_response(e.args[0], 403)
 
     return render_template('matchmaking.html',
+                           brand=TRUESCRUB_BRAND,
                            seasons=seasons, selected_season=season_id,
                            selected_players=selected_players,
                            players=players, teams=matches, latest=latest)
@@ -473,6 +476,7 @@ def main():
         futures = [executor.submit(updater_service)]
         if args.recalculate:
             send_updater_message(command='recalculate')
+            updater.stop_updater()
         else:
             logger.info('listening on %s:%s', args.addr, args.port)
             futures.append(executor.submit(waitress_service))

@@ -1,12 +1,18 @@
 import argparse
+import logging
 import struct
 
 from google.protobuf import text_format
 from google.protobuf.timestamp_pb2 import Timestamp
+import json
+from tqdm import tqdm
 from truescrub.proto import game_state_pb2
 
-from truescrub.state_serialization import parse_game_state
-from truescrub.db import get_game_db, get_raw_game_states
+from truescrub.state_serialization import parse_game_state, InvalidGameStateException
+from truescrub.db import get_game_db, get_raw_game_states, get_game_state_count
+
+
+logger = logging.getLogger(__name__)
 
 
 def write_textpb(gs_proto: game_state_pb2.GameState, output):
@@ -41,9 +47,15 @@ def main():
 
   with get_game_db() as game_db, open(opts.output, 'wb') as output:
     writer = FORMATS[opts.format]
+    total = get_game_state_count(game_db=game_db)
     game_states = get_raw_game_states(game_db=game_db)
-    for game_state_id, created_at, game_state in game_states:
-      gs_proto = parse_game_state(game_state)
+    for game_state_id, created_at, game_state in tqdm(game_states, total=total):
+      try:
+        gs_proto = parse_game_state(game_state)
+      except InvalidGameStateException as e:
+        logger.warning('skipping invalid round (reason: %s): %s',
+                       e, json.dumps(game_state))
+        continue
       timestamp = Timestamp()
       timestamp.FromSeconds(created_at)
       gs_entry = game_state_pb2.GameStateEntry(

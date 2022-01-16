@@ -91,10 +91,18 @@ def get_seasons_by_start_date(game_db) -> {datetime.datetime: int}:
     }
 
 
+def get_game_state_count(game_db) -> int:
+    return execute_one(game_db, '''
+    SELECT COUNT(*) FROM game_state
+    ''')[0]
+
+
 def get_raw_game_states(game_db) -> \
       Iterator[Tuple[int, int, dict]]:
     for game_state_id, created_at, game_state in execute(game_db, '''
-    SELECT game_state_id, strftime('%s', created_at), game_state
+    SELECT game_state_id
+         , CAST(strftime('%s', created_at) AS INTEGER) AS created_at_unixtime
+         , game_state
     FROM game_state 
     '''):
         yield game_state_id, created_at, json.loads(game_state)

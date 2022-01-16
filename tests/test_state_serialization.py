@@ -6,7 +6,7 @@ from truescrub.proto import game_state_pb2
 from google.protobuf import text_format
 
 from truescrub.state_serialization import DeserializationError, \
-  parse_game_state, parse_map
+  InvalidGameStateException, parse_game_state, parse_map
 
 SAMPLE_GAME_STATE = json.loads('''
 {
@@ -181,7 +181,7 @@ SAMPLE_GAME_STATE = json.loads('''
 
 
 def test_invalid_json_fails():
-  with pytest.raises(DeserializationError):
+  with pytest.raises(InvalidGameStateException):
     parse_game_state({'map': {}})
 
   with pytest.raises(DeserializationError):

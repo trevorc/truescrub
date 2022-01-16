@@ -53,7 +53,7 @@ message Player {
     ACTIVITY_UNSPECIFIED = 0;
     ACTIVITY_PLAYING = 1;
     ACTIVITY_MENU = 2;
-    ACTIVITY_TEXT_INPUT = 3;
+    ACTIVITY_TEXTINPUT = 3;
   }
 
   int64 steam_id = 1;
