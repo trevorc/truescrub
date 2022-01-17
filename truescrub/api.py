@@ -446,10 +446,15 @@ class UpdaterService:
 
 class WaitressService:
     def __init__(self, app, host, port):
-        self.server = waitress.server.create_server(app, host=host, port=port)
+        self.app = app
+        self.host = host
+        self.port = port
+        self.server = None
 
     def __call__(self):
         logger.info('running %s', type(self).__name__)
+        self.server = waitress.server.create_server(
+            self.app, host=self.host, port=self.port)
         self.server.run()
 
     def __enter__(self):
@@ -457,7 +462,9 @@ class WaitressService:
 
     def __exit__(self, *exc_info):
         logger.info('stopping %s', type(self).__name__)
-        self.server.close()
+        if self.server is not None:
+            logger.debug('closing server')
+            self.server.close()
 
 
 def main():
