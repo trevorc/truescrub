@@ -4,6 +4,8 @@ import argparse
 import logging
 import threading
 import concurrent.futures
+from typing import Dict
+from concurrent.futures import Future
 
 from werkzeug.middleware.shared_data import SharedDataMiddleware
 import waitress.server
@@ -101,14 +103,12 @@ class UpdaterService(Service):
 
 class WaitressService(Service):
   def __init__(self, app, host, port):
-    self.app = app
-    self.host = host
-    self.port = port
-    self.server = None
+    self.server = waitress.server.create_server(
+        app, host=host, port=port, _start=False)
+    logger.info('listening on %s:%s', host, port)
 
   def run(self):
-    self.server = waitress.server.create_server(
-        self.app, host=self.host, port=self.port)
+    self.server.accept_connections()
     self.server.run()
 
   def stop(self):
@@ -117,21 +117,35 @@ class WaitressService(Service):
       self.server.close()
 
 
+def wait_on_futures(futures: Dict[Future, Service]):
+  for future in futures:
+    future.cancel()
+  logger.debug('waiting on remaining futures')
+  done, not_done = concurrent.futures.wait(futures, timeout=4.0)
+  if len(not_done) == 0:
+    logger.info('canceling watchdog timer')
+    return True
+  logger.warning('some futures did not complete: %s',
+                 [str(futures[future]) for future in not_done])
+  return False
+
+
 class Watchdog:
-  def __init__(self, interval: float):
+  def __init__(self, futures: Dict[Future, Service], interval: float):
+    self.futures = futures
     self.timer = threading.Timer(interval, self.shutdown)
 
   def __enter__(self):
     return self
 
   def __exit__(self, exc_type, exc_value, traceback):
-    if exc_type is not None:
-      logger.info('triggering watchdog timer due to %s', exc_type.__name__)
-      self.timer.start()
+    if exc_type is None:
+      return
 
-  def cancel(self):
-    logger.info('canceling watchdog timer')
-    self.timer.cancel()
+    logger.info('triggering watchdog timer due to %s', exc_type.__name__)
+    self.timer.start()
+    if wait_on_futures(self.futures):
+      self.timer.cancel()
 
   @staticmethod
   def shutdown():
@@ -157,34 +171,22 @@ def main():
       '/htdocs': (truescrub.__name__, 'htdocs'),
     }, cache_timeout=3600 * 24 * 14)
 
-  try:
-    with UpdaterService(updater) as updater_service, \
-        WaitressService(app, host=args.addr, port=args.port) \
-            as waitress_service, \
-        StateWriterService(state_writer) as state_writer_service, \
-        Watchdog(interval=8.0) as watchdog:
+  with Watchdog(futures, interval=8.0), \
+      UpdaterService(updater) as updater_service, \
+      WaitressService(app, host=args.addr, port=args.port) \
+          as waitress_service, \
+      StateWriterService(state_writer) as state_writer_service:
 
-      logger.info('listening on %s:%s', args.addr, args.port)
-      app.state_writer = state_writer
-      futures[executor.submit(updater_service)] = updater_service
-      futures[executor.submit(state_writer_service)] = state_writer_service
-      futures[executor.submit(waitress_service)] = waitress_service
+    app.state_writer = state_writer
+    futures[executor.submit(updater_service)] = updater_service
+    futures[executor.submit(state_writer_service)] = state_writer_service
+    futures[executor.submit(waitress_service)] = waitress_service
 
-      for future in concurrent.futures.as_completed(futures):
-        if future.exception() is not None:
-          logger.fatal('future %s failed with "%s"', futures[future],
-                       future.exception())
-        else:
-          logger.info('future %s has completed', futures[future])
-        future.result()
-  finally:
-    for future in futures:
-      future.cancel()
-    logger.debug('waiting on remaining futures')
-    done, not_done = concurrent.futures.wait(futures, timeout=4.0)
-    if len(not_done) == 0:
-      watchdog.cancel()
-    else:
-      logger.warning('some futures did not complete: %s',
-                     [str(futures[future]) for future in not_done])
+    for future in concurrent.futures.as_completed(futures):
+      if future.exception() is not None:
+        logger.fatal('future %s failed with "%s"', futures[future],
+                     future.exception())
+      else:
+        logger.info('future %s has completed', futures[future])
+      future.result()
   logger.info('exiting')
