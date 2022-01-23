@@ -57,6 +57,16 @@ py_library(
 )
 
 py_library(
+    name = "queue_consumer",
+    srcs = ["queue_consumer.py"],
+    visibility = [
+        "//tests:__pkg__",
+        "//truescrub/updater:__pkg__",
+    ],
+    deps = [],
+)
+
+py_library(
     name = "api",
     srcs = [
         "__init__.py",
@@ -77,9 +87,22 @@ py_library(
         ":db",
         ":matchmaking",
         ":models",
-        "//truescrub/updater",
         requirement("Flask"),
         requirement("waitress"),
+    ],
+)
+
+py_library(
+    name = "application",
+    srcs = [
+        "__init__.py",
+        "application.py",
+    ],
+    deps = [
+        ":api",
+        ":db",
+        ":queue_consumer",
+        "//truescrub/updater",
     ],
 )
 
@@ -87,5 +110,5 @@ par_binary(
     name = "truescrub",
     srcs = ["__main__.py"],
     main = "__main__.py",
-    deps = [":api"],
+    deps = [":application"],
 )

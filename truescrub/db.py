@@ -14,6 +14,7 @@ from truescrub.models import SKILL_MEAN, SKILL_STDEV
 
 
 DATA_DIR = os.environ.get('TRUESCRUB_DATA_DIR', 'data')
+SQLITE_TIMEOUT = float(os.environ.get('SQLITE_TIMEOUT', '30'))
 GAME_DB_NAME = 'games.db'
 SKILL_DB_NAME = 'skill.db'
 
@@ -62,7 +63,7 @@ def make_placeholder(columns, rows):
 
 def get_game_db():
     db_path = os.path.join(DATA_DIR, GAME_DB_NAME)
-    return sqlite3.connect(db_path)
+    return sqlite3.connect(db_path, timeout=SQLITE_TIMEOUT)
 
 
 def insert_game_state(game_db, state):
@@ -167,8 +168,10 @@ def initialize_game_db(game_db):
 ###########################
 
 def get_skill_db(name: str = SKILL_DB_NAME):
-    connection = sqlite3.connect(os.path.join(DATA_DIR, name))
-    connection.cursor().execute('PRAGMA foreign_keys = ON')
+    connection = sqlite3.connect(os.path.join(DATA_DIR, name), timeout=SQLITE_TIMEOUT)
+    cursor = connection.cursor()
+    cursor.execute('PRAGMA foreign_keys = ON')
+    cursor.execute('PRAGMA defer_foreign_keys = ON')
     return connection
 
 

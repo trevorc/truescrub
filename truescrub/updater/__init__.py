@@ -1,3 +1,3 @@
-from truescrub.updater.updater import run_updater, stop_updater, send_message
+from truescrub.updater.updater import Updater
 
-__all__ = ["run_updater", "stop_updater", "send_message"]
+__all__ = ["Updater"]

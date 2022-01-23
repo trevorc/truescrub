@@ -6,20 +6,16 @@ import math
 import time
 import logging
 import datetime
-import argparse
 import operator
 import itertools
-import concurrent.futures
 from typing import List, Optional
 
 import flask
 import jinja2
 from flask import g, request
-from werkzeug.middleware.shared_data import SharedDataMiddleware
-import waitress.server
 
 import truescrub
-from truescrub import db, updater
+from truescrub import db
 from truescrub.highlights import get_highlights
 from truescrub.matchmaking import (
     skill_group_ranges, compute_matches,
@@ -36,22 +32,10 @@ jinja2_env = jinja2.Environment(
 
 TRUESCRUB_BRAND = os.environ.get('TRUESCRUB_BRAND', 'TrueScrub™')
 SHARED_KEY = os.environ.get('TRUESCRUB_KEY', 'afohXaef9ighaeSh')
-LOG_LEVEL = os.environ.get('TRUESCRUB_LOG_LEVEL', 'DEBUG')
 TIMEZONE_PATTERN = re.compile(r'([+-])(\d\d):00')
 MAX_MATCHES = 50
 
-logging.basicConfig(format='%(asctime)s.%(msecs).3dZ\t'
-                           '%(levelname)s\t%(message)s',
-                    datefmt='%Y-%m-%dT%H:%M:%S',
-                    level=LOG_LEVEL)
 logger = logging.getLogger(__name__)
-
-
-def send_updater_message(**message):
-    if 'command' not in message:
-        raise ValueError('missing "command"')
-    updater.send_message(message)
-    logger.debug('sent "%s" message', repr(message))
 
 
 def render_template(template_name, **context):
@@ -97,18 +81,13 @@ def index():
 
 @app.route('/api/game_state', methods={'POST'})
 def game_state():
-    logger.debug('processing game state')
+    logger.debug('accepting game state')
     state_json = request.get_json(force=True)
     if state_json.get('auth', {}).get('token') != SHARED_KEY:
         return flask.make_response('Invalid auth token\n', 403)
     del state_json['auth']
     state = json.dumps(state_json)
-    with db.get_game_db() as game_db:
-        game_state_id = db.insert_game_state(game_db, state)
-        logger.debug('saved game_state with id %d', game_state_id)
-        send_updater_message(command='process_game_state',
-                             game_state_id=game_state_id)
-        game_db.commit()
+    app.state_writer.send_message(game_state=state)
     return '<h1>OK</h1>\n'
 
 
@@ -418,74 +397,3 @@ def matchmaking0(seasons: [int], selected_players: {int}, season_id: int = None,
                            seasons=seasons, selected_season=season_id,
                            selected_players=selected_players,
                            players=players, teams=matches, latest=latest)
-
-
-arg_parser = argparse.ArgumentParser()
-arg_parser.add_argument('-a', '--addr', metavar='HOST', default='0.0.0.0',
-                        help='Bind to this address.')
-arg_parser.add_argument('-p', '--port', metavar='PORT', type=int,
-                        default=9000, help='Listen on this TCP port.')
-arg_parser.add_argument('-c', '--recalculate', action='store_true',
-                        help='Recalculate rankings.')
-arg_parser.add_argument('-s', '--serve-htdocs', action='store_true',
-                        help='Serve static files.')
-
-
-class UpdaterService:
-    def __call__(self):
-        logger.info('running %s', type(self).__name__)
-        updater.run_updater()
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *exc_info):
-        logger.info('stopping %s', type(self).__name__)
-        updater.stop_updater()
-
-
-class WaitressService:
-    def __init__(self, app, host, port):
-        self.app = app
-        self.host = host
-        self.port = port
-        self.server = None
-
-    def __call__(self):
-        logger.info('running %s', type(self).__name__)
-        self.server = waitress.server.create_server(
-            self.app, host=self.host, port=self.port)
-        self.server.run()
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *exc_info):
-        logger.info('stopping %s', type(self).__name__)
-        if self.server is not None:
-            logger.debug('closing server')
-            self.server.close()
-
-
-def main():
-    args = arg_parser.parse_args()
-    executor = concurrent.futures.ThreadPoolExecutor(max_workers=2)
-    db.initialize_dbs()
-
-    if args.serve_htdocs:
-        app.wsgi_app = SharedDataMiddleware(app.wsgi_app, {
-            '/htdocs': (truescrub.__name__, 'htdocs'),
-        }, cache_timeout=3600 * 24 * 14)
-
-    with UpdaterService() as updater_service, \
-         WaitressService(app, host=args.addr, port=args.port) \
-            as waitress_service:
-        futures = [executor.submit(updater_service)]
-        if args.recalculate:
-            send_updater_message(command='recalculate')
-            updater.stop_updater()
-        else:
-            logger.info('listening on %s:%s', args.addr, args.port)
-            futures.append(executor.submit(waitress_service))
-        for future in concurrent.futures.as_completed(futures):
-            future.result()

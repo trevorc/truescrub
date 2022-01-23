@@ -1,14 +1,11 @@
-import queue
 import logging
-import threading
 
 from truescrub import db
+from truescrub.queue_consumer import QueueConsumer
 from truescrub.updater.recalculate import recalculate, \
-    compute_rounds_and_players, recalculate_ratings
+  compute_rounds_and_players, recalculate_ratings
 
 
-QUEUE_DONE = object()
-_message_queue = queue.Queue()
 logger = logging.getLogger(__name__)
 
 
@@ -27,52 +24,16 @@ def process_game_states(game_states):
         skill_db.commit()
 
 
-def send_message(message: dict):
-    _message_queue.put(message)
-
-
-def drain_queue():
-    messages = [_message_queue.get()]
-    try:
-        while True:
-            messages.append(_message_queue.get_nowait())
-    except queue.Empty:
-        return messages
-
-
-def run_updater():
-    done = False
-
-    while not done:
-        messages = drain_queue()
-        if QUEUE_DONE in messages:
-            logger.info('got done message')
-            del messages[messages.index(QUEUE_DONE):]
-            if len(messages) == 0:
-                return
-            done = True
-
-        if any(message['command'] == 'recalculate' for message in messages):
-            logger.debug('processing recalculate message')
-            recalculate()
-        else:
-            logger.debug('processing %d game states', len(messages))
-            process_game_states([
-                message['game_state_id']
-                for message in messages
-            ])
-
-
-def stop_updater():
-    _message_queue.put(QUEUE_DONE)
-
-
-class UpdaterThread(threading.Thread):
-    def __init__(self):
-        super().__init__(name='updater')
-
-    def run(self) -> None:
-        run_updater()
-
-    def stop(self):
-        stop_updater()
+class Updater(QueueConsumer):
+    def process_messages(self, messages):
+      if any(message['command'] == 'recalculate' for message in messages):
+        logger.debug('%s processing recalculate message',
+                     type(self).__name__)
+        recalculate()
+      else:
+        logger.debug('%s processing %d game states', type(self).__name__,
+                     len(messages))
+        process_game_states([
+          message['game_state_id']
+          for message in messages
+        ])

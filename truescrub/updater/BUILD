@@ -45,6 +45,7 @@ py_library(
         ":evaluator",
         ":recalculate",
         "//truescrub:db",
+        "//truescrub:queue_consumer",
     ],
 )
 

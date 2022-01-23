@@ -116,8 +116,6 @@ def compute_rounds(skill_db, rounds, player_states):
     return round_range
 
 
-
-
 def compute_rounds_and_players(game_db, skill_db, game_state_range=None) \
         -> (int, (int, int)):
     rounds, player_states, max_game_state_id = \
