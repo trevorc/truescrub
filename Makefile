@@ -1,16 +1,19 @@
+HOST		?= cirno
 TRUESCRUB_PAR	:= /opt/truescrub/truescrub.par
+TOOLS_PAR	:= /opt/truescrub/tstools.par
 
 .PHONY: build
 build:
-	bazel build //truescrub:truescrub.par
+	bazel build //truescrub:truescrub.par //truescrub/tools:dbsurgery.par
 
 .PHONY: deploy
 deploy: build
-	rsync -auvh --progress bazel-bin/truescrub/truescrub.par rumia:${TRUESCRUB_PAR}
+	rsync -auvh --progress bazel-bin/truescrub/truescrub.par ${HOST}:${TRUESCRUB_PAR}
+	rsync -auvh --progress bazel-bin/truescrub/tools/dbsurgery.par ${HOST}:${TOOLS_PAR}
 
 .PHONY: recalculate
 recalculate:
-	ssh rumia TRUESCRUB_DATA_DIR=/var/db/truescrub ${TRUESCRUB_PAR} --recalculate
+	ssh ${HOST} TRUESCRUB_DATA_DIR=/data/db/truescrub ${TRUESCRUB_PAR} --recalculate
 
 .PHONY: test
 test:
@@ -18,7 +21,7 @@ test:
 
 .PHONY: serve
 serve:
-	TRUESCRUB_DATA_DIR=${PWD}/data bazel run //truescrub -s
+	TRUESCRUB_DATA_DIR=${PWD}/data bazel run //truescrub -- -s -p 3000
 
 .PHONY: upload
 upload:

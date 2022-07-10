@@ -25,6 +25,7 @@ class QueueConsumer(metaclass=abc.ABCMeta):
     self._message_queue.put(message)
 
   def run(self):
+    logger.debug('%s waiting on queue', type(self).__name__)
     done = False
 
     while not done:

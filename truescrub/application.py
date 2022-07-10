@@ -16,7 +16,6 @@ from truescrub.api import app
 from truescrub.queue_consumer import QueueConsumer
 from truescrub.updater import Updater
 
-
 LOG_LEVEL = os.environ.get('TRUESCRUB_LOG_LEVEL', 'DEBUG')
 logging.basicConfig(format='%(asctime)s.%(msecs).3dZ\t'
                            '%(name)s\t%(levelname)s\t%(message)s',
@@ -37,16 +36,8 @@ arg_parser.add_argument('-s', '--serve-htdocs', action='store_true',
 
 class Service(metaclass=abc.ABCMeta):
   @abc.abstractmethod
-  def run(self):
-    pass
-
-  @abc.abstractmethod
   def stop(self):
     pass
-
-  def __call__(self):
-    logger.info('running %s', self)
-    self.run()
 
   def __enter__(self):
     return self
@@ -79,10 +70,10 @@ class GameStateWriter(QueueConsumer):
 
 class StateWriterService(Service):
   def __init__(self, state_writer):
-    super().__init__()
     self.state_writer = state_writer
 
-  def run(self):
+  def __call__(self):
+    logger.info('running %s', self)
     self.state_writer.run()
 
   def stop(self):
@@ -91,10 +82,10 @@ class StateWriterService(Service):
 
 class UpdaterService(Service):
   def __init__(self, updater):
-    super().__init__()
     self.updater = updater
 
-  def run(self):
+  def __call__(self):
+    logger.info('running %s', self)
     self.updater.run()
 
   def stop(self):
@@ -104,10 +95,11 @@ class UpdaterService(Service):
 class WaitressService(Service):
   def __init__(self, app, host, port):
     self.server = waitress.server.create_server(
-        app, host=host, port=port, _start=False)
+      app, host=host, port=port, _start=False)
     logger.info('listening on %s:%s', host, port)
 
-  def run(self):
+  def __call__(self):
+    logger.info('running %s', self)
     self.server.accept_connections()
     self.server.run()
 
