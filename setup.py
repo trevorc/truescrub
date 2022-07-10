@@ -14,7 +14,7 @@ setup(
     },
     install_requires=[
       'Flask==1.0',
-      'waitress==2.1.1',
+      'waitress==2.1.2',
       'trueskill==0.4.5',
       'werkzeug==0.15.6',
     ],
