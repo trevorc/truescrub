@@ -2,7 +2,6 @@
 Purge the rounds that include game states with the given steamids.
 '''
 import argparse
-import dataclasses
 import logging
 import sys
 from typing import Set
@@ -14,13 +13,14 @@ from truescrub.db import get_game_db, get_player_profile, execute, get_skill_db,
 logger = logging.getLogger(__name__)
 
 
-@dataclasses.dataclass
 class ImpactedGameStateStats:
-  maps: Set[str]
-  min_game_state: int
-  max_game_state: int
-  rounds: int
-  game_states: int
+  def __init__(self, maps: Set[str], min_game_state: int, max_game_state: int,
+               rounds: int, game_states: int):
+    self.maps = maps
+    self.min_game_state = min_game_state
+    self.max_game_state = max_game_state
+    self.rounds = rounds
+    self.game_states = game_states
 
 
 def get_impacted_game_state_stats(game_db, condition: str):
@@ -142,6 +142,7 @@ def main():
                 player.steam_name, overall_record['rounds_won'],
                 overall_record['rounds_lost'])
     purge_rounds_with_player(game_db, player)
+
 
 if __name__ == '__main__':
   main()
