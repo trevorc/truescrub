@@ -22,3 +22,11 @@ py_binary(
         requirement("tqdm"),
     ],
 )
+
+py_binary(
+    name = "dbsurgery",
+    srcs = ["dbsurgery.py"],
+    deps = [
+        "//truescrub:db",
+    ],
+)
