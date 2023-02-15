@@ -16,7 +16,7 @@ setup(
       'Flask==1.0',
       'waitress==2.1.2',
       'trueskill==0.4.5',
-      'werkzeug==0.15.6',
+      'werkzeug==2.2.3',
     ],
     tests_require=[
       'pytest==6.2.4',
