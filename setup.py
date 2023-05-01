@@ -13,7 +13,7 @@ setup(
       'truescrub.updater': ['*.ini'],
     },
     install_requires=[
-      'Flask==1.0',
+      'Flask==2.3.2',
       'waitress==2.1.2',
       'trueskill==0.4.5',
       'werkzeug==0.15.6',
