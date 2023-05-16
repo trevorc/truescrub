@@ -1,6 +1,5 @@
 load("@rules_python//python:defs.bzl", "py_binary")
 load("@pip_requirements//:requirements.bzl", "requirement")
-load("@subpar//:subpar.bzl", "par_binary")
 
 py_binary(
     name = "teameval",
@@ -24,11 +23,10 @@ py_binary(
     ],
 )
 
-par_binary(
+py_binary(
     name = "dbsurgery",
     srcs = ["dbsurgery.py"],
     main = "dbsurgery.py",
-    deps = [
-        "//truescrub:db",
-    ],
+    visibility = ["//:__pkg__"],
+    deps = ["//truescrub:db"],
 )

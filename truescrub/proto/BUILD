@@ -12,6 +12,6 @@ py_proto_library(
     srcs = ["game_state.proto"],
     visibility = ["//truescrub:__pkg__"],
     deps = [
-        "@com_google_protobuf//:protobuf_python",
+        "@com_google_protobuf//:well_known_types_py_pb2",
     ],
 )

@@ -1,19 +1,19 @@
 HOST		?= cirno
-TRUESCRUB_PAR	:= /opt/truescrub/truescrub.par
-TOOLS_PAR	:= /opt/truescrub/tstools.par
+TRUESCRUB_ZIP	:= /opt/truescrub/truescrub.zip
+TOOLS_ZIP	:= /opt/truescrub/tstools.zip
 
 .PHONY: build
 build:
-	bazel build //truescrub:truescrub.par //truescrub/tools:dbsurgery.par
+	bazel build //:truescrub_zip //:dbsurgery_zip
 
 .PHONY: deploy
 deploy: build
-	rsync -auvh --progress bazel-bin/truescrub/truescrub.par ${HOST}:${TRUESCRUB_PAR}
-	rsync -auvh --progress bazel-bin/truescrub/tools/dbsurgery.par ${HOST}:${TOOLS_PAR}
+	rsync -auvh --progress bazel-bin/truescrub/truescrub.zip ${HOST}:${TRUESCRUB_ZIP}
+	rsync -auvh --progress bazel-bin/truescrub/tools/dbsurgery.zip ${HOST}:${TOOLS_ZIP}
 
 .PHONY: recalculate
 recalculate:
-	ssh ${HOST} TRUESCRUB_DATA_DIR=/data/db/truescrub ${TRUESCRUB_PAR} --recalculate
+	ssh ${HOST} TRUESCRUB_DATA_DIR=/data/db/truescrub python3 ${TRUESCRUB_ZIP} --recalculate
 
 .PHONY: test
 test:
