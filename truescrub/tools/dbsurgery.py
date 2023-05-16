@@ -1,5 +1,5 @@
 '''
-Purge the rounds that include game states with the given steamids.
+Purge the rounds that include game states with the given steamid.
 '''
 import argparse
 import logging
@@ -14,17 +14,16 @@ logger = logging.getLogger(__name__)
 
 
 class ImpactedGameStateStats:
-  def __init__(self, maps: Set[str], min_game_state: int, max_game_state: int,
-               rounds: int, game_states: int):
-    self.maps = maps
-    self.min_game_state = min_game_state
-    self.max_game_state = max_game_state
-    self.rounds = rounds
-    self.game_states = game_states
+  def __init__(self):
+    self.maps: Set[str] = set()
+    self.min_game_state = sys.maxsize
+    self.max_game_state = 0
+    self.rounds = 0
+    self.game_states = 0
 
 
 def get_impacted_game_state_stats(game_db, condition: str):
-  stats = ImpactedGameStateStats(set(), sys.maxsize, 0, 0, 0)
+  stats = ImpactedGameStateStats()
   for game_state_id, map_name, round_phase, previous_phase \
       in execute(game_db, f'''
   SELECT game_state_id
