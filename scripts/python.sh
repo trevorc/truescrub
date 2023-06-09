@@ -1,3 +1,3 @@
 #!/bin/sh
 
-exec python3.11 -S "$@"
+exec /usr/bin/python3.11 -S "$@"
