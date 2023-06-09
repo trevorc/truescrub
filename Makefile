@@ -8,8 +8,8 @@ build:
 
 .PHONY: deploy
 deploy: build
-	rsync -auvh --progress bazel-bin/truescrub/truescrub.zip ${HOST}:${TRUESCRUB_ZIP}
-	rsync -auvh --progress bazel-bin/truescrub/tools/dbsurgery.zip ${HOST}:${TOOLS_ZIP}
+	rsync -auvh --progress "$(bazel cquery --output=files //:truescrub_zip)" ${HOST}:${TRUESCRUB_ZIP}
+	rsync -auvh --progress "$(bazel cquery --output=files //:dbsurgery_zip)" ${HOST}:${TOOLS_ZIP}
 
 .PHONY: recalculate
 recalculate:
