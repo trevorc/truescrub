@@ -14,6 +14,17 @@ py_binary(
 )
 
 py_binary(
+    name = "genetic",
+    srcs = ["genetic.py"],
+    deps = [
+        "//truescrub:db",
+        "//truescrub:models",
+        "//truescrub/tools:teameval",
+        requirement("deap"),
+    ],
+)
+
+py_binary(
     name = "gstrans",
     srcs = ["gstrans.py"],
     deps = [

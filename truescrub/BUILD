@@ -72,6 +72,7 @@ py_library(
         ":matchmaking",
         ":models",
         requirement("Flask"),
+        requirement("setuptools"),
         requirement("waitress"),
     ],
 )
