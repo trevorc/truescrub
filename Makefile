@@ -8,8 +8,8 @@ build:
 
 .PHONY: deploy
 deploy: build
-	rsync -auvh --progress "$(bazel cquery --output=files //:truescrub_zip)" ${HOST}:${TRUESCRUB_ZIP}
-	rsync -auvh --progress "$(bazel cquery --output=files //:dbsurgery_zip)" ${HOST}:${TOOLS_ZIP}
+	rsync -avh --progress "$(shell bazel cquery --output=files //:truescrub_zip)" ${HOST}:${TRUESCRUB_ZIP}
+	rsync -avh --progress "$(shell bazel cquery --output=files //:dbsurgery_zip)" ${HOST}:${TOOLS_ZIP}
 
 .PHONY: recalculate
 recalculate:
@@ -22,17 +22,3 @@ test:
 .PHONY: serve
 serve:
 	TRUESCRUB_DATA_DIR=${PWD}/data bazel run //truescrub -- -s -p 3000
-
-.PHONY: upload
-upload:
-	venv/bin/python3 setup.py sdist bdist_wheel
-	twine upload dist/*
-
-.PHONY: clean
-clean:
-	venv/bin/python3 setup.py clean --all
-
-.PHONY: distclean
-distclean: clean
-	rm -Rf dist
-	rm -Rf truescrub.egg-info
