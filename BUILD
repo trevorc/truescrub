@@ -7,6 +7,15 @@ compile_pip_requirements(
     requirements_txt = "requirements_lock.txt",
 )
 
+# Custom requirement function to integrate with virtualenv
+cc_library(
+    name = "requirement_lib",
+    hdrs = ["requirements.bzl"],
+    visibility = ["//visibility:public"],
+)
+
+exports_files(["requirements.bzl"])
+
 filegroup(
     name = "truescrub_zip",
     srcs = ["//truescrub"],
