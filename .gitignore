@@ -10,6 +10,7 @@ __pycache__/
 *.so
 .Python
 .pytest_cache/
+.mypy_cache/
 
 # Bazel
 .bazelrc.local

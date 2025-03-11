@@ -1,0 +1,36 @@
+[mypy]
+python_version = 3.8
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+strict_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+follow_imports = silent
+
+# Exclude generated files and third-party code
+exclude = bazel-*,truescrub/proto/game_state_pb2.py,truescrub/proto/game_state_pb2.pyi
+
+# External dependencies
+[mypy-truescrub.proto.*]
+ignore_missing_imports = true
+
+[mypy-google.protobuf.*]
+ignore_missing_imports = true
+
+[mypy-trueskill.*]
+ignore_missing_imports = true
+
+[mypy-deap.*]
+ignore_missing_imports = true
+
+[mypy-waitress.*]
+ignore_missing_imports = true
+
+[mypy-pkg_resources]
+ignore_missing_imports = true

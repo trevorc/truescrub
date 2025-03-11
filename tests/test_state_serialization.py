@@ -1,14 +1,23 @@
-import json
 import datetime
+import json
+from typing import cast
 
 import pytest
-from truescrub.proto import game_state_pb2
 from google.protobuf import text_format
+from google.protobuf.message import Message
 
-from truescrub.state_serialization import DeserializationError, \
-  InvalidGameStateException, parse_game_state, parse_map
+from truescrub.proto import game_state_pb2
+from truescrub.state_serialization import (
+    DeserializationError,
+    GameStateDict,
+    InvalidGameStateException,
+    MapDict,
+    parse_game_state,
+    parse_map,
+)
 
-SAMPLE_GAME_STATE = json.loads('''
+SAMPLE_GAME_STATE = json.loads(
+    """
 {
     "map": {
         "round_wins": {
@@ -177,35 +186,49 @@ SAMPLE_GAME_STATE = json.loads('''
         }
     }
 }
-''')
+"""
+)
 
 
-def test_invalid_json_fails():
-  with pytest.raises(InvalidGameStateException):
-    parse_game_state({'map': {}})
+def test_invalid_json_fails() -> None:
+    """Test that invalid game state JSON fails appropriately."""
+    with pytest.raises(InvalidGameStateException):
+        parse_game_state(cast(GameStateDict, {"map": {}}))
 
-  with pytest.raises(DeserializationError):
-    parse_game_state({'provider': None})
+    with pytest.raises(DeserializationError):
+        parse_game_state(cast(GameStateDict, {"provider": None}))
 
-  with pytest.raises(DeserializationError):
-    parse_game_state(
-        {'provider': {'appid': 730, 'steamid': '123', 'version': 1}})
+    with pytest.raises(DeserializationError):
+        parse_game_state(cast(GameStateDict, {"provider": {"appid": 730, "steamid": "123", "version": 1}}))
 
 
-def test_warmup_map():
-  actual = parse_map({
-    'mode': 'scrimcomp2v2', 'name': 'de_shortnuke', 'phase': 'warmup',
-    'round': 0,
-    'team_ct': {
-      'score': 0, 'consecutive_round_losses': 0, 'timeouts_remaining': 1,
-      'matches_won_this_series': 0
-    }, 'team_t': {
-      'score': 0, 'consecutive_round_losses': 0,
-      'timeouts_remaining': 1, 'matches_won_this_series': 0},
-    'num_matches_to_win_series': 0, 'current_spectators': 0,
-    'souvenirs_total': 0,
-  })
-  expected = text_format.Parse('''
+def test_warmup_map() -> None:
+    """Test parsing of a warmup phase map state."""
+    actual = parse_map(
+        cast(MapDict, {
+            "mode": "scrimcomp2v2",
+            "name": "de_shortnuke",
+            "phase": "warmup",
+            "round": 0,
+            "team_ct": {
+                "score": 0,
+                "consecutive_round_losses": 0,
+                "timeouts_remaining": 1,
+                "matches_won_this_series": 0,
+            },
+            "team_t": {
+                "score": 0,
+                "consecutive_round_losses": 0,
+                "timeouts_remaining": 1,
+                "matches_won_this_series": 0,
+            },
+            "num_matches_to_win_series": 0,
+            "current_spectators": 0,
+            "souvenirs_total": 0,
+        })
+    )
+    expected = text_format.Parse(
+        """
   mode: MODE_SCRIMCOMP2V2
   name: "de_shortnuke"
   phase: MAP_PHASE_WARMUP
@@ -223,15 +246,18 @@ def test_warmup_map():
   }
   num_matches_to_win_series: 0
   current_spectators: 0
-  ''', game_state_pb2.Map())
-  assert text_format.MessageToString(actual) == \
-         text_format.MessageToString(expected)
+  """,
+        game_state_pb2.Map(),
+    )
+    assert text_format.MessageToString(cast(Message, actual)) == text_format.MessageToString(expected)
 
 
-def test_json_to_proto():
-  gs_proto = parse_game_state(SAMPLE_GAME_STATE)
+def test_json_to_proto() -> None:
+    """Test conversion of JSON game state to protobuf."""
+    gs_proto = parse_game_state(cast(GameStateDict, SAMPLE_GAME_STATE))
 
-  expected_map = text_format.Parse('''
+    expected_map = text_format.Parse(
+        """
   mode: MODE_SCRIMCOMP2V2
   name: "de_shortnuke"
   phase: MAP_PHASE_LIVE
@@ -254,19 +280,24 @@ def test_json_to_proto():
     round_num: 1
     win_condition: WIN_CONDITION_CT_WIN_ELIMINATION
   }]
-  ''', game_state_pb2.Map())
-  assert text_format.MessageToString(gs_proto.map) == \
-         text_format.MessageToString(expected_map)
+  """,
+        game_state_pb2.Map(),
+    )
+    assert text_format.MessageToString(cast(Message, gs_proto.map)) == text_format.MessageToString(
+        expected_map
+    )
 
-  assert gs_proto.provider.timestamp.ToDatetime() == \
-         datetime.datetime(2019, 5, 11, 0, 37, 51)
-  assert gs_proto.round == game_state_pb2.Round(
-      phase=game_state_pb2.Round.ROUND_PHASE_OVER,
-      win_team=game_state_pb2.TEAM_CT,
-  )
+    assert gs_proto.provider.timestamp.ToDatetime() == datetime.datetime(
+        2019, 5, 11, 0, 37, 51
+    )
+    assert gs_proto.round == game_state_pb2.Round(
+        phase=game_state_pb2.Round.ROUND_PHASE_OVER,
+        win_team=game_state_pb2.TEAM_CT,
+    )
 
 
-FREEZETIME_GAME_STATE = json.loads('''
+FREEZETIME_GAME_STATE = json.loads(
+    """
 {
     "map": {
         "mode": "scrimcomp2v2",
@@ -492,20 +523,27 @@ FREEZETIME_GAME_STATE = json.loads('''
         }
     }
 }
-''')
+"""
+)
 
 
-def test_freezetime():
-  actual = parse_game_state(FREEZETIME_GAME_STATE)
+def test_freezetime() -> None:
+    """Test freezetime round phase in game state."""
+    actual = parse_game_state(cast(GameStateDict, FREEZETIME_GAME_STATE))
 
-  expected = text_format.Parse('''
+    expected = text_format.Parse(
+        """
   phase: ROUND_PHASE_FREEZETIME
-  ''', game_state_pb2.Round())
-  assert text_format.MessageToString(actual.round) == \
-         text_format.MessageToString(expected)
+  """,
+        game_state_pb2.Round(),
+    )
+    assert text_format.MessageToString(cast(Message, actual.round)) == text_format.MessageToString(
+        expected
+    )
 
 
-WARMUP_GAME_STATE = json.loads('''
+WARMUP_GAME_STATE = json.loads(
+    """
 {
     "map": {
         "mode": "scrimcomp2v2",
@@ -572,12 +610,15 @@ WARMUP_GAME_STATE = json.loads('''
         }
     }
 }
-''')
+"""
+)
 
 
-def test_warmup():
-  actual = parse_game_state(WARMUP_GAME_STATE)
-  expected = text_format.Parse('''
+def test_warmup() -> None:
+    """Test warmup phase game state parsing."""
+    actual = parse_game_state(cast(GameStateDict, WARMUP_GAME_STATE))
+    expected = text_format.Parse(
+        """
   map {
       mode: MODE_SCRIMCOMP2V2
       name: "de_shortnuke"
@@ -644,10 +685,11 @@ def test_warmup():
           state: true
       }
   }
-  ''', game_state_pb2.GameState())
-  assert text_format.MessageToString(actual) == \
-         text_format.MessageToString(expected)
+  """,
+        game_state_pb2.GameState(),
+    )
+    assert text_format.MessageToString(cast(Message, actual)) == text_format.MessageToString(expected)
 
 
-if __name__ == '__main__':
-  raise SystemExit(pytest.main([__file__]))
+if __name__ == "__main__":
+    raise SystemExit(pytest.main([__file__]))
