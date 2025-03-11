@@ -1,5 +1,5 @@
 load("@rules_proto//proto:defs.bzl", "proto_library")
-load("@com_google_protobuf//:protobuf.bzl", "py_proto_library")
+load("@rules_python//python:defs.bzl", "py_library")
 
 proto_library(
     name = "game_state_proto",
@@ -7,11 +7,18 @@ proto_library(
     deps = ["@com_google_protobuf//:timestamp_proto"],
 )
 
-py_proto_library(
+# Simple py_library that wraps the proto outputs
+py_library(
     name = "game_state_py_proto",
-    srcs = ["game_state.proto"],
+    srcs = ["game_state_pb2.py"],
+    data = [":game_state_proto"],
+    imports = ["."],
     visibility = ["//truescrub:__pkg__"],
-    deps = [
-        "@com_google_protobuf//:well_known_types_py_pb2",
-    ],
+)
+
+# Add the generated type stub file
+filegroup(
+    name = "proto_type_stubs",
+    srcs = ["game_state_pb2.pyi"],
+    visibility = ["//visibility:public"],
 )

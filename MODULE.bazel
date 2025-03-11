@@ -1,18 +1,18 @@
-bazel_dep(name = "bazel_skylib", version = "1.4.1")
-bazel_dep(name = "protobuf", version = "21.7", repo_name = "com_google_protobuf")
-bazel_dep(name = "rules_pkg", version = "0.9.1")
+module(
+    name = "truescrub",
+)
+
+# Explicitly state the dependencies we want
+bazel_dep(name = "rules_python", version = "0.26.0")
 bazel_dep(name = "rules_proto", version = "5.3.0-21.7")
-bazel_dep(name = "rules_python", version = "0.17.3")
+bazel_dep(name = "protobuf", version = "23.1", repo_name = "com_google_protobuf")
 
-register_toolchains(
-    "//scripts:hermetic_python_toolchain",
+# Add the pip_deps module
+bazel_dep(name = "pip_deps", version = "0.1")
+
+# Add Python path override to use the system Python
+# This is the simplest approach for a project like this
+local_path_override(
+    module_name = "pip_deps",
+    path = "site_packages",
 )
-
-pip = use_extension("@rules_python//python:extensions.bzl", "pip")
-pip.parse(
-    name = "pip_requirements",
-    python_interpreter = "python3",
-    requirements_lock = "//:requirements_lock.txt",
-)
-
-use_repo(pip, "pip_requirements")

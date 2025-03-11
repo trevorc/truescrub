@@ -2,3 +2,25 @@
 /venv
 /data
 /bazel-*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.pytest_cache/
+.mypy_cache/
+
+# Bazel
+.bazelrc.local
+.bazelrc.user
+MODULE.bazel.lock
+WORKSPACE.local
+
+# Environment
+.python-version
+
+# Generated files
+truescrub/proto/game_state_pb2.py
+truescrub/proto/game_state_pb2.pyi

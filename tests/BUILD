@@ -1,5 +1,15 @@
 load("@rules_python//python:defs.bzl", "py_test")
-load("@pip_requirements//:requirements.bzl", "requirement")
+load("//:requirements.bzl", "requirement")
+
+py_test(
+    name = "test_models",
+    srcs = ["test_models.py"],
+    deps = [
+        "//truescrub:models",
+        requirement("pytest"),
+        requirement("trueskill"),
+    ],
+)
 
 py_test(
     name = "test_matchmaking",
@@ -13,20 +23,12 @@ py_test(
 )
 
 py_test(
-    name = "test_models",
-    srcs = ["test_models.py"],
-    deps = [
-        "//truescrub:models",
-        requirement("pytest"),
-    ],
-)
-
-py_test(
     name = "test_state_serialization",
     srcs = ["test_state_serialization.py"],
     deps = [
         "//truescrub:state_serialization",
         requirement("pytest"),
+        requirement("protobuf"),
     ],
 )
 
