@@ -35,8 +35,7 @@ serve: bazel-setup protos
 # Linting and code quality
 .PHONY: setup
 setup:
-	python -m venv .venv || true
-	. .venv/bin/activate && pip install -r requirements.in
+	pip install -r requirements.in
 	./scripts/setup_bazel.sh
 
 .PHONY: setup-dev

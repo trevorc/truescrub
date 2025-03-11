@@ -20,18 +20,26 @@ The project uses several code quality tools that can be run using Make:
 
 To set up the development environment:
 
-1. Install Bazel: https://bazel.build/install
-2. Set up Python environment: `pyenv install 3.11.11` and `pyenv virtualenv 3.11.11 truescrub`
-3. Activate the environment: `pyenv activate truescrub`
-4. Install dependencies: `pip install -r requirements.in`
-5. Install dev tools: `pip install -r requirements-dev.in`
+1. Install Bazel 8.1.1: https://bazel.build/install
+2. Set up Python environment (recommended):
+   ```bash
+   pyenv install 3.11.11
+   pyenv virtualenv 3.11.11 truescrub
+   pyenv activate truescrub
+   ```
+3. Set up the project:
+   ```bash
+   make setup      # Install runtime dependencies
+   make setup-dev  # Install development dependencies
+   make protos     # Generate protobuf files
+   ```
 
 ## Bazel Configuration
 
-The project uses Bazel for building and testing, with a platform-specific configuration setup by `scripts/setup_bazel.sh`. This script automatically detects:
+The project uses Bazel 8.1.1 for building and testing, with a platform-specific configuration setup by `scripts/setup_bazel.sh`. This script automatically:
 
-- The operating system (macOS/Linux)
-- The macOS SDK version from Xcode (for macOS platforms)
-- The Python site-packages path
+- Detects the operating system (macOS/Linux)
+- Configures the macOS SDK version from Xcode (on macOS)
+- Sets up the Python site-packages path for dependencies
 
-To ensure Bazel is properly configured before building or testing, the `bazel-setup` target should always be run first.
+The `bazel-setup` Make target runs this script and is included as a dependency for all build and test targets.

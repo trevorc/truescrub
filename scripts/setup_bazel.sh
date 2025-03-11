@@ -22,11 +22,9 @@ elif [[ "$PLATFORM" == "Linux" ]]; then
     # Detect CPU architecture
     CPU_ARCH=$(uname -m)
     echo "# Linux-specific settings for $CPU_ARCH" >> .bazelrc.local
-    # Don't add any architecture-specific flags - let Bazel auto-detect
     echo "Platform detected: Linux on $CPU_ARCH"
 else
     echo "# Unknown platform settings" >> .bazelrc.local
-    echo "# No specific config for platform: ${PLATFORM}" >> .bazelrc.local
     echo "Platform detected: ${PLATFORM} (no specific configuration)"
 fi
 
@@ -38,15 +36,5 @@ echo "build --action_env PYTHONPATH=${PYTHON_SITE_PACKAGES}" >> .bazelrc.local
 echo "test --action_env PYTHONPATH=${PYTHON_SITE_PACKAGES}" >> .bazelrc.local
 echo "run --action_env PYTHONPATH=${PYTHON_SITE_PACKAGES}" >> .bazelrc.local
 echo "Using Python site-packages from: ${PYTHON_SITE_PACKAGES}"
-
-# Create required pip dependency stub directories
-mkdir -p site_packages
-for pkg in flask Flask trueskill setuptools waitress pytest deap tqdm protobuf six py pluggy iniconfig attrs _pytest; do
-  mkdir -p "site_packages/$pkg"
-  cat > "site_packages/$pkg/BUILD.bazel" << EOF
-package(default_visibility = ["//visibility:public"])
-py_library(name = "$pkg", srcs = [])
-EOF
-done
 
 echo "Bazel configuration updated successfully."
