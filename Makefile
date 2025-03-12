@@ -1,15 +1,24 @@
-HOST		?= truescrub.life
-TRUESCRUB_ZIP	:= /opt/truescrub/truescrub.zip
-TOOLS_ZIP	:= /opt/truescrub/tstools.zip
+HOST			?= truescrub.life
+TRUESCRUB_ZIP_SRC	:= $(shell bazel cquery --ui_event_filters=-info --noshow_progress --output=files //:truescrub_zip)
+DBSURGERY_ZIP_SRC	:= $(shell bazel cquery --ui_event_filters=-info --noshow_progress --output=files //:dbsurgery_zip)
+TRUESCRUB_ZIP_DEST	:= /opt/truescrub/truescrub.zip
+DBSURGERY_ZIP_DEST	:= /opt/truescrub/dbsurgery.zip
 
 .PHONY: build
-build:
-	bazel build //:truescrub_zip //:dbsurgery_zip
+build: ${TRUESCRUB_ZIP_SRC} ${DBSURGERY_ZIP_SRC}
 
-.PHONY: deploy
-deploy: build
-	rsync -avh --progress "$(shell bazel cquery --output=files //:truescrub_zip)" ${HOST}:${TRUESCRUB_ZIP}
-	rsync -avh --progress "$(shell bazel cquery --output=files //:dbsurgery_zip)" ${HOST}:${TOOLS_ZIP}
+${TRUESCRUB_ZIP_SRC}:
+	bazel build //:truescrub_zip
+
+${DBSURGERY_ZIP_SRC}:
+	bazel build //:dbsurgery_zip
+
+.PHONY: deploy deploy-truescrub deploy-dbsurgery
+deploy: deploy-truescrub deploy-dbsurgery
+deploy-truescrub: ${TRUESCRUB_ZIP_SRC}
+	rsync -avh --progress "$<" ${HOST}:${TRUESCRUB_ZIP_DEST}
+deploy-dbsurgery: ${DBSURGERY_ZIP_SRC}
+	rsync -avh --progress "$<" ${HOST}:${DBSURGERY_ZIP_DEST}
 
 .PHONY: recalculate
 recalculate:
@@ -19,6 +28,5 @@ recalculate:
 test:
 	bazel test //tests:all
 
-.PHONY: serve
-serve:
-	TRUESCRUB_DATA_DIR=${PWD}/data bazel run //truescrub -- -s -p 3000
+serve: ${TRUESCRUB_ZIP_SRC}
+	TRUESCRUB_DATA_DIR=${PWD}/data python3 "$<" -s -p 3000
