@@ -1,4 +1,4 @@
-HOST		?= cirno
+HOST		?= truescrub.life
 TRUESCRUB_ZIP	:= /opt/truescrub/truescrub.zip
 TOOLS_ZIP	:= /opt/truescrub/tstools.zip
 

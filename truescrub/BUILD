@@ -1,4 +1,5 @@
 load("@rules_python//python:defs.bzl", "py_binary")
+load("@rules_python//python:defs.bzl", "py_library")
 load("@pip_requirements//:requirements.bzl", "requirement")
 
 package(
@@ -40,7 +41,7 @@ py_library(
     srcs = ["state_serialization.py"],
     deps = [
         ":models",
-        "//truescrub/proto:game_state_py_proto",
+        "//truescrub/proto:game_state_py_pb2",
     ],
 )
 
