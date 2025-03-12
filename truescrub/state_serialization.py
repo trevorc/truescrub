@@ -16,6 +16,10 @@ class InvalidGameStateException(RuntimeError):
   pass
 
 
+class InvalidRoundException(RuntimeError):
+  pass
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -56,7 +60,7 @@ def parse_round_win(round_num: str, win_condition: str) -> game_state_pb2.RoundW
 
 
 def parse_map(map_json) -> game_state_pb2.Map:
-  if map_json is None:
+  if map_json is None or map_json is True:
     return None
   try:
     mode = MODES[map_json['mode']] if 'mode' in map_json else None
@@ -65,12 +69,16 @@ def parse_map(map_json) -> game_state_pb2.Map:
       if 'team_ct' in map_json else None
     team_t = parse_team_state(map_json['team_t']) \
       if 'team_t' in map_json else None
+    round_wins = [
+      parse_round_win(round_num, win_condition)
+      for round_num, win_condition in map_json.get('round_wins', {}).items()
+      if win_condition != ''
+    ]
     return game_state_pb2.Map(
         mode=mode, name=map_json.get('name'), phase=phase,
         round=map_json.get('round'), team_ct=team_ct, team_t=team_t,
         num_matches_to_win_series=map_json.get('num_matches_to_win_series'),
-        round_wins=list(itertools.starmap(
-            parse_round_win, map_json.get('round_wins', {}).items())),
+        round_wins=round_wins,
     )
   except KeyError as e:
     raise DeserializationError(e)
@@ -119,13 +127,16 @@ def parse_provider(provider_json) -> game_state_pb2.Provider:
 def parse_round(round_json: Optional[dict]) -> Optional[game_state_pb2.Round]:
   if round_json is None:
     return None
-  win_team = TEAMS[round_json['win_team']] \
-    if 'win_team' in round_json else None
-  return game_state_pb2.Round(
-      phase=ROUND_PHASES[round_json['phase']],
-      win_team=win_team,
-      bomb=BOMBS[round_json.get('bomb', 'unspecified')],
-  )
+  try:
+    phase = ROUND_PHASES[round_json['phase']] if 'phase' in round_json else None
+    win_team = TEAMS[round_json['win_team']] \
+      if 'win_team' in round_json else None
+    return game_state_pb2.Round(
+        phase=phase, win_team=win_team,
+        bomb=BOMBS[round_json.get('bomb', 'unspecified')],
+    )
+  except KeyError as e:
+    raise DeserializationError(e)
 
 
 def parse_match_stats(ms: dict) -> game_state_pb2.MatchStats:
@@ -155,7 +166,7 @@ def parse_allplayers_entry(steam_id: str, player: dict) ->\
 def parse_previously(previously: dict) -> game_state_pb2.Previously:
   oneof_fields = {}
 
-  if previously.get('allplayers'):
+  if previously.get('allplayers') is True:
     oneof_fields['allplayers_present'] = True
   elif 'allplayers' in previously:
     oneof_fields['allplayers'] = game_state_pb2.PreviousAllPlayers(allplayers=[
@@ -163,7 +174,7 @@ def parse_previously(previously: dict) -> game_state_pb2.Previously:
       for steam_id, allplayers_entry in previously['allplayers'].items()
     ])
 
-  if previously.get('round'):
+  if previously.get('round') is True:
     oneof_fields['round_present'] = True
   elif 'round' in previously:
     oneof_fields['round'] = parse_round(previously['round'])

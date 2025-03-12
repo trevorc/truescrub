@@ -649,5 +649,152 @@ def test_warmup():
          text_format.MessageToString(expected)
 
 
+BLANK_WIN_CONDITION_GAME_STATE = json.loads('''
+{
+    "provider": {
+        "name": "Counter-Strike: Global Offensive",
+        "appid": 730,
+        "version": 13844,
+        "steamid": "76561198413889827",
+        "timestamp": 1665097332
+    },
+    "player": {
+        "steamid": "76561198413889827",
+        "clan": "truescrub",
+        "name": "Gumbercules",
+        "activity": "playing",
+        "state": {
+            "health": 0,
+            "armor": 0,
+            "helmet": false,
+            "flashed": 0,
+            "smoked": 0,
+            "burning": 0,
+            "money": 800,
+            "round_kills": 0,
+            "round_killhs": 0,
+            "equip_value": 0
+        }
+    },
+    "map": {
+        "mode": "scrimcomp2v2",
+        "name": "ar_dizzy",
+        "phase": "live",
+        "round": 3,
+        "team_ct": {
+            "score": 1,
+            "consecutive_round_losses": 0,
+            "timeouts_remaining": 1,
+            "matches_won_this_series": 0
+        },
+        "team_t": {
+            "score": 2,
+            "consecutive_round_losses": 1,
+            "timeouts_remaining": 1,
+            "matches_won_this_series": 0
+        },
+        "num_matches_to_win_series": 0,
+        "current_spectators": 0,
+        "souvenirs_total": 0,
+        "round_wins": {
+            "1": "t_win_elimination",
+            "2": "t_win_elimination",
+            "3": ""
+        }
+    },
+    "round": {
+        "phase": "over"
+    },
+    "previously": {
+        "map": {
+            "round_wins": {
+                "3": "ct_win_elimination"
+            }
+        },
+        "round": {
+            "phase": "live"
+        }
+    }
+}
+''')
+
+def test_blank_win_condition():
+  actual = parse_game_state(BLANK_WIN_CONDITION_GAME_STATE)
+  expected = text_format.Parse('''
+  provider {
+      name: "Counter-Strike: Global Offensive"
+      app_id: 730
+      version: 13844,
+      steam_id: 76561198413889827
+      timestamp {
+        seconds: 1665097332
+      }
+  }
+  player {
+      steam_id: 76561198413889827
+      clan: "truescrub"
+      name: "Gumbercules"
+      activity: ACTIVITY_PLAYING
+      state {
+          health: 0
+          armor: 0
+          helmet: false
+          flashed: 0
+          smoked: 0
+          burning: 0,
+          money: 800
+          round_kills: 0
+          round_killhs: 0
+          equip_value: 0
+      }
+  }
+  map {
+      mode: MODE_SCRIMCOMP2V2
+      name: "ar_dizzy"
+      phase: MAP_PHASE_LIVE
+      round: 3
+      team_ct {
+          score: 1
+          consecutive_round_losses: 0
+          timeouts_remaining: 1
+          matches_won_this_series: 0
+      }
+      team_t {
+          score: 2
+          consecutive_round_losses: 1
+          timeouts_remaining: 1
+          matches_won_this_series: 0
+      }
+      round_wins {
+          round_num: 1
+          win_condition: WIN_CONDITION_T_WIN_ELIMINATION
+      }
+      round_wins {
+          round_num: 2
+          win_condition: WIN_CONDITION_T_WIN_ELIMINATION
+      }
+      num_matches_to_win_series: 0
+      current_spectators: 0
+      souvenirs_total: 0
+  }
+  round {
+      phase: ROUND_PHASE_OVER
+  }
+  previously {
+      map {
+          round_wins: {
+              round_num: 3
+              win_condition: WIN_CONDITION_CT_WIN_ELIMINATION
+          }
+      }
+      round {
+          phase: ROUND_PHASE_LIVE
+      }
+  }
+  ''', game_state_pb2.GameState())
+  assert text_format.MessageToString(actual) == \
+         text_format.MessageToString(expected)
+
+
 if __name__ == '__main__':
   raise SystemExit(pytest.main([__file__]))
