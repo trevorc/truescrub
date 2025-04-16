@@ -114,8 +114,11 @@ def highlights(year, month, day, hour, minute, second, tz):
                 'Invalid timezone {}'.format(tz), 404)
     date = datetime.datetime(year, month, day, hour, minute, second,
                              tzinfo=timezone).astimezone(timezone.utc)
+
+    include_accolades = request.args.get('accolades') == '1'
+
     try:
-        return flask.jsonify(get_highlights(g.conn, date))
+        return flask.jsonify(get_highlights(g.conn, date, include_accolades))
     except StopIteration:
         return flask.make_response(
                 'No rounds on {}\n'.format(date.isoformat()), 404)

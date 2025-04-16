@@ -1,3 +1,5 @@
+load("@pip_requirements//:requirements.bzl", "requirement")
+
 py_library(
     name = "state_parser",
     srcs = ["state_parser.py"],
@@ -8,6 +10,9 @@ py_library(
     name = "remapper",
     srcs = ["remapper.py"],
     data = ["players.ini"],
+    deps = [
+        requirement("setuptools"),
+    ],
 )
 
 py_library(
@@ -39,6 +44,7 @@ py_library(
         "updater.py",
     ],
     visibility = [
+        "//tests:__pkg__",
         "//truescrub:__pkg__",
     ],
     deps = [

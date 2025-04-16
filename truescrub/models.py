@@ -5,8 +5,8 @@ from typing import Optional
 
 import trueskill
 
-__all__ = ['SKILL_MEAN', 'SKILL_STDEV', 'Match', 'Player', 'ThinPlayer',
-           'SkillHistory', 'RoundRow', 'GameStateRow',
+__all__ = ['SKILL_MEAN', 'SKILL_STDEV', 'SKILL_GROUP_NAMES', 'Match', 'Player',
+           'ThinPlayer', 'SkillHistory', 'RoundRow', 'GameStateRow',
            'skill_groups', 'skill_group_name', 'setup_trueskill']
 
 SKILL_MEAN = 1000.0
@@ -164,4 +164,4 @@ class Match(object):
 
   def __eq__(self, other):
     return self.team1 == other.team1 \
-           and self.team2 == other.team2
+      and self.team2 == other.team2

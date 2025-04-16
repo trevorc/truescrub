@@ -1,5 +1,18 @@
-load("@rules_python//python:defs.bzl", "py_test")
 load("@pip_requirements//:requirements.bzl", "requirement")
+load("@rules_python//python:defs.bzl", "py_library", "py_test")
+
+py_library(
+    name = "db_test_utils",
+    srcs = [
+        "__init__.py",
+        "db_test_utils.py",
+    ],
+    deps = [
+        "//truescrub:db",
+        "//truescrub:models",
+        "//truescrub/updater",
+    ],
+)
 
 py_test(
     name = "test_matchmaking",
@@ -30,9 +43,33 @@ py_test(
     ],
 )
 
+py_test(
+    name = "test_highlights",
+    srcs = ["test_highlights.py"],
+    deps = [
+        ":db_test_utils",
+        "//truescrub:db",
+        "//truescrub:highlights",
+        "//truescrub:models",
+        requirement("pytest"),
+    ],
+)
+
+py_test(
+    name = "test_accolades",
+    srcs = ["test_accolades.py"],
+    deps = [
+        "//truescrub:accolades",
+        requirement("pytest"),
+        requirement("setuptools"),
+    ],
+)
+
 test_suite(
     name = "tests",
     tests = [
+        "test_accolades",
+        "test_highlights",
         "test_matchmaking",
         "test_models",
         "test_state_serialization",

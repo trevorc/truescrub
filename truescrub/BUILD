@@ -1,6 +1,5 @@
-load("@rules_python//python:defs.bzl", "py_binary")
-load("@rules_python//python:defs.bzl", "py_library")
 load("@pip_requirements//:requirements.bzl", "requirement")
+load("@rules_python//python:defs.bzl", "py_binary", "py_library")
 
 package(
     default_visibility = [
@@ -48,7 +47,31 @@ py_library(
 py_library(
     name = "queue_consumer",
     srcs = ["queue_consumer.py"],
-    deps = [],
+)
+
+py_library(
+    name = "highlights",
+    srcs = ["highlights.py"],
+    deps = [
+        ":accolades",
+        ":db",
+        ":models",
+    ],
+)
+
+py_binary(
+    name = "accolades",
+    srcs = ["accolades.py"],
+    data = ["accolades.ini"],
+    visibility = [
+        "//tests:__pkg__",
+        "//truescrub/tools:__pkg__",
+    ],
+    deps = [
+        requirement("setuptools"),
+        ":db",
+        ":models",
+    ],
 )
 
 py_library(
@@ -69,7 +92,9 @@ py_library(
         "templates/skill_groups.html",
     ],
     deps = [
+        ":accolades",
         ":db",
+        ":highlights",
         ":matchmaking",
         ":models",
         requirement("Flask"),
