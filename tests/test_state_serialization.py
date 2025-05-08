@@ -5,7 +5,7 @@ import pytest
 from truescrub.proto import game_state_pb2
 from google.protobuf import text_format
 
-from truescrub.state_serialization import DeserializationError, \
+from truescrub.statewriter.state_serialization import DeserializationError, \
   InvalidGameStateException, parse_game_state, parse_map
 
 SAMPLE_GAME_STATE = json.loads('''

@@ -31,7 +31,6 @@ def create_test_db(
       Populated skill database connection
   """
   db_manager = TestDBManager()
-  game_db, skill_db = db_manager.create_in_memory_dbs()
 
   map_distribution = map_distribution or {'de_dust2': 5, 'de_mirage': 3,
                                           'de_nuke': 2}
@@ -107,7 +106,7 @@ def create_test_db(
   db_manager.add_game_states(game_states)
   db_manager.process_game_states()
 
-  return skill_db
+  return db_manager.skill_db
 
 
 @pytest.fixture

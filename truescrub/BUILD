@@ -4,6 +4,7 @@ load("@rules_python//python:defs.bzl", "py_binary", "py_library")
 package(
     default_visibility = [
         "//tests:__pkg__",
+        "//truescrub/statewriter:__pkg__",
         "//truescrub/tools:__pkg__",
         "//truescrub/updater:__pkg__",
     ],
@@ -32,15 +33,6 @@ py_library(
     deps = [
         ":models",
         requirement("trueskill"),
-    ],
-)
-
-py_library(
-    name = "state_serialization",
-    srcs = ["state_serialization.py"],
-    deps = [
-        ":models",
-        "//truescrub/proto:game_state_py_pb2",
     ],
 )
 
@@ -113,6 +105,8 @@ py_library(
         ":api",
         ":db",
         ":queue_consumer",
+        "//truescrub/proto:game_state_py_pb2",
+        "//truescrub/statewriter",
         "//truescrub/updater",
     ],
 )

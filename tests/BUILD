@@ -38,7 +38,17 @@ py_test(
     name = "test_state_serialization",
     srcs = ["test_state_serialization.py"],
     deps = [
-        "//truescrub:state_serialization",
+        "//truescrub/statewriter:state_serialization",
+        requirement("pytest"),
+    ],
+)
+
+py_test(
+    name = "test_state_writer",
+    srcs = ["test_state_writer.py"],
+    deps = [
+        ":db_test_utils",
+        "//truescrub/statewriter",
         requirement("pytest"),
     ],
 )

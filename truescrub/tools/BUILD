@@ -29,7 +29,7 @@ py_binary(
     srcs = ["gstrans.py"],
     deps = [
         "//truescrub:db",
-        "//truescrub:state_serialization",
+        "//truescrub/statewriter:state_serialization",
         requirement("tqdm"),
     ],
 )

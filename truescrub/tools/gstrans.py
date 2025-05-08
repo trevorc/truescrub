@@ -8,7 +8,7 @@ import json
 from tqdm import tqdm
 from truescrub.proto import game_state_pb2
 
-from truescrub.state_serialization import parse_game_state, InvalidGameStateException
+from truescrub.statewriter.state_serialization import parse_game_state, InvalidGameStateException
 from truescrub.db import get_game_db, get_raw_game_states, get_game_state_count
 
 

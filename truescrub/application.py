@@ -1,19 +1,19 @@
-import os
 import abc
 import argparse
-import logging
-import threading
 import concurrent.futures
-from typing import Dict
+import logging
+import os
+import threading
 from concurrent.futures import Future
+from typing import Dict
 
-from werkzeug.middleware.shared_data import SharedDataMiddleware
 import waitress.server
+from werkzeug.middleware.shared_data import SharedDataMiddleware
 
 import truescrub
 from truescrub import db
 from truescrub.api import app
-from truescrub.queue_consumer import QueueConsumer
+from truescrub.statewriter import GameStateWriter
 from truescrub.updater import Updater
 
 LOG_LEVEL = os.environ.get('TRUESCRUB_LOG_LEVEL', 'DEBUG')
@@ -33,7 +33,6 @@ arg_parser.add_argument('-c', '--recalculate', action='store_true',
 arg_parser.add_argument('-s', '--serve-htdocs', action='store_true',
                         help='Serve static files.')
 
-
 class Service(metaclass=abc.ABCMeta):
   @abc.abstractmethod
   def stop(self):
@@ -48,24 +47,6 @@ class Service(metaclass=abc.ABCMeta):
 
   def __str__(self):
     return type(self).__name__
-
-
-class GameStateWriter(QueueConsumer):
-  def __init__(self, updater):
-    super().__init__()
-    self.updater = updater
-
-  def process_messages(self, messages):
-    max_game_state = 0
-    with db.get_game_db() as game_db:
-      logger.debug('saving %d game states', len(messages))
-      for message in messages:
-        game_state_id = db.insert_game_state(game_db, message['game_state'])
-        logger.debug('saved game_state with id %d', game_state_id)
-        max_game_state = max(game_state_id, max_game_state)
-      game_db.commit()
-      self.updater.send_message(command='process',
-                                game_state_id=max_game_state)
 
 
 class StateWriterService(Service):

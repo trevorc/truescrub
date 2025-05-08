@@ -101,22 +101,11 @@ class TestDBManager:
   """
 
   def __init__(self):
-    self.game_db = None
-    self.skill_db = None
-
-  def create_in_memory_dbs(self):
-    """Create in-memory game and skill databases."""
     self.game_db = sqlite3.connect(":memory:")
     self.skill_db = sqlite3.connect(":memory:")
-
-    # Initialize database schemas
     initialize_game_db(self.game_db)
     initialize_skill_db(self.skill_db)
-
-    # Create basic seasons
     self._setup_seasons()
-
-    return self.game_db, self.skill_db
 
   def _setup_seasons(self):
     """Set up basic seasons in both databases."""
@@ -149,9 +138,6 @@ class TestDBManager:
     Returns:
         List of inserted game state IDs
     """
-    if not self.game_db:
-      raise ValueError(
-        "Databases not initialized. Call create_in_memory_dbs first.")
 
     game_state_ids = []
 
@@ -195,10 +181,8 @@ class TestDBManager:
 
   def close(self):
     """Close database connections."""
-    if self.game_db:
-      self.game_db.close()
-    if self.skill_db:
-      self.skill_db.close()
+    self.game_db.close()
+    self.skill_db.close()
 
 
 def create_player_data(
