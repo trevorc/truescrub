@@ -2,7 +2,7 @@ import pytest
 
 from truescrub.accolades import (
   parse_high_low, parse_accolade, parse_condition, parse_accolades,
-  compute_expected_rating, test_conditions, compute_accolades,
+  compute_expected_rating, evaluate_conditions, compute_accolades,
   format_accolades, get_accolades
 )
 
@@ -106,7 +106,7 @@ def test_test_conditions():
     },
   ]
 
-  conditions = test_conditions(player_ratings)
+  conditions = evaluate_conditions(player_ratings)
 
   assert 1 in conditions
   assert 2 in conditions

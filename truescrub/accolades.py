@@ -80,7 +80,7 @@ def compute_expected_rating(rating_details: Dict) -> float:
   )
 
 
-def test_conditions(player_ratings: List[Dict]) -> Dict[int, Dict[str, bool]]:
+def evaluate_conditions(player_ratings: List[Dict]) -> Dict[int, Dict[str, bool]]:
   """
   Determine which conditions each player meets, based on their performance.
 
@@ -235,6 +235,6 @@ def get_accolades(player_ratings: List[Dict]) -> Iterator[dict]:
       List of accolade dictionaries with formatting for display
   """
 
-  triggered_conditions = test_conditions(player_ratings)
+  triggered_conditions = evaluate_conditions(player_ratings)
   awarded_accolades = compute_accolades(triggered_conditions)
   return format_accolades(awarded_accolades, player_ratings)
