@@ -1,15 +1,10 @@
-import argparse
 import collections
 import configparser
-import datetime
-import json
 import numbers
-import sys
 from typing import Dict, List, Tuple, Iterator, OrderedDict
 
 import pkg_resources
 
-from truescrub import db
 from truescrub.db import KILL_COEFF, DEATH_COEFF, DAMAGE_COEFF, INTERCEPT
 
 
@@ -191,7 +186,7 @@ def compute_accolades(triggered_conditions: Dict[int, Dict[str, bool]]) -> \
 
 
 def format_accolades(
-    accolades: List[Tuple[str, int]],
+    accolades: Iterator[Tuple[str, int]],
     player_ratings: List[Dict]) -> Iterator[Dict]:
   """
   Format accolades for display with detailed information.
@@ -229,7 +224,7 @@ def format_accolades(
     }
 
 
-def get_accolades(player_ratings: List[Dict]) -> List[Dict]:
+def get_accolades(player_ratings: List[Dict]) -> Iterator[dict]:
   """
   Generate accolades based on player ratings from highlights.get_highlights().
 

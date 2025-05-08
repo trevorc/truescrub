@@ -5,7 +5,7 @@ import logging
 import datetime
 import operator
 import itertools
-from typing import FrozenSet, Iterator, Optional, Tuple
+from typing import FrozenSet, Iterator, Optional, Tuple, List, Dict
 
 import trueskill
 
@@ -236,7 +236,7 @@ def make_batches(items: list, size: int):
     )
 
 
-def insert_rounds(skill_db, rounds: [dict]) -> (int, int):
+def insert_rounds(skill_db, rounds: List[Dict]) -> (int, int):
     if len(rounds) == 0:
         raise ValueError
 
@@ -269,7 +269,7 @@ def insert_rounds(skill_db, rounds: [dict]) -> (int, int):
     return max_round_id - len(rounds) + 1, max_round_id
 
 
-def insert_round_stats(skill_db, round_stats_by_game_state_id: {int: dict}):
+def insert_round_stats(skill_db, round_stats_by_game_state_id: Dict[int, Dict]):
     min_game_state_id = min(round_stats_by_game_state_id.keys())
     max_game_state_id = max(round_stats_by_game_state_id.keys())
 
