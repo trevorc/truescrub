@@ -29,7 +29,17 @@ py_binary(
     srcs = ["gstrans.py"],
     deps = [
         "//truescrub:db",
+        "//truescrub/statewriter",
         "//truescrub/statewriter:state_serialization",
+        requirement("tqdm"),
+    ],
+)
+
+py_binary(
+    name = "logquery",
+    srcs = ["logquery.py"],
+    deps = [
+        "//truescrub/statewriter",
         requirement("tqdm"),
     ],
 )

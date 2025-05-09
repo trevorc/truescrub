@@ -211,7 +211,7 @@ def parse_game_state(gs_json: dict) -> game_state_pb2.GameState:
     map_ = parse_map(gs_json.get('map'))
     provider = parse_provider(gs_json['provider'])
     round_ = parse_round(gs_json.get('round'))
-    player = parse_player(gs_json['player'])
+    player = parse_player(gs_json.get('player')) # Changed to .get()
     allplayers = [
       parse_allplayers_entry(steam_id, allplayers_entry)
       for steam_id, allplayers_entry in gs_json.get('allplayers', {}).items()

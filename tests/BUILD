@@ -44,6 +44,16 @@ py_test(
 )
 
 py_test(
+    name = "test_game_state_log",
+    srcs = ["test_game_state_log.py"],
+    deps = [
+        requirement("pytest"),
+        "//truescrub/statewriter",
+        "//truescrub/statewriter:game_state_log",
+    ],
+)
+
+py_test(
     name = "test_state_writer",
     srcs = ["test_state_writer.py"],
     deps = [

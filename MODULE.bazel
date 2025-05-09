@@ -3,6 +3,7 @@ bazel_dep(name = "protobuf", version = "30.0", repo_name = "com_google_protobuf"
 bazel_dep(name = "rules_pkg", version = "1.1.0")
 bazel_dep(name = "rules_proto", version = "7.1.0")
 bazel_dep(name = "rules_python", version = "1.4.0")
+bazel_dep(name = "riegeli", version = "0.0.0-20241218-3385e3c")
 
 register_toolchains(
     "//scripts:hermetic_python_toolchain",
