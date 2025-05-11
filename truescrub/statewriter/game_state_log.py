@@ -123,7 +123,8 @@ class StateLogReader:
     if not self._in_context:
       raise RuntimeError('fetch_all() called outside of context manager')
 
-    self.reader.search_for_message(GameStateEntry, test_fn(start_id))
+    if start_id is not None:
+      self.reader.search_for_message(GameStateEntry, test_fn(start_id))
     return self.reader.read_messages(message_type=GameStateEntry)
 
   def fetch_last(self) -> GameStateEntry:

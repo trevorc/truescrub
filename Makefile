@@ -1,6 +1,6 @@
 HOST			?= truescrub.life
-TRUESCRUB_ZIP_SRC	:= $(shell bazel cquery --ui_event_filters=-info --noshow_progress --output=files //:truescrub_zip)
-DBSURGERY_ZIP_SRC	:= $(shell bazel cquery --ui_event_filters=-info --noshow_progress --output=files //:dbsurgery_zip)
+TRUESCRUB_ZIP_SRC	:= $(shell bazel --bazelrc=deploy.bazelrc cquery --output=files //:truescrub_zip)
+DBSURGERY_ZIP_SRC	:= $(shell bazel --bazelrc=deploy.bazelrc cquery --output=files //:dbsurgery_zip)
 TRUESCRUB_ZIP_DEST	:= /opt/truescrub/truescrub.zip
 DBSURGERY_ZIP_DEST	:= /opt/truescrub/dbsurgery.zip
 
@@ -8,10 +8,10 @@ DBSURGERY_ZIP_DEST	:= /opt/truescrub/dbsurgery.zip
 build: ${TRUESCRUB_ZIP_SRC} ${DBSURGERY_ZIP_SRC}
 
 ${TRUESCRUB_ZIP_SRC}:
-	bazel build //:truescrub_zip
+	bazel --bazelrc=deploy.bazelrc build //:truescrub_zip
 
 ${DBSURGERY_ZIP_SRC}:
-	bazel build //:dbsurgery_zip
+	bazel --bazelrc=deploy.bazelrc build //:dbsurgery_zip
 
 .PHONY: deploy deploy-truescrub deploy-dbsurgery
 deploy: deploy-truescrub deploy-dbsurgery

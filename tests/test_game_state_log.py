@@ -6,8 +6,8 @@ import unittest
 from concurrent.futures import ThreadPoolExecutor
 
 from google.protobuf import text_format
-
 from truescrub.proto.game_state_pb2 import GameStateEntry
+
 from truescrub.statewriter import GameStateLog
 from truescrub.statewriter.game_state_log import ReaderWriterLock, \
   NoSuchRecordException
@@ -51,13 +51,11 @@ game_state {
 
 class TestGameStateLog(unittest.TestCase):
   def setUp(self):
-    self.temp_file = tempfile.NamedTemporaryFile(delete=False)
-    self.log_path = pathlib.Path(self.temp_file.name)
-    self.game_state_log = GameStateLog(self.log_path)
+    self.temp_file = tempfile.NamedTemporaryFile()
+    self.game_state_log = GameStateLog(pathlib.Path(self.temp_file.name))
 
   def tearDown(self):
     self.temp_file.close()
-    self.log_path.unlink(missing_ok=True)
 
   def test_write_and_read_game_state(self):
     with self.game_state_log.writer() as writer:
@@ -69,15 +67,12 @@ class TestGameStateLog(unittest.TestCase):
     self.assertEqual(len(read_entries), 1)
     self.assertEqual(
       read_entries[0].game_state.provider.name,
-      "Counter-Strike: Global Offensive"
-    )
+      "Counter-Strike: Global Offensive")
     self.assertEqual(
       read_entries[0].game_state.map.name,
-      "de_shortnuke"
-    )
+      "de_shortnuke")
 
   def test_fetch_specific_id_range(self):
-    """Test fetching game states in a specific ID range"""
     with self.game_state_log.writer() as writer:
       for i in range(5):
         entry = GameStateEntry()
@@ -125,10 +120,12 @@ class TestGameStateLog(unittest.TestCase):
     writer = self.game_state_log.writer()
     with self.assertRaises(RuntimeError):
       writer.append(SAMPLE_GAME_STATE_ENTRY)
+    writer.writer.close()
 
     reader = self.game_state_log.reader()
     with self.assertRaises(RuntimeError):
       next(reader.fetch(1))
+    reader.reader.close()
 
 
 class TestReaderWriterLock(unittest.TestCase):
@@ -212,7 +209,6 @@ class TestReaderWriterLock(unittest.TestCase):
         future.result()
 
   def test_writer_preference(self):
-    """Test that readers wait when a writer is waiting."""
     writer_waiting = threading.Event()
     reader_start = threading.Event()
     reader_ready = threading.Event()
@@ -262,6 +258,54 @@ class TestReaderWriterLock(unittest.TestCase):
         future.result()
 
     self.assertEqual(self.reader_wait_count, 0)
+
+
+class TestStateLogInteraction(unittest.TestCase):
+  def setUp(self):
+    self.temp_file = tempfile.NamedTemporaryFile()
+    self.game_state_log = GameStateLog(pathlib.Path(self.temp_file.name))
+
+  def tearDown(self):
+    self.temp_file.close()
+
+  def test_writer_create_new_file(self):
+    entry1 = GameStateEntry(game_state_id=1)
+    with self.game_state_log.writer() as writer:
+      writer.append(entry1)
+
+    with self.game_state_log.reader() as reader:
+      entries = list(reader.fetch_all())
+    self.assertSequenceEqual(entries, [entry1])
+
+    entry2 = GameStateEntry(game_state_id=2)
+    with self.game_state_log.writer() as writer:
+      writer.append(entry2)
+    with self.game_state_log.reader() as reader:
+      entries = list(reader.fetch_all())
+    self.assertSequenceEqual(entries, [entry1, entry2])
+
+  def test_reader_fetch_all_with_none_start_id(self):
+    with self.game_state_log.writer() as writer:
+      for i in range(1, 4):
+        writer.append(GameStateEntry(game_state_id=i))
+
+    with self.game_state_log.reader() as reader:
+      entries = list(reader.fetch_all(start_id=None))
+    self.assertEqual(len(entries), 3)
+    self.assertListEqual([e.game_state_id for e in entries], [1, 2, 3])
+
+  def test_reader_fetch_start_id_greater_than_existing(self):
+    with self.game_state_log.writer() as writer:
+      writer.append(GameStateEntry(game_state_id=1))
+      writer.append(GameStateEntry(game_state_id=2))
+
+    with self.game_state_log.reader() as reader:
+      entries = list(reader.fetch(start_id=5))
+    self.assertEqual(len(entries), 0)
+
+    with self.game_state_log.reader() as reader:
+      entries = list(reader.fetch(start_id=5, end_id=10))
+    self.assertEqual(len(entries), 0)
 
 
 if __name__ == '__main__':

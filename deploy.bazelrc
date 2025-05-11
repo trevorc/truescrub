@@ -1,0 +1,3 @@
+common --compilation_mode=opt
+common --noshow_progress
+common --ui_event_filters=-info
