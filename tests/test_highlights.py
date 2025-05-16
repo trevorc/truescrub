@@ -4,12 +4,13 @@ from typing import Dict
 
 import pytest
 
-from tests.db_test_utils import MockDBManager, create_game_state_for_round
+from tests.db_test_utils import TestDBManager, create_game_state_for_round
 from truescrub.highlights import (
   get_highlights, get_round_range_for_day, get_player_ratings_between_rounds,
   get_most_played_maps_between_rounds, get_skill_changes_between_rounds,
   make_player_rating
 )
+from truescrub.accolades import get_accolades
 from truescrub.models import Player, skill_group_name
 
 
@@ -30,7 +31,7 @@ def create_test_db(
   Returns:
       Populated skill database connection
   """
-  db_manager = MockDBManager()
+  db_manager = TestDBManager()
 
   map_distribution = map_distribution or {'de_dust2': 5, 'de_mirage': 3,
                                           'de_nuke': 2}
@@ -254,5 +255,26 @@ def test_get_highlights(test_db):
   assert player1['next_skill']['mmr'] > player1['previous_skill']['mmr']
 
 
+def test_get_accolades_in_highlights(test_db):
+  day = datetime.datetime(2022, 1, 15)
+  round_range, rounds_played = get_round_range_for_day(test_db, day)
+  player_ratings = get_player_ratings_between_rounds(test_db, round_range)
+  accolades = list(get_accolades(player_ratings))
+
+  assert len(accolades) == 3
+
+  accolades_by_player = {acc['player_id']: acc for acc in accolades}
+  assert set(accolades_by_player.keys()) == {1, 2, 3}
+
+  for accolade_data in accolades:
+    assert isinstance(accolade_data, dict)
+    assert 'accolade' in accolade_data
+    assert isinstance(accolade_data['accolade'], str)
+    assert len(accolade_data['accolade']) > 0
+    assert 'player_id' in accolade_data
+    assert 'player_name' in accolade_data
+    assert 'details' in accolade_data
+
+
 if __name__ == '__main__':
-  raise SystemExit(pytest.main([__file__]))
+  raise SystemExit(pytest.main(["-xv", __file__]))

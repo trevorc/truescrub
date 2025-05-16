@@ -60,23 +60,6 @@ def win_probability(trueskill_env, team1, team2):
     return trueskill_env.cdf(delta_mu / denom)
 
 
-def team1_win_probability(player_skills: {int: trueskill.Rating}, team1, team2):
-    return win_probability(
-            trueskill.global_env(),
-            [player_skills[player.player_id] for player in team1],
-            [player_skills[player.player_id] for player in team2])
-
-
-def match_quality(
-        player_skills: {int: trueskill.TrueSkill},
-        team1: [Player], team2: [Player]) -> float:
-    teams = (
-        [player_skills[player.player_id] for player in team1],
-        [player_skills[player.player_id] for player in team2],
-    )
-    return trueskill.quality(teams)
-
-
 def suggest_teams(player_skills: {int: trueskill.Rating}):
     players = frozenset(player_skills.keys())
     max_team_size = min(len(players) // 2, MAX_PLAYERS_PER_TEAM)

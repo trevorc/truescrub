@@ -241,7 +241,10 @@ def get_accolades(player_ratings: List[Dict]) -> List[dict]:
   Returns:
       List of accolade dictionaries with formatting for display
   """
-
+  
+  if not player_ratings:
+    return []
+    
   triggered_conditions = evaluate_conditions(player_ratings)
   awarded_accolades = compute_accolades(triggered_conditions)
   return list(format_accolades(awarded_accolades, player_ratings))

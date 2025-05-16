@@ -15,7 +15,7 @@ filegroup(
 )
 
 filegroup(
-    name = "dbsurgery_zip",
-    srcs = ["//truescrub/tools:dbsurgery"],
+    name = "surgery_zip",
+    srcs = ["//truescrub/tools:surgery"],
     output_group = "python_zip_file",
 )

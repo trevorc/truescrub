@@ -62,15 +62,13 @@ lowest deaths = {deaths:.2f} Deaths
 
 def test_calculate_expected_rating():
   player_stats = {
-    'rating_details': {
-      'average_kills': 2.5,
-      'average_deaths': 0.2,
-      'average_damage': 150.0,
-      'average_assists': 1.0
-    }
+    'average_kills': 2.5,
+    'average_deaths': 0.2,
+    'average_damage': 150.0,
+    'average_assists': 1.0
   }
 
-  expected_rating = compute_expected_rating(player_stats['rating_details'])
+  expected_rating = compute_expected_rating(player_stats)
   assert isinstance(expected_rating, float)
   assert expected_rating > 0
 
@@ -109,9 +107,6 @@ def test_test_conditions():
 
   conditions = evaluate_conditions(player_ratings)
 
-  assert 1 in conditions
-  assert 2 in conditions
-
   assert conditions[1]['mvps']
   assert conditions[1]['rating']
   assert conditions[1]['kills']
@@ -132,10 +127,7 @@ def test_compute_accolades(monkeypatch):
     2: {"deaths": True, "assists": True, "total_deaths": True}
   }
 
-  # Patch the ACCOLADES global
   monkeypatch.setattr("truescrub.accolades.ACCOLADES", mock_accolades)
-
-  # Run compute_accolades
   accolades = list(compute_accolades(triggered_conditions))
 
   assert len(accolades) == 2
@@ -181,15 +173,12 @@ def test_format_accolades(monkeypatch):
     ("deaths", True): "Highest Deaths: {deaths:.2f}"
   }
 
-  # Patch the globals
   monkeypatch.setattr("truescrub.accolades.ACCOLADES", mock_accolades)
   monkeypatch.setattr("truescrub.accolades.CONDITIONS", mock_conditions)
 
-  # Format accolades
   accolades = [("Test Accolade", 1), ("Another Accolade", 2)]
   formatted = list(format_accolades(accolades, player_ratings))
 
-  # Verify results
   assert len(formatted) == 2
   assert formatted[0]['accolade'] == "Test Accolade"
   assert formatted[0]['player_id'] == 1
@@ -205,9 +194,7 @@ def test_format_accolades(monkeypatch):
 
 
 def test_get_accolades(monkeypatch):
-  def mock_test_conditions(player_ratings):
-    if not player_ratings:
-      return {}
+  def mock_evaluate_conditions(player_ratings):
     return {
       1: {"mvps": True, "rating": True},
       2: {"deaths": True, "assists": True}
@@ -236,9 +223,8 @@ def test_get_accolades(monkeypatch):
       }
     ]
 
-  # Patch the functions
   monkeypatch.setattr("truescrub.accolades.evaluate_conditions",
-                      mock_test_conditions)
+                      mock_evaluate_conditions)
   monkeypatch.setattr("truescrub.accolades.compute_accolades",
                       mock_compute_accolades)
   monkeypatch.setattr("truescrub.accolades.format_accolades",
@@ -484,4 +470,4 @@ class TestNewAccoladesTrigger:
 
 
 if __name__ == "__main__":
-  sys.exit(pytest.main(["-xvs", __file__]))
+  raise SystemExit(pytest.main(["-xv", __file__]))

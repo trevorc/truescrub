@@ -12,12 +12,15 @@ import pytest
 
 from truescrub import seasoncfg
 from truescrub.db import (
-  initialize_skill_db, initialize_game_db, execute_one,
-  insert_game_state
+  initialize_skill_db, initialize_game_db, execute_one, insert_game_state,
+  get_game_states,
 )
+from truescrub.seasoncfg import get_seasons_by_start_date
 from truescrub.updater.recalculate import (
   compute_rounds_and_players, recalculate_ratings, load_seasons
 )
+from truescrub.updater.state_loader import StateLoader
+from truescrub.updater.state_parser import parse_game_states
 
 
 class MockGameState:
@@ -85,7 +88,7 @@ class MockGameState:
       },
       "round": {
         "phase": self.round_phase,
-        "win_team": self.win_team if self.round_phase == "over" else None
+        **({"win_team": self.win_team} if self.round_phase == "over" else {})
       },
       "allplayers": self.players,
       "previously": {
@@ -98,7 +101,19 @@ class MockGameState:
     return game_state
 
 
-class MockDBManager:
+class TestStateLoader(StateLoader):
+  def __init__(self, game_db):
+    self.game_db = game_db
+
+  def extract_game_states(self, game_state_range):
+
+    season_ids = get_seasons_by_start_date()
+    game_states = get_game_states(self.game_db, game_state_range)
+
+    return parse_game_states(game_states, season_ids)
+
+
+class TestDBManager:
   """
   Manager for creating and populating test databases.
   Uses the existing updater logic to transform game states into skill database content.
@@ -145,7 +160,6 @@ class MockDBManager:
     Process game states and update player skills using the existing updater logic.
     """
 
-    # Get count of game states
     game_state_count = execute_one(
       self.game_db, "SELECT COUNT(*) FROM game_state")[0]
     if game_state_count == 0:
@@ -156,11 +170,12 @@ class MockDBManager:
     with pytest.MonkeyPatch.context() as m:
       m.setattr(seasoncfg, 'SEASONS_TOML', self.seasons_toml)
 
+      state_loader = TestStateLoader(self.game_db)
       max_game_state_id, new_rounds = compute_rounds_and_players(
-        self.game_db, self.skill_db, game_state_range)
+        state_loader, self.skill_db, game_state_range)
 
-      if new_rounds is not None:
-        recalculate_ratings(self.skill_db, new_rounds)
+      assert new_rounds is not None, "Expected compute_rounds_and_players to return rounds, but got None"
+      recalculate_ratings(self.skill_db, new_rounds)
 
       self.game_db.commit()
       self.skill_db.commit()
@@ -208,15 +223,15 @@ def create_player_data(
   if not weapons_dict:
     if team == "CT":
       weapons_dict = {
-        "0": {"name": "weapon_knife"},
-        "1": {"name": "weapon_usp_silencer"},
-        "2": {"name": "weapon_m4a1"}
+        "weapon_0": {"name": "weapon_knife"},
+        "weapon_1": {"name": "weapon_usp_silencer"},
+        "weapon_2": {"name": "weapon_m4a1"}
       }
     else:
       weapons_dict = {
-        "0": {"name": "weapon_knife_t"},
-        "1": {"name": "weapon_glock"},
-        "2": {"name": "weapon_ak47"}
+        "weapon_0": {"name": "weapon_knife_t"},
+        "weapon_1": {"name": "weapon_glock"},
+        "weapon_2": {"name": "weapon_ak47"}
       }
 
   return {

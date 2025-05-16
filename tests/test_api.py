@@ -10,7 +10,7 @@ import sqlite3
 
 import pytest
 
-from tests.db_test_utils import MockDBManager, create_game_state_for_round
+from tests.db_test_utils import TestDBManager, create_game_state_for_round
 from truescrub.api import app, parse_timezone
 
 
@@ -21,7 +21,7 @@ from truescrub.api import app, parse_timezone
 @pytest.fixture
 def populated_db():
   """Create a populated database with 10 rounds."""
-  db_manager = MockDBManager()
+  db_manager = TestDBManager()
 
   ct_team = [(1, 'Player1'), (2, 'Player2')]
   t_team = [(3, 'Player3')]

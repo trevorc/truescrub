@@ -15,12 +15,28 @@ py_library(
 py_library(
     name = "recalculate",
     srcs = ["recalculate.py"],
+    visibility = ["//tests:__pkg__"],
     deps = [
         ":remapper",
+        ":state_loader",
         ":state_parser",
         "//truescrub:db",
         "//truescrub:models",
         "//truescrub:seasoncfg",
+    ],
+)
+
+py_library(
+    name = "state_loader",
+    srcs = ["state_loader.py"],
+    visibility = ["//tests:__pkg__"],
+    deps = [
+        ":state_parser",
+        "//truescrub:db",
+        "//truescrub:envconfig",
+        "//truescrub:models",
+        "//truescrub:seasoncfg",
+        "//truescrub/statewriter",
     ],
 )
 
@@ -48,6 +64,7 @@ py_library(
     deps = [
         ":evaluator",
         ":recalculate",
+        ":state_loader",
         "//truescrub:db",
         "//truescrub:queue_consumer",
     ],
@@ -56,9 +73,11 @@ py_library(
 py_binary(
     name = "updater_main",
     srcs = ["__main__.py"],
+    legacy_create_init = False,
     main = "__main__.py",
     deps = [
         ":evaluator",
         ":updater",
     ],
 )
+

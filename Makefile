@@ -29,6 +29,10 @@ test:
 	bazel test //tests:all
 
 .PHONY: serve
-serve:
-	bazel build //:truescrub_zip
-	TRUESCRUB_DATA_DIR=${PWD}/data python3.12 bazel-bin/truescrub/truescrub.zip -s -p 3000
+serve: ${TRUESCRUB_ZIP_SRC}
+	TRUESCRUB_DATA_DIR=${PWD}/data python3 "$<" -s -p 3000
+
+.PHONY: update-requirements
+update-requirements:
+	bazel run //:requirements.update
+

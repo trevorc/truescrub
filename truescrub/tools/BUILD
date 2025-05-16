@@ -6,6 +6,7 @@ py_binary(
     srcs = [
         "teameval.py",
     ],
+    legacy_create_init = False,
     deps = [
         "//truescrub:db",
         "//truescrub:matchmaking",
@@ -16,6 +17,7 @@ py_binary(
 py_binary(
     name = "genetic",
     srcs = ["genetic.py"],
+    legacy_create_init = False,
     deps = [
         "//truescrub:db",
         "//truescrub:models",
@@ -24,12 +26,21 @@ py_binary(
     ],
 )
 
+
+
 py_binary(
-    name = "gstrans",
-    srcs = ["gstrans.py"],
+    name = "log_translator",
+    srcs = ["log_translator.py"],
+    legacy_create_init = False,
+    visibility = [
+        "//:__pkg__",
+        "//tests:__pkg__",
+    ],
     deps = [
         "//truescrub:db",
+        "//truescrub/proto:game_state_py_pb2",
         "//truescrub/statewriter",
+        "//truescrub/statewriter:state_parsing",
         "//truescrub/statewriter:state_serialization",
         requirement("tqdm"),
     ],
@@ -38,6 +49,7 @@ py_binary(
 py_binary(
     name = "logquery",
     srcs = ["logquery.py"],
+    legacy_create_init = False,
     deps = [
         "//truescrub/statewriter",
         requirement("tqdm"),
@@ -45,16 +57,26 @@ py_binary(
 )
 
 py_binary(
-    name = "dbsurgery",
-    srcs = ["dbsurgery.py"],
-    main = "dbsurgery.py",
-    visibility = ["//:__pkg__"],
-    deps = ["//truescrub:db"],
+    name = "surgery",
+    srcs = ["surgery.py"],
+    legacy_create_init = False,
+    main = "surgery.py",
+    visibility = [
+        "//:__pkg__",
+        "//tests:__pkg__",
+    ],
+    deps = [
+        "//truescrub:db",
+        "//truescrub/proto:game_state_py_pb2",
+        "//truescrub/statewriter",
+        "//truescrub/statewriter:state_parsing",
+    ],
 )
 
 py_binary(
     name = "printaccolades",
     srcs = ["printaccolades.py"],
+    legacy_create_init = False,
     deps = [
         "//truescrub:accolades",
         "//truescrub:highlights",

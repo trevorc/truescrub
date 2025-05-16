@@ -1,3 +1,4 @@
+import logging
 import pathlib
 import threading
 from io import FileIO
@@ -6,6 +7,7 @@ from typing import Optional, Iterator, Callable
 import riegeli
 from truescrub.proto.game_state_pb2 import GameStateEntry
 
+logger = logging.getLogger(__name__)
 
 class ReaderWriterLock:
   def __init__(self):
@@ -71,6 +73,11 @@ class StateLogWriter:
     if not self._in_context:
       raise RuntimeError('append() called outside of context manager')
     self.writer.write_message(game_state)
+
+  def flush(self):
+    if not self._in_context:
+      raise RuntimeError('flush() called outside of context manager')
+    self.writer.flush()
 
 
 def test_fn(search_target: int) -> Callable[[GameStateEntry], bool]:
@@ -152,11 +159,12 @@ class GameStateLog:
   def __init__(self, log_path: pathlib.Path):
     self.log_path = log_path
     self.lock = ReaderWriterLock()
+    logger.debug('Initializing GameStateLog from %s', log_path)
 
-  def writer(self, timeout: Optional[float] = None):
+  def writer(self, timeout: Optional[float] = None) -> StateLogWriter:
     return StateLogWriter.create(
       FileIO(self.log_path, mode='ab'), self.lock, timeout)
 
-  def reader(self, timeout: Optional[float] = None):
+  def reader(self, timeout: Optional[float] = None) -> StateLogReader:
     return StateLogReader.create(
       FileIO(self.log_path, mode='rb'), self.lock, timeout)

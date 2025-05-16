@@ -1,10 +1,11 @@
-import logging
 import argparse
+import logging
 
 from truescrub import db
-from truescrub.updater.recalculate import recalculate
-from truescrub.updater.evaluator import evaluate_parameters
 from truescrub.envconfig import LOG_LEVEL
+from truescrub.updater.evaluator import evaluate_parameters
+from truescrub.updater.recalculate import recalculate
+from truescrub.updater.state_loader import DatabaseStateLoader
 
 logging.basicConfig(format='%(asctime)s.%(msecs).3dZ\t'
                            '%(levelname)s\t%(message)s',
@@ -27,7 +28,8 @@ def main():
     args = arg_parser.parse_args()
     db.initialize_dbs()
     if args.recalculate:
-        return recalculate()
+        with DatabaseStateLoader() as state_loader:
+            return recalculate(state_loader)
     elif args.evaluate:
         params = {}
         if args.beta:

@@ -1,4 +1,5 @@
 import sys
+import pytest
 
 from truescrub.models import SKILL_GROUP_NAMES, Player, skill_group_name
 
@@ -20,5 +21,4 @@ def test_player():
 
 
 if __name__ == '__main__':
-  import pytest
-  raise SystemExit(pytest.main([__file__]))
+  raise SystemExit(pytest.main(["-xv", __file__]))

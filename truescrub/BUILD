@@ -68,6 +68,7 @@ py_binary(
     name = "accolades",
     srcs = ["accolades.py"],
     data = ["accolades.ini"],
+    legacy_create_init = False,
     visibility = [
         "//tests:__pkg__",
         "//truescrub/tools:__pkg__",
@@ -195,6 +196,7 @@ py_library(
 py_binary(
     name = "truescrub",
     srcs = ["__main__.py"],
+    legacy_create_init = False,
     main = "__main__.py",
     visibility = ["//:__pkg__"],
     deps = [":application"],

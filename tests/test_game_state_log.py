@@ -2,6 +2,7 @@ import pathlib
 import tempfile
 import threading
 import time
+import pytest
 import unittest
 from concurrent.futures import ThreadPoolExecutor
 
@@ -309,4 +310,4 @@ class TestStateLogInteraction(unittest.TestCase):
 
 
 if __name__ == '__main__':
-  unittest.main()
+  raise SystemExit(pytest.main(["-xv", __file__]))

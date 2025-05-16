@@ -10,10 +10,8 @@ proto_library(
 py_proto_library(
     name = "game_state_py_pb2",
     visibility = [
-        "//truescrub:__pkg__",
-        "//truescrub/statewriter:__pkg__",
-        "//truescrub/tools:__pkg__",
         "//tests:__pkg__",
+        "//truescrub:__subpackages__",
     ],
     deps = [":game_state_proto"],
 )

@@ -235,4 +235,4 @@ def test_compute_matches():
 
 
 if __name__ == '__main__':
-  raise SystemExit(pytest.main([__file__]))
+  raise SystemExit(pytest.main(["-xv", __file__]))

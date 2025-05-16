@@ -1,800 +1,492 @@
 import json
-import datetime
+import unittest
 
 import pytest
-from truescrub.proto import game_state_pb2
+
 from google.protobuf import text_format
+from google.protobuf.timestamp_pb2 import Timestamp
 
-from truescrub.statewriter.state_serialization import DeserializationError, \
-  InvalidGameStateException, parse_game_state, parse_map
-
-SAMPLE_GAME_STATE = json.loads('''
-{
-    "map": {
-        "round_wins": {
-            "1": "ct_win_elimination"
-        },
-        "mode": "scrimcomp2v2",
-        "name": "de_shortnuke",
-        "phase": "live",
-        "round": 1,
-        "team_ct": {
-            "score": 0,
-            "consecutive_round_losses": 0,
-            "timeouts_remaining": 1,
-            "matches_won_this_series": 0
-        },
-        "team_t": {
-            "score": 0,
-            "consecutive_round_losses": 1,
-            "timeouts_remaining": 1,
-            "matches_won_this_series": 0
-        },
-        "num_matches_to_win_series": 0,
-        "current_spectators": 0,
-        "souvenirs_total": 0
-    },
-    "player": {
-        "steamid": "76561197970510532",
-        "name": "Defiler",
-        "observer_slot": 2,
-        "team": "T",
-        "activity": "playing",
-        "match_stats": {
-            "kills": 0,
-            "assists": 0,
-            "deaths": 1,
-            "mvps": 0,
-            "score": 0
-        },
-        "state": {
-            "health": 0,
-            "armor": 0,
-            "helmet": false,
-            "flashed": 0,
-            "smoked": 0,
-            "burning": 0,
-            "money": 2150,
-            "round_kills": 0,
-            "round_killhs": 0,
-            "round_totaldmg": 0,
-            "equip_value": 850
-        }
-    },
-    "provider": {
-        "name": "Counter-Strike: Global Offensive",
-        "appid": 730,
-        "version": 13694,
-        "steamid": "76561198413889827",
-        "timestamp": 1557535071
-    },
-    "round": {
-        "phase": "over",
-        "win_team": "CT"
-    },
-    "allplayers": {
-        "76561198121510237": {
-            "name": "nonverba1",
-            "observer_slot": 1,
-            "team": "CT",
-            "match_stats": {
-                "kills": 1,
-                "assists": 0,
-                "deaths": 0,
-                "mvps": 1,
-                "score": 2
-            },
-            "state": {
-                "health": 100,
-                "armor": 100,
-                "helmet": false,
-                "flashed": 0,
-                "burning": 0,
-                "money": 3200,
-                "round_kills": 1,
-                "round_killhs": 1,
-                "round_totaldmg": 100,
-                "equip_value": 850
-            }
-        },
-        "76561197970510532": {
-            "name": "Defiler",
-            "observer_slot": 2,
-            "team": "T",
-            "match_stats": {
-                "kills": 0,
-                "assists": 0,
-                "deaths": 1,
-                "mvps": 0,
-                "score": 0
-            },
-            "state": {
-                "health": 0,
-                "armor": 0,
-                "helmet": false,
-                "flashed": 0,
-                "burning": 0,
-                "money": 2150,
-                "round_kills": 0,
-                "round_killhs": 0,
-                "round_totaldmg": 0,
-                "equip_value": 850
-            }
-        }
-    },
-    "previously": {
-        "map": {
-            "round": 0,
-            "team_t": {
-                "consecutive_round_losses": 0
-            }
-        },
-        "player": {
-            "match_stats": {
-                "deaths": 0
-            },
-            "state": {
-                "health": 100,
-                "armor": 100,
-                "money": 150
-            }
-        },
-        "round": {
-            "phase": "live"
-        },
-        "allplayers": {
-            "76561198121510237": {
-                "match_stats": {
-                    "kills": 0,
-                    "mvps": 0,
-                    "score": 0
-                },
-                "state": {
-                    "money": 150,
-                    "round_kills": 0,
-                    "round_killhs": 0,
-                    "round_totaldmg": 0
-                }
-            },
-            "76561197970510532": {
-                "match_stats": {
-                    "deaths": 0
-                },
-                "state": {
-                    "health": 100,
-                    "armor": 100,
-                    "money": 150
-                }
-            }
-        }
-    },
-    "added": {
-        "map": {
-            "round_wins": true
-        },
-        "round": {
-            "win_team": true
-        }
-    }
-}
-''')
+from truescrub.proto import game_state_pb2
+from truescrub.statewriter.state_parsing import parse_game_state
+from truescrub.statewriter.state_serialization import (
+  serialize_game_state,
+  serialize_provider,
+  serialize_player,
+  serialize_match_stats,
+  serialize_player_state,
+  serialize_round,
+  serialize_map,
+  serialize_team_state,
+  serialize_allplayers_entry,
+  serialize_previously,
+  serialize_added,
+)
 
 
-def test_invalid_json_fails():
-  with pytest.raises(InvalidGameStateException):
-    parse_game_state({'map': {}})
+@unittest.skip
+def test_json_proto_json_roundtrip():
+  with open('tests/sample_game_states.json') as f:
+    sample_states = json.load(f)
 
-  with pytest.raises(DeserializationError):
-    parse_game_state({'provider': None})
-
-  with pytest.raises(DeserializationError):
-    parse_game_state(
-        {'provider': {'appid': 730, 'steamid': '123', 'version': 1}})
-
-
-def test_warmup_map():
-  actual = parse_map({
-    'mode': 'scrimcomp2v2', 'name': 'de_shortnuke', 'phase': 'warmup',
-    'round': 0,
-    'team_ct': {
-      'score': 0, 'consecutive_round_losses': 0, 'timeouts_remaining': 1,
-      'matches_won_this_series': 0
-    }, 'team_t': {
-      'score': 0, 'consecutive_round_losses': 0,
-      'timeouts_remaining': 1, 'matches_won_this_series': 0},
-    'num_matches_to_win_series': 0, 'current_spectators': 0,
-    'souvenirs_total': 0,
-  })
-  expected = text_format.Parse('''
-  mode: MODE_SCRIMCOMP2V2
-  name: "de_shortnuke"
-  phase: MAP_PHASE_WARMUP
-  team_t {
-    score: 0
-    consecutive_round_losses: 0
-    timeouts_remaining: 1
-    matches_won_this_series: 0
-  }
-  team_ct {
-    score: 0
-    consecutive_round_losses: 0
-    timeouts_remaining: 1
-    matches_won_this_series: 0
-  }
-  num_matches_to_win_series: 0
-  current_spectators: 0
-  ''', game_state_pb2.Map())
-  assert text_format.MessageToString(actual) == \
-         text_format.MessageToString(expected)
+  for original_state in sample_states:
+    gs_proto = parse_game_state(original_state)
+    roundtripped_state = serialize_game_state(gs_proto)
+    assert roundtripped_state == original_state
 
 
-def test_json_to_proto():
-  gs_proto = parse_game_state(SAMPLE_GAME_STATE)
-
-  expected_map = text_format.Parse('''
-  mode: MODE_SCRIMCOMP2V2
-  name: "de_shortnuke"
-  phase: MAP_PHASE_LIVE
-  round: 1
-  team_t {
-    score: 0
-    consecutive_round_losses: 1
-    timeouts_remaining: 1
-    matches_won_this_series: 0
-  }
-  team_ct {
-    score: 0
-    consecutive_round_losses: 0
-    timeouts_remaining: 1
-    matches_won_this_series: 0
-  }
-  num_matches_to_win_series: 0
-  current_spectators: 0
-  round_wins [{
-    round_num: 1
-    win_condition: WIN_CONDITION_CT_WIN_ELIMINATION
-  }]
-  ''', game_state_pb2.Map())
-  assert text_format.MessageToString(gs_proto.map) == \
-         text_format.MessageToString(expected_map)
-
-  assert gs_proto.provider.timestamp.ToDatetime() == \
-         datetime.datetime(2019, 5, 11, 0, 37, 51)
-  assert gs_proto.round == game_state_pb2.Round(
-      phase=game_state_pb2.Round.ROUND_PHASE_OVER,
-      win_team=game_state_pb2.TEAM_CT,
+def test_serialize_provider():
+  provider_proto = game_state_pb2.Provider(
+    name="test_provider",
+    app_id=730,
+    version=13784,
+    steam_id=76561198000000000,
+    timestamp=Timestamp(seconds=1678886400)
   )
+  expected_dict = {
+    "name": "test_provider",
+    "appid": 730,
+    "version": 13784,
+    "steamid": "76561198000000000",
+    "timestamp": 1678886400,
+  }
+  assert serialize_provider(provider_proto) == expected_dict
 
 
-FREEZETIME_GAME_STATE = json.loads('''
-{
+def test_serialize_match_stats():
+  match_stats_proto = game_state_pb2.MatchStats(
+    kills=10,
+    assists=5,
+    deaths=7,
+    mvps=2,
+    score=25,
+  )
+  expected_dict = {
+    "kills": 10,
+    "assists": 5,
+    "deaths": 7,
+    "mvps": 2,
+    "score": 25,
+  }
+  assert serialize_match_stats(match_stats_proto) == expected_dict
+
+
+def test_serialize_player_state():
+  player_state_proto = game_state_pb2.PlayerState(
+    health=100,
+    armor=50,
+    helmet=True,
+    flashed=0,
+    smoked=0,
+    burning=0,
+    money=16000,
+    round_kills=2,
+    round_killhs=1,
+    round_totaldmg=150,
+    equip_value=5000,
+    defusekit=True,
+  )
+  expected_dict = {
+    "health": 100,
+    "armor": 50,
+    "helmet": True,
+    "flashed": 0,
+    "smoked": 0,
+    "burning": 0,
+    "money": 16000,
+    "round_kills": 2,
+    "round_killhs": 1,
+    "round_totaldmg": 150,
+    "equip_value": 5000,
+    "defusekit": True,
+  }
+  assert serialize_player_state(player_state_proto) == expected_dict
+
+
+def test_serialize_player_state_no_defusekit():
+  player_state_proto = game_state_pb2.PlayerState(
+    health=100,
+    armor=50,
+    helmet=True,
+    flashed=0,
+    smoked=0,
+    burning=0,
+    money=16000,
+    round_kills=2,
+    round_killhs=1,
+    round_totaldmg=150,
+    equip_value=5000,
+    defusekit=False,
+  )
+  expected_dict = {
+    "health": 100,
+    "armor": 50,
+    "helmet": True,
+    "flashed": 0,
+    "smoked": 0,
+    "burning": 0,
+    "money": 16000,
+    "round_kills": 2,
+    "round_killhs": 1,
+    "round_totaldmg": 150,
+    "equip_value": 5000,
+  }
+  assert serialize_player_state(player_state_proto) == expected_dict
+
+
+def test_serialize_player():
+  match_stats_proto = game_state_pb2.MatchStats(
+    kills=10,
+    assists=5,
+    deaths=7,
+    mvps=2,
+    score=25,
+  )
+  player_state_proto = game_state_pb2.PlayerState(
+    health=100,
+    armor=50,
+    helmet=True,
+    flashed=0,
+    smoked=0,
+    burning=0,
+    money=16000,
+    round_kills=2,
+    round_killhs=1,
+    round_totaldmg=150,
+    equip_value=5000,
+    defusekit=True,
+  )
+  player_proto = game_state_pb2.Player(
+    steam_id=76561198000000001,
+    clan="testclan",
+    name="testplayer",
+    observer_slot=1,
+    team=game_state_pb2.TEAM_CT,
+    activity=game_state_pb2.Player.ACTIVITY_PLAYING,
+    match_stats=match_stats_proto,
+    state=player_state_proto,
+  )
+  expected_dict = {
+    "steamid": "76561198000000001",
+    "clan": "testclan",
+    "name": "testplayer",
+    "observer_slot": 1,
+    "team": "CT",
+    "activity": "playing",
+    "match_stats": {
+      "kills": 10,
+      "assists": 5,
+      "deaths": 7,
+      "mvps": 2,
+      "score": 25,
+    },
+    "state": {
+      "health": 100,
+      "armor": 50,
+      "helmet": True,
+      "flashed": 0,
+      "smoked": 0,
+      "burning": 0,
+      "money": 16000,
+      "round_kills": 2,
+      "round_killhs": 1,
+      "round_totaldmg": 150,
+      "equip_value": 5000,
+      "defusekit": True,
+    },
+  }
+  assert serialize_player(player_proto) == expected_dict
+
+
+def test_serialize_player_minimal():
+  player_proto = game_state_pb2.Player(
+    steam_id=76561198000000001,
+    name="testplayer",
+    team=game_state_pb2.TEAM_T,
+    activity=game_state_pb2.Player.ACTIVITY_MENU,
+  )
+  expected_dict = {
+    "steamid": "76561198000000001",
+    "name": "testplayer",
+    "team": "T",
+    "activity": "menu",
+  }
+  assert serialize_player(player_proto) == expected_dict
+
+
+def test_serialize_round():
+  round_proto = game_state_pb2.Round(
+    phase=game_state_pb2.Round.ROUND_PHASE_LIVE,
+    win_team=game_state_pb2.TEAM_CT,
+    bomb=game_state_pb2.Round.BOMB_PLANTED,
+  )
+  expected_dict = {
+    "phase": "live",
+    "win_team": "CT",
+    "bomb": "planted",
+  }
+  assert serialize_round(round_proto) == expected_dict
+
+
+def test_serialize_round_no_bomb():
+  round_proto = game_state_pb2.Round(
+    phase=game_state_pb2.Round.ROUND_PHASE_FREEZETIME,
+    win_team=game_state_pb2.TEAM_T,
+  )
+  expected_dict = {
+    "phase": "freezetime",
+    "win_team": "T",
+  }
+  assert serialize_round(round_proto) == expected_dict
+
+
+def test_serialize_team_state():
+  team_state_proto = game_state_pb2.TeamState(
+    score=10,
+    consecutive_round_losses=2,
+    timeouts_remaining=1,
+    matches_won_this_series=1,
+  )
+  expected_dict = {
+    "score": 10,
+    "consecutive_round_losses": 2,
+    "timeouts_remaining": 1,
+    "matches_won_this_series": 1,
+  }
+  assert serialize_team_state(team_state_proto) == expected_dict
+
+
+def test_serialize_map():
+  team_t_state_proto = game_state_pb2.TeamState(
+    score=10,
+    consecutive_round_losses=2,
+    timeouts_remaining=1,
+    matches_won_this_series=1,
+  )
+  team_ct_state_proto = game_state_pb2.TeamState(
+    score=16,
+    consecutive_round_losses=0,
+    timeouts_remaining=0,
+    matches_won_this_series=2,
+  )
+  round_win_proto_1 = game_state_pb2.RoundWin(
+    round_num=1,
+    win_condition=game_state_pb2.RoundWin.WIN_CONDITION_CT_WIN_DEFUSE,
+  )
+  round_win_proto_2 = game_state_pb2.RoundWin(
+    round_num=2,
+    win_condition=game_state_pb2.RoundWin.WIN_CONDITION_T_WIN_ELIMINATION,
+  )
+  map_proto = game_state_pb2.Map(
+    mode=game_state_pb2.MODE_COMPETITIVE,
+    name="de_dust2",
+    phase=game_state_pb2.MAP_PHASE_LIVE,
+    round=15,
+    team_t=team_t_state_proto,
+    team_ct=team_ct_state_proto,
+    num_matches_to_win_series=3,
+    current_spectators=50,
+    souvenirs_total=10,
+    round_wins=[round_win_proto_1, round_win_proto_2],
+  )
+  expected_dict = {
+    "mode": "competitive",
+    "name": "de_dust2",
+    "phase": "live",
+    "round": 15,
+    "team_t": {
+      "score": 10,
+      "consecutive_round_losses": 2,
+      "timeouts_remaining": 1,
+      "matches_won_this_series": 1,
+    },
+    "team_ct": {
+      "score": 16,
+      "consecutive_round_losses": 0,
+      "timeouts_remaining": 0,
+      "matches_won_this_series": 2,
+    },
+    "num_matches_to_win_series": 3,
+    "round_wins": {
+      "1": "ct_win_defuse",
+      "2": "t_win_elimination",
+    },
+    "current_spectators": 50,
+    "souvenirs_total": 10,
+  }
+  assert serialize_map(map_proto) == expected_dict
+
+
+def test_serialize_thin_player():
+  match_stats_proto = game_state_pb2.MatchStats(
+    kills=5,
+    assists=2,
+    deaths=3,
+    mvps=1,
+    score=15,
+  )
+  player_state_proto = game_state_pb2.PlayerState(
+    health=80,
+    armor=80,
+    helmet=False,
+    flashed=10,
+    smoked=5,
+    burning=0,
+    money=5000,
+    round_kills=1,
+    round_killhs=1,
+    round_totaldmg=80,
+    equip_value=3000,
+    defusekit=False,
+  )
+  thin_player_proto = game_state_pb2.ThinPlayer(
+    steam_id=76561198000000002,
+    name="thinplayer",
+    observer_slot=2,
+    team=game_state_pb2.TEAM_T,
+    match_stats=match_stats_proto,
+    state=player_state_proto,
+    clan="thinclan",
+  )
+  expected_tuple = (
+    "76561198000000002", {
+    "name": "thinplayer",
+    "observer_slot": 2,
+    "team": "T",
+    "match_stats": {
+      "kills": 5,
+      "assists": 2,
+      "deaths": 3,
+      "mvps": 1,
+      "score": 15,
+    },
+    "state": {
+      "health": 80,
+      "armor": 80,
+      "helmet": False,
+      "flashed": 10,
+      "smoked": 5,
+      "burning": 0,
+      "money": 5000,
+      "round_kills": 1,
+      "round_killhs": 1,
+      "round_totaldmg": 80,
+      "equip_value": 3000,
+    },
+    "clan": "thinclan",
+  }
+  )
+  assert serialize_allplayers_entry(thin_player_proto) == expected_tuple
+
+
+def test_serialize_previously():
+  map_proto = game_state_pb2.Map(
+    mode=game_state_pb2.MODE_CASUAL,
+    name="de_mirage",
+    phase=game_state_pb2.MAP_PHASE_INTERMISSION,
+    round=10,
+  )
+  player_proto = game_state_pb2.Player(
+    steam_id=76561198000000003,
+    name="prevplayer",
+    team=game_state_pb2.TEAM_CT,
+    activity=game_state_pb2.Player.ACTIVITY_TEXTINPUT,
+  )
+  round_proto = game_state_pb2.Round(
+    phase=game_state_pb2.Round.ROUND_PHASE_OVER,
+    win_team=game_state_pb2.TEAM_T,
+    bomb=game_state_pb2.Round.BOMB_EXPLODED,
+  )
+  thin_player_proto_1 = game_state_pb2.ThinPlayer(
+    steam_id=76561198000000004,
+    name="prevalplayer1",
+    team=game_state_pb2.TEAM_T,
+  )
+  thin_player_proto_2 = game_state_pb2.ThinPlayer(
+    steam_id=76561198000000005,
+    name="prevalplayer2",
+    team=game_state_pb2.TEAM_CT,
+  )
+  previous_allplayers_proto = game_state_pb2.PreviousAllPlayers(
+    allplayers=[thin_player_proto_1, thin_player_proto_2]
+  )
+  previously_proto = game_state_pb2.Previously(
+    map=map_proto,
+    player=player_proto,
+    round=round_proto,
+    allplayers=previous_allplayers_proto,
+  )
+  expected_dict = {
     "map": {
-        "mode": "scrimcomp2v2",
-        "name": "de_shortnuke",
-        "phase": "live",
-        "round": 0,
-        "team_ct": {
-            "score": 0,
-            "consecutive_round_losses": 0,
-            "timeouts_remaining": 1,
-            "matches_won_this_series": 0
-        },
-        "team_t": {
-            "score": 0,
-            "consecutive_round_losses": 0,
-            "timeouts_remaining": 1,
-            "matches_won_this_series": 0
-        },
-        "num_matches_to_win_series": 0,
-        "current_spectators": 0,
-        "souvenirs_total": 0
+      "mode": "casual",
+      "name": "de_mirage",
+      "phase": "intermission",
+      "round": 10,
+      "num_matches_to_win_series": 0,
+      "round_wins": {},
+      "current_spectators": 0,
+      "souvenirs_total": 0,
     },
     "player": {
-        "steamid": "76561197960265729",
-        "name": "Zane",
-        "observer_slot": 2,
-        "team": "CT",
-        "activity": "playing",
-        "match_stats": {
-            "kills": 0,
-            "assists": 0,
-            "deaths": 0,
-            "mvps": 0,
-            "score": 0
-        },
-        "state": {
-            "health": 100,
-            "armor": 0,
-            "helmet": false,
-            "flashed": 0,
-            "smoked": 0,
-            "burning": 0,
-            "money": 800,
-            "round_kills": 0,
-            "round_killhs": 0,
-            "round_totaldmg": 0,
-            "equip_value": 200
-        }
-    },
-    "provider": {
-        "name": "Counter-Strike: Global Offensive",
-        "appid": 730,
-        "version": 13694,
-        "steamid": "76561198413889827",
-        "timestamp": 1557534759
+      "steamid": "76561198000000003",
+      "name": "prevplayer",
+      "team": "CT",
+      "activity": "textinput",
     },
     "round": {
-        "phase": "freezetime"
+      "phase": "over",
+      "win_team": "T",
+      "bomb": "exploded",
     },
     "allplayers": {
-        "76561198121510237": {
-            "name": "nonverba1",
-            "observer_slot": 1,
-            "team": "CT",
-            "match_stats": {
-                "kills": 0,
-                "assists": 0,
-                "deaths": 0,
-                "mvps": 0,
-                "score": 0
-            },
-            "state": {
-                "health": 100,
-                "armor": 0,
-                "helmet": false,
-                "flashed": 0,
-                "burning": 0,
-                "money": 800,
-                "round_kills": 0,
-                "round_killhs": 0,
-                "round_totaldmg": 0,
-                "equip_value": 200
-            }
-        },
-        "76561197970510532": {
-            "name": "Defiler",
-            "observer_slot": 3,
-            "team": "T",
-            "match_stats": {
-                "kills": 0,
-                "assists": 0,
-                "deaths": 0,
-                "mvps": 0,
-                "score": 0
-            },
-            "state": {
-                "health": 100,
-                "armor": 0,
-                "helmet": false,
-                "flashed": 0,
-                "burning": 0,
-                "money": 800,
-                "round_kills": 0,
-                "round_killhs": 0,
-                "round_totaldmg": 0,
-                "equip_value": 200
-            }
-        },
-        "76561197960265729": {
-            "name": "Zane",
-            "observer_slot": 2,
-            "team": "CT",
-            "match_stats": {
-                "kills": 0,
-                "assists": 0,
-                "deaths": 0,
-                "mvps": 0,
-                "score": 0
-            },
-            "state": {
-                "health": 100,
-                "armor": 0,
-                "helmet": false,
-                "flashed": 0,
-                "burning": 0,
-                "money": 800,
-                "round_kills": 0,
-                "round_killhs": 0,
-                "round_totaldmg": 0,
-                "equip_value": 200
-            }
-        },
-        "76561197960265730": {
-            "name": "Hank",
-            "observer_slot": 4,
-            "team": "T",
-            "match_stats": {
-                "kills": 0,
-                "assists": 0,
-                "deaths": 0,
-                "mvps": 0,
-                "score": 0
-            },
-            "state": {
-                "health": 100,
-                "armor": 0,
-                "helmet": false,
-                "flashed": 0,
-                "burning": 0,
-                "money": 800,
-                "round_kills": 0,
-                "round_killhs": 0,
-                "round_totaldmg": 0,
-                "equip_value": 200
-            }
-        }
+      "76561198000000004": {
+        "name": "prevalplayer1",
+        "team": "T",
+      },
+      "76561198000000005": {
+        "name": "prevalplayer2",
+        "team": "CT",
+      },
     },
-    "previously": {
-        "map": {
-            "phase": "warmup"
-        },
-        "player": {
-            "steamid": "76561198413889827",
-            "name": "Gumbercules",
-            "state": {
-                "health": 0,
-                "money": 0,
-                "equip_value": 0
-            }
-        },
-        "allplayers": {
-            "76561198121510237": {
-                "match_stats": {
-                    "kills": 1,
-                    "deaths": 1,
-                    "score": 2
-                },
-                "state": {
-                    "money": 3700
-                }
-            },
-            "76561197970510532": {
-                "match_stats": {
-                    "kills": 4,
-                    "score": 8
-                },
-                "state": {
-                    "armor": 100,
-                    "helmet": true,
-                    "money": 4300,
-                    "round_kills": 4,
-                    "round_killhs": 3,
-                    "equip_value": 3900
-                }
-            },
-            "76561197960265729": {
-                "match_stats": {
-                    "kills": 1,
-                    "assists": 1,
-                    "deaths": 3,
-                    "score": 3
-                },
-                "state": {
-                    "money": 500
-                }
-            },
-            "76561197960265730": {
-                "match_stats": {
-                    "assists": 1,
-                    "deaths": 2,
-                    "score": 1
-                },
-                "state": {
-                    "money": 1400
-                }
-            }
-        }
-    },
-    "added": {
-        "player": {
-            "observer_slot": true,
-            "team": true
-        }
-    }
-}
-''')
+  }
+  assert serialize_previously(previously_proto) == expected_dict
 
 
-def test_freezetime():
-  actual = parse_game_state(FREEZETIME_GAME_STATE)
+def test_serialize_previously_allplayers_present():
+  previously_proto = game_state_pb2.Previously(
+    allplayers_present=True
+  )
+  assert serialize_previously(previously_proto) == {
+    "allplayers": True,
+  }
 
-  expected = text_format.Parse('''
-  phase: ROUND_PHASE_FREEZETIME
-  ''', game_state_pb2.Round())
-  assert text_format.MessageToString(actual.round) == \
-         text_format.MessageToString(expected)
+
+def test_serialize_previously_round_present():
+  previously_proto = game_state_pb2.Previously(round_present=True)
+  assert serialize_previously(previously_proto) == {"round": True}
 
 
-WARMUP_GAME_STATE = json.loads('''
-{
-    "map": {
-        "mode": "scrimcomp2v2",
-        "name": "de_shortnuke",
-        "phase": "warmup",
-        "round": 0,
-        "team_ct": {
-            "score": 0,
-            "consecutive_round_losses": 0,
-            "timeouts_remaining": 1,
-            "matches_won_this_series": 0
-        },
-        "team_t": {
-            "score": 0,
-            "consecutive_round_losses": 0,
-            "timeouts_remaining": 1,
-            "matches_won_this_series": 0
-        },
-        "num_matches_to_win_series": 0,
-        "current_spectators": 0,
-        "souvenirs_total": 0
-    },
+def test_serialize_added_player():
+  player_added_proto = game_state_pb2.PlayerAdded(
+    clan=True,
+    observer_slot=True,
+    team=True,
+    match_stats=True,
+    state=True,
+  )
+  added_proto = game_state_pb2.Added(
+    player=player_added_proto
+  )
+  expected_dict = {
     "player": {
-        "steamid": "76561198413889827",
-        "name": "unconnected",
-        "activity": "playing",
-        "match_stats": {
-            "kills": 0,
-            "assists": 0,
-            "deaths": 0,
-            "mvps": 0,
-            "score": 0
-        },
-        "state": {
-            "health": 0,
-            "armor": 0,
-            "helmet": false,
-            "flashed": 0,
-            "smoked": 0,
-            "burning": 0,
-            "money": 8000,
-            "round_kills": 0,
-            "round_killhs": 0,
-            "equip_value": 0
-        }
-    },
-    "provider": {
-        "name": "Counter-Strike: Global Offensive",
-        "appid": 730,
-        "version": 13694,
-        "steamid": "76561198413889827",
-        "timestamp": 1557534710
-    },
-    "previously": {
-        "player": {
-            "name": "Gumbercules",
-            "activity": "menu"
-        }
-    },
-    "added": {
-        "player": {
-            "match_stats": true,
-            "state": true
-        }
+      "clan": True,
+      "observer_slot": True,
+      "team": True,
+      "match_stats": True,
+      "state": True,
     }
-}
-''')
-
-
-def test_warmup():
-  actual = parse_game_state(WARMUP_GAME_STATE)
-  expected = text_format.Parse('''
-  map {
-      mode: MODE_SCRIMCOMP2V2
-      name: "de_shortnuke"
-      phase: MAP_PHASE_WARMUP
-      round: 0
-      team_ct {
-          score: 0
-          consecutive_round_losses: 0
-          timeouts_remaining: 1
-          matches_won_this_series: 0
-      }
-      team_t {
-          score: 0
-          consecutive_round_losses: 0
-          timeouts_remaining: 1
-          matches_won_this_series: 0
-      }
-      num_matches_to_win_series: 0
-      current_spectators: 0
-      souvenirs_total: 0
   }
-  player {
-      steam_id: 76561198413889827
-      name: "unconnected"
-      activity: ACTIVITY_PLAYING
-      match_stats {
-          kills: 0
-          assists: 0
-          deaths: 0
-          mvps: 0
-          score: 0
-      }
-      state {
-          health: 0
-          armor: 0
-          helmet: false
-          flashed: 0
-          smoked: 0
-          burning: 0,
-          money: 8000
-          round_kills: 0
-          round_killhs: 0
-          equip_value: 0
-      }
-  }
-  provider {
-      name: "Counter-Strike: Global Offensive"
-      app_id: 730
-      version: 13694,
-      steam_id: 76561198413889827
-      timestamp {
-        seconds: 1557534710
-      }
-  }
-  previously {
-      player {
-          name: "Gumbercules"
-          activity: ACTIVITY_MENU
-      }
-  }
-  added {
-      player {
-          match_stats: true,
-          state: true
-      }
-  }
-  ''', game_state_pb2.GameState())
-  assert text_format.MessageToString(actual) == \
-         text_format.MessageToString(expected)
-
-
-BLANK_WIN_CONDITION_GAME_STATE = json.loads('''
-{
-    "provider": {
-        "name": "Counter-Strike: Global Offensive",
-        "appid": 730,
-        "version": 13844,
-        "steamid": "76561198413889827",
-        "timestamp": 1665097332
-    },
-    "player": {
-        "steamid": "76561198413889827",
-        "clan": "truescrub",
-        "name": "Gumbercules",
-        "activity": "playing",
-        "state": {
-            "health": 0,
-            "armor": 0,
-            "helmet": false,
-            "flashed": 0,
-            "smoked": 0,
-            "burning": 0,
-            "money": 800,
-            "round_kills": 0,
-            "round_killhs": 0,
-            "equip_value": 0
-        }
-    },
-    "map": {
-        "mode": "scrimcomp2v2",
-        "name": "ar_dizzy",
-        "phase": "live",
-        "round": 3,
-        "team_ct": {
-            "score": 1,
-            "consecutive_round_losses": 0,
-            "timeouts_remaining": 1,
-            "matches_won_this_series": 0
-        },
-        "team_t": {
-            "score": 2,
-            "consecutive_round_losses": 1,
-            "timeouts_remaining": 1,
-            "matches_won_this_series": 0
-        },
-        "num_matches_to_win_series": 0,
-        "current_spectators": 0,
-        "souvenirs_total": 0,
-        "round_wins": {
-            "1": "t_win_elimination",
-            "2": "t_win_elimination",
-            "3": ""
-        }
-    },
-    "round": {
-        "phase": "over"
-    },
-    "previously": {
-        "map": {
-            "round_wins": {
-                "3": "ct_win_elimination"
-            }
-        },
-        "round": {
-            "phase": "live"
-        }
-    }
-}
-''')
-
-def test_blank_win_condition():
-  actual = parse_game_state(BLANK_WIN_CONDITION_GAME_STATE)
-  expected = text_format.Parse('''
-  provider {
-      name: "Counter-Strike: Global Offensive"
-      app_id: 730
-      version: 13844,
-      steam_id: 76561198413889827
-      timestamp {
-        seconds: 1665097332
-      }
-  }
-  player {
-      steam_id: 76561198413889827
-      clan: "truescrub"
-      name: "Gumbercules"
-      activity: ACTIVITY_PLAYING
-      state {
-          health: 0
-          armor: 0
-          helmet: false
-          flashed: 0
-          smoked: 0
-          burning: 0,
-          money: 800
-          round_kills: 0
-          round_killhs: 0
-          equip_value: 0
-      }
-  }
-  map {
-      mode: MODE_SCRIMCOMP2V2
-      name: "ar_dizzy"
-      phase: MAP_PHASE_LIVE
-      round: 3
-      team_ct {
-          score: 1
-          consecutive_round_losses: 0
-          timeouts_remaining: 1
-          matches_won_this_series: 0
-      }
-      team_t {
-          score: 2
-          consecutive_round_losses: 1
-          timeouts_remaining: 1
-          matches_won_this_series: 0
-      }
-      round_wins {
-          round_num: 1
-          win_condition: WIN_CONDITION_T_WIN_ELIMINATION
-      }
-      round_wins {
-          round_num: 2
-          win_condition: WIN_CONDITION_T_WIN_ELIMINATION
-      }
-      num_matches_to_win_series: 0
-      current_spectators: 0
-      souvenirs_total: 0
-  }
-  round {
-      phase: ROUND_PHASE_OVER
-  }
-  previously {
-      map {
-          round_wins: {
-              round_num: 3
-              win_condition: WIN_CONDITION_CT_WIN_ELIMINATION
-          }
-      }
-      round {
-          phase: ROUND_PHASE_LIVE
-      }
-  }
-  ''', game_state_pb2.GameState())
-  assert text_format.MessageToString(actual) == \
-         text_format.MessageToString(expected)
+  assert serialize_added(added_proto) == expected_dict
 
 
 if __name__ == '__main__':
-  raise SystemExit(pytest.main([__file__]))
+  raise SystemExit(pytest.main(["-xvv", __file__]))

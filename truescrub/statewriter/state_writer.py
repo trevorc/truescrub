@@ -10,7 +10,7 @@ from truescrub.envconfig import DATA_DIR
 from truescrub.queue_consumer import QueueConsumer
 from truescrub.statewriter.game_state_log import GameStateLog, \
   NoSuchRecordException
-from truescrub.statewriter.state_serialization import parse_game_state
+from truescrub.statewriter.state_parsing import parse_game_state
 
 LOG_FILE_NAME = 'game_states.riegeli'
 logger = logging.getLogger(__name__)

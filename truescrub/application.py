@@ -8,8 +8,7 @@ import os
 import threading
 import uuid
 from concurrent.futures import Future
-from contextlib import ExitStack
-from typing import Dict, List
+from typing import Dict, List, Callable, Tuple
 
 import flask
 import mimetypes
@@ -19,15 +18,26 @@ import truescrub
 from truescrub import db
 from truescrub.api import app
 from truescrub.envconfig import LOG_LEVEL
+from truescrub.queue_consumer import QueueConsumer
 from truescrub.statewriter import GameStateWriter
+from truescrub.statewriter.state_writer import RiegeliGameStateWriter
 from truescrub.updater import Updater
 from truescrub.updater.recalculate import load_seasons
+from truescrub.updater.state_loader import (
+  DatabaseStateLoader, RiegeliStateLoader, StateLoader)
 
 logging.basicConfig(format='%(asctime)s.%(msecs).3dZ\t'
                            '%(name)s\t%(levelname)s\t%(message)s',
                     datefmt='%Y-%m-%dT%H:%M:%S',
                     level=LOG_LEVEL)
 logger = logging.getLogger(__name__)
+
+GAME_STATE_BACKENDS: Dict[str, Tuple[
+  Callable[[], StateLoader], Callable[[QueueConsumer], QueueConsumer]
+]] = {
+  'sqlite': (DatabaseStateLoader, GameStateWriter),
+  'riegeli': (RiegeliStateLoader.from_env, RiegeliGameStateWriter.from_env),
+}
 
 arg_parser = argparse.ArgumentParser()
 arg_parser.add_argument('-a', '--addr', metavar='HOST', default='0.0.0.0',
@@ -38,6 +48,10 @@ arg_parser.add_argument('-c', '--recalculate', action='store_true',
                         help='Recalculate rankings.')
 arg_parser.add_argument('-s', '--serve-htdocs', action='store_true',
                         help='Serve static files.')
+arg_parser.add_argument('-b', '--game-state-backend',
+                        choices=GAME_STATE_BACKENDS, default='sqlite',
+                        help='Store game states using this provider.')
+
 
 
 class Service(metaclass=abc.ABCMeta):
@@ -141,11 +155,13 @@ def serve_htdocs(filename):
 
 def main(args: List[str]):
   args = arg_parser.parse_args(args)
+  state_loader_provider, state_writer_provider = \
+    GAME_STATE_BACKENDS[args.game_state_backend]
 
   executor = concurrent.futures.ThreadPoolExecutor(max_workers=3)
   futures = {}
-  updater = Updater()
-  state_writer = GameStateWriter(updater)
+  updater = Updater(state_loader_provider)
+  state_writer = state_writer_provider(updater)
   db.initialize_dbs()
 
   with db.get_skill_db() as skill_db:

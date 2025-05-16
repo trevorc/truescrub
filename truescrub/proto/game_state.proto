@@ -43,8 +43,9 @@ message Provider {
 }
 
 enum Team {
-  TEAM_T = 0;
-  TEAM_CT = 1;
+  TEAM_UNSPECIFIED = 0;
+  TEAM_T = 1;
+  TEAM_CT = 2;
 }
 
 // Next ID: 9
@@ -189,13 +190,65 @@ message TeamState {
 
 message ThinPlayer {
   int64 steam_id = 1;
-  string name = 2;
-  int32 observer_slot = 3;
-  Team team = 4;
-  MatchStats match_stats = 5;
-  PlayerState state = 6;
+  string clan = 2;
+  string name = 3;
+  int32 observer_slot = 4;
+  Team team = 5;
+  MatchStats match_stats = 6;
+  PlayerState state = 7;
+  Weapons weapons = 8;
 
-  reserved 7 to max;
+  reserved 9 to max;
+}
+
+message Weapons {
+  Weapon weapon_0 = 1;
+  Weapon weapon_1 = 2;
+  Weapon weapon_2 = 3;
+  Weapon weapon_3 = 4;
+  Weapon weapon_4 = 5;
+  Weapon weapon_5 = 6;
+  Weapon weapon_6 = 7;
+  Weapon weapon_7 = 8;
+  Weapon weapon_8 = 9;
+  Weapon weapon_9 = 10;
+  Weapon weapon_10 = 11;
+  Weapon weapon_11 = 12;
+  Weapon weapon_12 = 13;
+  Weapon weapon_13 = 14;
+
+  reserved 15 to max;
+}
+
+message Weapon {
+  enum WeaponType {
+    WEAPON_TYPE_UNSPECIFIED = 0;
+    WEAPON_TYPE_C4 = 1;
+    WEAPON_TYPE_GRENADE = 2;
+    WEAPON_TYPE_KNIFE = 3;
+    WEAPON_TYPE_PISTOL = 4;
+    WEAPON_TYPE_RIFLE = 5;
+    WEAPON_TYPE_SHOTGUN = 6;
+    WEAPON_TYPE_SNIPERRIFLE = 7;
+    WEAPON_TYPE_SUBMACHINE_GUN = 8;
+    WEAPON_TYPE_MACHINE_GUN = 9;
+    WEAPON_TYPE_FISTS = 10;
+    WEAPON_TYPE_TABLET = 11;
+    WEAPON_TYPE_STACKABLEITEM = 12;
+    WEAPON_TYPE_MELEE = 13;
+    WEAPON_TYPE_BREACH_CHARGE = 14;
+    WEAPON_TYPE_BUMP_MINE = 15;
+  }
+
+  int32 ammo_clip = 1;
+  int32 ammo_clip_max = 2;
+  int32 ammo_reserve = 3;
+  string name = 4;
+  string paintkit = 5;
+  bool active = 6;
+  WeaponType type = 7;
+
+  reserved 8 to max;
 }
 
 message Previously {

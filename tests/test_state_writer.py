@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from tests.db_test_utils import MockDBManager, MockGameState
+from tests.db_test_utils import TestDBManager, MockGameState
 from truescrub import db
 from truescrub.statewriter.state_writer import GameStateWriter, \
   RiegeliGameStateWriter
@@ -24,7 +24,7 @@ GAME_STATE_DATA_2 = MockGameState(
 
 class TestGameStateWriter(unittest.TestCase):
   def setUp(self):
-    self.db_manager = MockDBManager()
+    self.db_manager = TestDBManager()
     self.updater_mock = MagicMock()
     self.writer = GameStateWriter(self.updater_mock)
     db.get_game_db = MagicMock(return_value=self.db_manager.game_db)
