@@ -11,6 +11,11 @@ package(
 )
 
 py_library(
+    name = "seasoncfg",
+    srcs = ["seasoncfg.py"],
+)
+
+py_library(
     name = "models",
     srcs = ["models.py"],
     deps = [

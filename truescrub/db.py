@@ -73,25 +73,6 @@ def insert_game_state(game_db, state):
     return cursor.lastrowid
 
 
-def get_season_rows(game_db):
-    return list(execute(game_db, '''
-    SELECT *
-    FROM seasons
-    '''))
-
-
-def get_seasons_by_start_date(game_db) -> {datetime.datetime: int}:
-    season_rows = execute(game_db, '''
-    SELECT season_id, start_date
-    FROM seasons
-    ''')
-
-    return {
-        datetime.datetime.strptime(start_date, '%Y-%m-%d'): season_id
-        for season_id, start_date in season_rows
-    }
-
-
 def get_game_state_count(game_db) -> int:
     return execute_one(game_db, '''
     SELECT COUNT(*) FROM game_state

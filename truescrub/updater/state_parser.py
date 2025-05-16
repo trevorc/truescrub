@@ -129,8 +129,7 @@ def parse_freezetime_transition(state: GameStateRow):
 
 
 def parse_roundover_transition(
-        season_starts: [datetime.datetime],
-        season_ids: {datetime.datetime: int},
+        season_ids: {datetime.date: int},
         state: GameStateRow):
     if state.round_phase != 'over':
         raise ValueError('Expected round_phase "over"')
@@ -148,7 +147,7 @@ def parse_roundover_transition(
         for team, group in itertools.groupby(
                 team_steamids, operator.itemgetter(0))}
     if len(team_members) != 2:
-        return
+        return None
     lose_team = next(
             team_name
             for team_name in team_members
@@ -169,8 +168,10 @@ def parse_roundover_transition(
 
     created_at = datetime.datetime.utcfromtimestamp(state.timestamp)
 
+    season_starts = [datetime.datetime.combine(start_date, datetime.time.min)
+                     for start_date in season_ids]
     season_index = bisect.bisect_left(season_starts, created_at) - 1
-    season_id = season_ids[season_starts[season_index]]
+    season_id = season_ids[season_starts[season_index].date()]
 
     round_stats = parse_round_stats(allplayers)
 
@@ -190,15 +191,13 @@ def parse_roundover_transition(
 
 
 def parse_game_states(game_states: Iterable[GameStateRow],
-                      season_ids: {datetime.datetime: int}):
-    season_starts = list(season_ids.keys())
+                      season_ids: {datetime.date: int}):
     player_states = []
     rounds = []
     max_game_state_id = 0
 
     for game_state in game_states:
-        roundover_state = parse_roundover_transition(
-                season_starts, season_ids, game_state)
+        roundover_state = parse_roundover_transition(season_ids, game_state)
         if roundover_state is not None:
             new_round, new_player_states = roundover_state
             rounds.append(new_round)

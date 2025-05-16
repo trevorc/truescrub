@@ -1,12 +1,13 @@
-import time
+import itertools
 import logging
 import operator
-import itertools
+import time
 
 import trueskill
 
 from truescrub import db
 from truescrub.models import RoundRow, SkillHistory, setup_trueskill
+from truescrub.seasoncfg import get_seasons_by_start_date, get_all_seasons
 from truescrub.updater.remapper import remap_rounds, apply_player_configurations
 from truescrub.updater.state_parser import parse_game_states
 
@@ -21,8 +22,8 @@ class NoRounds(Exception):
 # Rating2 = 0.2778*Kills - 0.2559*Deaths + 0.00651*ADR + 0.00633*KAST + 0.18377
 
 
-def load_seasons(game_db, skill_db):
-  db.replace_seasons(skill_db, db.get_season_rows(game_db))
+def load_seasons(skill_db):
+  db.replace_seasons(skill_db, get_all_seasons())
 
 
 def replace_teams(skill_db, round_teams):
@@ -65,7 +66,7 @@ def insert_players(skill_db, player_states):
 
 
 def extract_game_states(game_db, game_state_range):
-  season_ids = db.get_seasons_by_start_date(game_db)
+  season_ids = get_seasons_by_start_date()
   game_states = db.get_game_states(game_db, game_state_range)
 
   return parse_game_states(game_states, season_ids)
@@ -223,7 +224,6 @@ def recalculate_ratings(skill_db, new_rounds: (int, int)):
 
 
 def compute_skill_db(game_db, skill_db):
-  load_seasons(game_db, skill_db)
   max_game_state_id, new_rounds = \
     compute_rounds_and_players(game_db, skill_db)
   if new_rounds is not None:
@@ -236,6 +236,7 @@ def recalculate():
   with db.get_game_db() as game_db, \
       db.get_skill_db(new_skill_db) as skill_db:
     db.initialize_skill_db(skill_db)
+    load_seasons(skill_db)
     compute_skill_db(game_db, skill_db)
     skill_db.commit()
   db.replace_skill_db(new_skill_db)

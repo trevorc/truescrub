@@ -23,6 +23,7 @@ py_library(
         ":state_parser",
         "//truescrub:db",
         "//truescrub:models",
+        "//truescrub:seasoncfg",
     ],
 )
 

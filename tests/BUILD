@@ -7,6 +7,7 @@ py_library(
         "__init__.py",
         "db_test_utils.py",
     ],
+    data = ["sample_seasons.toml"],
     deps = [
         "//truescrub:db",
         "//truescrub:models",

@@ -4,9 +4,13 @@ This module uses the existing updater logic to transform game states into skill 
 """
 import datetime
 import json
+import pathlib
 import sqlite3
 from typing import Dict, List, Tuple
 
+import pytest
+
+from truescrub import seasoncfg
 from truescrub.db import (
   initialize_skill_db, initialize_game_db, execute_one,
   insert_game_state
@@ -103,30 +107,16 @@ class TestDBManager:
   def __init__(self):
     self.game_db = sqlite3.connect(":memory:")
     self.skill_db = sqlite3.connect(":memory:")
+    self.seasons_toml = pathlib.Path('tests/sample_seasons.toml')
     initialize_game_db(self.game_db)
     initialize_skill_db(self.skill_db)
     self._setup_seasons()
 
   def _setup_seasons(self):
     """Set up basic seasons in both databases."""
-    game_db_cursor = self.game_db.cursor()
-
-    # Add seasons to game_db
-    seasons = [
-      (1, '2022-01-01'),
-      (2, '2022-02-01')
-    ]
-
-    for season_id, start_date in seasons:
-      game_db_cursor.execute(
-        "REPLACE INTO seasons (season_id, start_date) VALUES (?, ?)",
-        (season_id, start_date)
-      )
-
-    self.game_db.commit()
-
-    # Transfer seasons to skill_db using the existing updater logic
-    load_seasons(self.game_db, self.skill_db)
+    with pytest.MonkeyPatch.context() as m:
+      m.setattr(seasoncfg, 'SEASONS_TOML', self.seasons_toml)
+      load_seasons(self.skill_db)
 
   def add_game_states(self, game_states: List[TestGameState]) -> List[int]:
     """
@@ -154,30 +144,27 @@ class TestDBManager:
     """
     Process game states and update player skills using the existing updater logic.
     """
-    if not self.game_db or not self.skill_db:
-      raise ValueError(
-        "Databases not initialized. Call create_in_memory_dbs first.")
 
     # Get count of game states
-    game_state_count = \
-    execute_one(self.game_db, "SELECT COUNT(*) FROM game_state")[0]
+    game_state_count = execute_one(
+      self.game_db, "SELECT COUNT(*) FROM game_state")[0]
     if game_state_count == 0:
       return None
 
-    # Set game state range from all available game states
     game_state_range = (1, game_state_count)
 
-    # Process game states using existing updater logic
-    max_game_state_id, new_rounds = compute_rounds_and_players(
-      self.game_db, self.skill_db, game_state_range
-    )
+    with pytest.MonkeyPatch.context() as m:
+      m.setattr(seasoncfg, 'SEASONS_TOML', self.seasons_toml)
 
-    if new_rounds is not None:
-      recalculate_ratings(self.skill_db, new_rounds)
+      max_game_state_id, new_rounds = compute_rounds_and_players(
+        self.game_db, self.skill_db, game_state_range)
 
-    self.game_db.commit()
-    self.skill_db.commit()
-    return new_rounds
+      if new_rounds is not None:
+        recalculate_ratings(self.skill_db, new_rounds)
+
+      self.game_db.commit()
+      self.skill_db.commit()
+      return new_rounds
 
   def close(self):
     """Close database connections."""
@@ -186,7 +173,6 @@ class TestDBManager:
 
 
 def create_player_data(
-    steam_id: str,
     name: str,
     team: str,
     kills: int = 0,
@@ -202,7 +188,6 @@ def create_player_data(
   Create a player data dictionary for use in TestGameState.
 
   Args:
-      steam_id: Steam ID of the player
       name: Player name
       team: Team (CT or T)
       kills: Number of kills
@@ -292,7 +277,6 @@ def create_game_state_for_round(
   for steam_id, name in ct_team:
     player_stat = stats.get(steam_id, {})
     current_players[str(steam_id)] = create_player_data(
-      steam_id=steam_id,
       name=name,
       team="CT",
       kills=player_stat.get("kills", 0),
@@ -307,7 +291,6 @@ def create_game_state_for_round(
 
     # Create "previous" state with no kills in this round
     previous_players[str(steam_id)] = create_player_data(
-      steam_id=steam_id,
       name=name,
       team="CT",
       kills=0,
@@ -320,7 +303,6 @@ def create_game_state_for_round(
   for steam_id, name in t_team:
     player_stat = stats.get(steam_id, {})
     current_players[str(steam_id)] = create_player_data(
-      steam_id=steam_id,
       name=name,
       team="T",
       kills=player_stat.get("kills", 0),
@@ -335,7 +317,6 @@ def create_game_state_for_round(
 
     # Create "previous" state with no kills in this round
     previous_players[str(steam_id)] = create_player_data(
-      steam_id=steam_id,
       name=name,
       team="T",
       kills=0,
