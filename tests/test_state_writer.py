@@ -3,6 +3,8 @@ import json
 import unittest
 from unittest.mock import MagicMock
 
+import pytest
+
 from tests.db_test_utils import TestDBManager, TestGameState
 from truescrub import db
 from truescrub.statewriter.state_writer import GameStateWriter, \
@@ -76,10 +78,11 @@ class TestRiegeliGameStateWriter(unittest.TestCase):
     self.log_mock.writer.return_value.__enter__.return_value = mock_writer
     self.writer.process_messages(messages)
 
-    self.assertEqual(mock_writer.write_message.call_count, 2)
+    self.assertEqual(mock_writer.append.call_count, 2)
+    self.assertEqual(mock_writer.flush.call_count, 1)
 
     written_game_states = [call_args[0][0].game_state for call_args in
-                           mock_writer.write_message.call_args_list]
+                           mock_writer.append.call_args_list]
 
     self.assertEqual(written_game_states[0].map.name,
                      game_state_data_1['map']['name'])
@@ -93,7 +96,7 @@ class TestRiegeliGameStateWriter(unittest.TestCase):
       game_state_id=2
     )
 
-  def test_process_messages_empty_list(self):
+  def test_process_no_messages(self):
     self.writer.max_id = 10
     self.writer.process_messages([])
     self.updater_mock.send_message.assert_called_once_with(
@@ -118,4 +121,4 @@ class TestRiegeliGameStateWriter(unittest.TestCase):
 
 
 if __name__ == '__main__':
-  unittest.main()
+  raise SystemExit(pytest.main(["-xv", __file__]))

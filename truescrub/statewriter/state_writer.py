@@ -6,11 +6,13 @@ from google.protobuf.timestamp_pb2 import Timestamp
 from truescrub.proto.game_state_pb2 import GameStateEntry
 
 from truescrub import db
+from truescrub.envconfig import DATA_DIR
 from truescrub.queue_consumer import QueueConsumer
 from truescrub.statewriter.game_state_log import GameStateLog, \
   NoSuchRecordException
 from truescrub.statewriter.state_serialization import parse_game_state
 
+LOG_FILE_NAME = 'game_states.riegeli'
 logger = logging.getLogger(__name__)
 
 
@@ -39,8 +41,17 @@ class RiegeliGameStateWriter(QueueConsumer):
     self.updater = updater
     self.max_id = self._get_last_entry_id()
 
+  @classmethod
+  def from_env(cls, updater) -> QueueConsumer:
+    log_path = DATA_DIR.joinpath(LOG_FILE_NAME)
+    return cls(GameStateLog(log_path), updater)
+
   def _get_last_entry_id(self):
-    with self.log.reader(timeout=0) as reader:
+    try:
+      reader = self.log.reader(timeout=0)
+    except FileNotFoundError:
+      return 0
+    with reader:
       try:
         return reader.fetch_last().game_state_id
       except NoSuchRecordException:
@@ -59,7 +70,8 @@ class RiegeliGameStateWriter(QueueConsumer):
           game_state=parse_game_state(game_state_json),
         )
         self.max_id = entry.game_state_id
-        writer.write_message(entry)
+        logger.debug('saved game_state with id %d', entry.game_state_id)
+        writer.append(entry)
 
       writer.flush()
     self.updater.send_message(command='process',
