@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import re
-import os
 import json
 import math
 import time
@@ -21,6 +20,7 @@ from truescrub.matchmaking import (
     skill_group_ranges, compute_matches,
     estimated_skill_range, MAX_PLAYERS_PER_TEAM)
 from truescrub.models import Match, Player, skill_groups, skill_group_name
+from truescrub.envconfig import TRUESCRUB_BRAND, SHARED_KEY
 
 
 app = flask.Flask(__name__)
@@ -30,8 +30,6 @@ jinja2_env = jinja2.Environment(
     loader=jinja2.PackageLoader(truescrub.__name__))
 
 
-TRUESCRUB_BRAND = os.environ.get('TRUESCRUB_BRAND', 'TrueScrub™')
-SHARED_KEY = os.environ.get('TRUESCRUB_KEY', 'afohXaef9ighaeSh')
 TIMEZONE_PATTERN = re.compile(r'([+-])(\d\d):00')
 MAX_MATCHES = 50
 

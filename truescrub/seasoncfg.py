@@ -1,13 +1,10 @@
-import operator
-import os
 import pathlib
 import tomllib
 import datetime
+import operator
 from typing import List, Tuple, Dict
 
-SEASONS_TOML = pathlib.Path(
-  os.environ.get('TRUESCRUB_DATA_DIR', 'data')
-) / 'seasons.toml'
+from truescrub.envconfig import SEASONS_TOML
 
 
 def get_seasons_by_start_date(seasons_file: pathlib.Path = None) -> \

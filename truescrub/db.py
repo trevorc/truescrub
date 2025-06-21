@@ -9,12 +9,11 @@ from typing import FrozenSet, Iterator, Optional, Tuple, List, Dict
 
 import trueskill
 
+from truescrub.envconfig import DATA_DIR, SQLITE_TIMEOUT
 from truescrub.models import Player, RoundRow, SkillHistory, GameStateRow
 from truescrub.models import SKILL_MEAN, SKILL_STDEV
 
 
-DATA_DIR = os.environ.get('TRUESCRUB_DATA_DIR', 'data')
-SQLITE_TIMEOUT = float(os.environ.get('SQLITE_TIMEOUT', '30'))
 GAME_DB_NAME = 'games.db'
 SKILL_DB_NAME = 'skill.db'
 

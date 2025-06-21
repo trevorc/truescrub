@@ -3,7 +3,6 @@ import functools
 import itertools
 import json
 import multiprocessing
-import os
 import pathlib
 import random
 import shlex
@@ -194,8 +193,7 @@ def make_arg_parser():
     arg_parser.add_argument('--seed', type=int, default=1337,
                             help='random seed')
     arg_parser.add_argument('--season', type=int,
-                            default=int(os.getenv('SEASON_ID', 4)),
-                            help='use skills from this season')
+                            default=4, help='use skills from this season')
     arg_parser.add_argument('--popsize', type=int, default=64,
                             help='initial population size')
     arg_parser.add_argument('--generations', type=int, default=200,

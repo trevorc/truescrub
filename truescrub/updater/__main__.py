@@ -1,16 +1,15 @@
-import os
 import logging
 import argparse
 
 from truescrub import db
 from truescrub.updater.recalculate import recalculate
 from truescrub.updater.evaluator import evaluate_parameters
-
+from truescrub.envconfig import LOG_LEVEL
 
 logging.basicConfig(format='%(asctime)s.%(msecs).3dZ\t'
                            '%(levelname)s\t%(message)s',
                     datefmt='%Y-%m-%dT%H:%M:%S',
-                    level=os.environ.get('TRUESCRUB_LOG_LEVEL', 'DEBUG'))
+                    level=LOG_LEVEL)
 logger = logging.getLogger(__name__)
 
 

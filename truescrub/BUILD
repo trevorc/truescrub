@@ -11,8 +11,15 @@ package(
 )
 
 py_library(
+    name = "envconfig",
+    srcs = ["envconfig.py"],
+    visibility = ["//truescrub:__subpackages__"],
+)
+
+py_library(
     name = "seasoncfg",
     srcs = ["seasoncfg.py"],
+    deps = [":envconfig"],
 )
 
 py_library(
@@ -36,6 +43,7 @@ py_library(
     name = "db",
     srcs = ["db.py"],
     deps = [
+        ":envconfig",
         ":models",
         requirement("trueskill"),
     ],

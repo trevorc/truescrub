@@ -13,10 +13,10 @@ from werkzeug.middleware.shared_data import SharedDataMiddleware
 import truescrub
 from truescrub import db
 from truescrub.api import app
+from truescrub.envconfig import LOG_LEVEL
 from truescrub.statewriter import GameStateWriter
 from truescrub.updater import Updater
 
-LOG_LEVEL = os.environ.get('TRUESCRUB_LOG_LEVEL', 'DEBUG')
 logging.basicConfig(format='%(asctime)s.%(msecs).3dZ\t'
                            '%(name)s\t%(levelname)s\t%(message)s',
                     datefmt='%Y-%m-%dT%H:%M:%S',
