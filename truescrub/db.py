@@ -1,4 +1,3 @@
-import os
 import json
 import sqlite3
 import logging
@@ -61,7 +60,7 @@ def make_placeholder(columns, rows):
 ##########################
 
 def get_game_db():
-    db_path = os.path.join(DATA_DIR, GAME_DB_NAME)
+    db_path = DATA_DIR.joinpath(GAME_DB_NAME)
     return sqlite3.connect(db_path, timeout=SQLITE_TIMEOUT)
 
 
@@ -148,7 +147,7 @@ def initialize_game_db(game_db):
 ###########################
 
 def get_skill_db(name: str = SKILL_DB_NAME):
-    connection = sqlite3.connect(os.path.join(DATA_DIR, name), timeout=SQLITE_TIMEOUT)
+    connection = sqlite3.connect(DATA_DIR.joinpath(name), timeout=SQLITE_TIMEOUT)
     cursor = connection.cursor()
     cursor.execute('PRAGMA foreign_keys = ON')
     cursor.execute('PRAGMA defer_foreign_keys = ON')
@@ -156,8 +155,8 @@ def get_skill_db(name: str = SKILL_DB_NAME):
 
 
 def replace_skill_db(new_db_name: str):
-    os.rename(os.path.join(DATA_DIR, new_db_name),
-              os.path.join(DATA_DIR, SKILL_DB_NAME))
+    DATA_DIR.joinpath(new_db_name).rename(
+        DATA_DIR.joinpath(SKILL_DB_NAME))
 
 
 def replace_seasons(skill_db, season_rows):
@@ -985,8 +984,8 @@ def initialize_skill_db(skill_db):
 
 
 def initialize_dbs():
-    if not os.path.exists(DATA_DIR):
-        os.mkdir(DATA_DIR)
+    if not DATA_DIR.exists():
+        DATA_DIR.mkdir()
     with get_skill_db() as skill_db, get_game_db() as game_db:
         initialize_skill_db(skill_db)
         initialize_game_db(game_db)

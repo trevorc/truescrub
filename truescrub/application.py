@@ -5,7 +5,7 @@ import logging
 import os
 import threading
 from concurrent.futures import Future
-from typing import Dict
+from typing import Dict, List
 
 import waitress.server
 from werkzeug.middleware.shared_data import SharedDataMiddleware
@@ -16,6 +16,7 @@ from truescrub.api import app
 from truescrub.envconfig import LOG_LEVEL
 from truescrub.statewriter import GameStateWriter
 from truescrub.updater import Updater
+from truescrub.updater.recalculate import load_seasons
 
 logging.basicConfig(format='%(asctime)s.%(msecs).3dZ\t'
                            '%(name)s\t%(levelname)s\t%(message)s',
@@ -126,13 +127,18 @@ class Watchdog:
     os._exit(-1)
 
 
-def main():
-  args = arg_parser.parse_args()
+def main(args: List[str]):
+  args = arg_parser.parse_args(args)
+
   executor = concurrent.futures.ThreadPoolExecutor(max_workers=3)
   futures = {}
   updater = Updater()
   state_writer = GameStateWriter(updater)
   db.initialize_dbs()
+
+  with db.get_skill_db() as skill_db:
+    load_seasons(skill_db)
+    skill_db.commit()
 
   if args.recalculate:
     updater.send_message(command='recalculate')

@@ -1,7 +1,7 @@
 import pathlib
 import threading
 from io import FileIO
-from typing import Optional, Iterator
+from typing import Optional, Iterator, Callable
 
 import riegeli
 from truescrub.proto.game_state_pb2 import GameStateEntry
@@ -62,8 +62,8 @@ class StateLogWriter:
 
   def __exit__(self, exc_type, exc_val, exc_tb):
     try:
-      self.writer.close()
       self._in_context = False
+      return self.writer.__exit__(exc_type, exc_val, exc_tb)
     finally:
       self.lock.release_write()
 
@@ -73,7 +73,7 @@ class StateLogWriter:
     self.writer.write_message(game_state)
 
 
-def test_fn(search_target):
+def test_fn(search_target: int) -> Callable[[GameStateEntry], bool]:
   def compare(entry):
     return ((entry.game_state_id > search_target) -
             (entry.game_state_id < search_target))
@@ -105,8 +105,8 @@ class StateLogReader:
 
   def __exit__(self, exc_type, exc_val, exc_tb):
     try:
-      self.reader.close()
       self._in_context = False
+      return self.reader.__exit__(exc_type, exc_val, exc_tb)
     finally:
       self.lock.release_read()
 
@@ -119,7 +119,8 @@ class StateLogReader:
     if not self.reader.seek_back():
       raise NoSuchRecordException('failed to seek to last record')
 
-  def fetch_all(self, start_id: Optional[int] = None) -> Iterator[GameStateEntry]:
+  def fetch_all(self, start_id: Optional[int] = None) \
+      -> Iterator[GameStateEntry]:
     if not self._in_context:
       raise RuntimeError('fetch_all() called outside of context manager')
 
