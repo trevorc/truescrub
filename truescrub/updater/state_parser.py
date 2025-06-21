@@ -7,6 +7,13 @@ from typing import Optional, Iterable
 from truescrub.models import GameStateRow
 
 
+class RoundsAndPlayers:
+    def __init__(self, rounds, player_states, max_game_state_id: int):
+        self.rounds = rounds
+        self.player_states = player_states
+        self.max_game_state_id = max_game_state_id
+
+
 def parse_round_stats(allplayers: {int: dict}) -> {int: dict}:
     assist_counts = {
         steam_id: player['match_stats']['assists']
@@ -191,7 +198,7 @@ def parse_roundover_transition(
 
 
 def parse_game_states(game_states: Iterable[GameStateRow],
-                      season_ids: {datetime.date: int}):
+                      season_ids: {datetime.date: int}) -> RoundsAndPlayers:
     player_states = []
     rounds = []
     max_game_state_id = 0
@@ -204,4 +211,4 @@ def parse_game_states(game_states: Iterable[GameStateRow],
             player_states.extend(new_player_states)
             max_game_state_id = max(max_game_state_id,
                                     game_state.game_state_id)
-    return rounds, player_states, max_game_state_id
+    return RoundsAndPlayers(rounds, player_states, max_game_state_id)
