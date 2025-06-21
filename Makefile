@@ -22,11 +22,12 @@ deploy-dbsurgery: ${DBSURGERY_ZIP_SRC}
 
 .PHONY: recalculate
 recalculate:
-	ssh ${HOST} TRUESCRUB_DATA_DIR=/data/db/truescrub python3 ${TRUESCRUB_ZIP} --recalculate
+	ssh ${HOST} TRUESCRUB_DATA_DIR=/var/db/truescrub python3 ${TRUESCRUB_ZIP_DEST} --recalculate
 
 .PHONY: test
 test:
 	bazel test //tests:all
 
+.PHONY: serve
 serve: ${TRUESCRUB_ZIP_SRC}
 	TRUESCRUB_DATA_DIR=${PWD}/data python3 "$<" -s -p 3000
