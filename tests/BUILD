@@ -82,7 +82,6 @@ py_test(
     deps = [
         "//truescrub:accolades",
         requirement("pytest"),
-        requirement("setuptools"),
     ],
 )
 

@@ -1,4 +1,5 @@
 import pytest
+import sys
 
 from truescrub.accolades import (
   parse_high_low, parse_accolade, parse_condition, parse_accolades,
@@ -69,7 +70,7 @@ def test_calculate_expected_rating():
     }
   }
 
-  expected_rating = compute_expected_rating(player_stats)
+  expected_rating = compute_expected_rating(player_stats['rating_details'])
   assert isinstance(expected_rating, float)
   assert expected_rating > 0
 
@@ -111,12 +112,10 @@ def test_test_conditions():
   assert 1 in conditions
   assert 2 in conditions
 
-  # Player 1 should have highest mvps, rating, and kills
   assert conditions[1]['mvps']
   assert conditions[1]['rating']
   assert conditions[1]['kills']
 
-  # Player 2 should have highest deaths and assists
   assert conditions[2]['deaths']
   assert conditions[2]['assists']
 
@@ -134,19 +133,17 @@ def test_compute_accolades(monkeypatch):
   }
 
   # Patch the ACCOLADES global
-  monkeypatch.setattr("truescrub.tools.accolades.ACCOLADES", mock_accolades)
+  monkeypatch.setattr("truescrub.accolades.ACCOLADES", mock_accolades)
 
   # Run compute_accolades
   accolades = list(compute_accolades(triggered_conditions))
 
-  # Verify results
   assert len(accolades) == 2
   assert accolades[0] == ("Test Accolade 1", 1)
   assert accolades[1] == ("Test Accolade 2", 2)
 
 
 def test_format_accolades(monkeypatch):
-  # Create mock player ratings
   player_ratings = [
     {
       'player_id': 1,
@@ -174,7 +171,6 @@ def test_format_accolades(monkeypatch):
     }
   ]
 
-  # Create mock accolades and CONDITIONS
   mock_accolades = {
     "Test Accolade": {"rating": True},
     "Another Accolade": {"deaths": True}
@@ -186,12 +182,12 @@ def test_format_accolades(monkeypatch):
   }
 
   # Patch the globals
-  monkeypatch.setattr("truescrub.tools.accolades.ACCOLADES", mock_accolades)
-  monkeypatch.setattr("truescrub.tools.accolades.CONDITIONS", mock_conditions)
+  monkeypatch.setattr("truescrub.accolades.ACCOLADES", mock_accolades)
+  monkeypatch.setattr("truescrub.accolades.CONDITIONS", mock_conditions)
 
   # Format accolades
   accolades = [("Test Accolade", 1), ("Another Accolade", 2)]
-  formatted = format_accolades(accolades, player_ratings)
+  formatted = list(format_accolades(accolades, player_ratings))
 
   # Verify results
   assert len(formatted) == 2
@@ -209,17 +205,22 @@ def test_format_accolades(monkeypatch):
 
 
 def test_get_accolades(monkeypatch):
-  # Mock the functions that get_accolades calls
   def mock_test_conditions(player_ratings):
+    if not player_ratings:
+      return {}
     return {
       1: {"mvps": True, "rating": True},
       2: {"deaths": True, "assists": True}
     }
 
   def mock_compute_accolades(triggered_conditions):
+    if not triggered_conditions:
+      return []
     return [("Test Accolade", 1), ("Another Accolade", 2)]
 
   def mock_format_accolades(accolades, player_ratings):
+    if not accolades:
+      return []
     return [
       {
         'accolade': "Test Accolade",
@@ -236,14 +237,13 @@ def test_get_accolades(monkeypatch):
     ]
 
   # Patch the functions
-  monkeypatch.setattr("truescrub.tools.accolades.test_conditions",
+  monkeypatch.setattr("truescrub.accolades.evaluate_conditions",
                       mock_test_conditions)
-  monkeypatch.setattr("truescrub.tools.accolades.compute_accolades",
+  monkeypatch.setattr("truescrub.accolades.compute_accolades",
                       mock_compute_accolades)
-  monkeypatch.setattr("truescrub.tools.accolades.format_accolades",
+  monkeypatch.setattr("truescrub.accolades.format_accolades",
                       mock_format_accolades)
 
-  # Test with some player ratings
   player_ratings = [
     {
       'player_id': 1,
@@ -261,16 +261,13 @@ def test_get_accolades(monkeypatch):
     }
   ]
 
-  accolades = get_accolades(player_ratings)
+  accolades = list(get_accolades(player_ratings))
 
-  # Verify results
   assert len(accolades) == 2
   assert accolades[0]['accolade'] == "Test Accolade"
   assert accolades[1]['accolade'] == "Another Accolade"
-
-  # Test empty input
-  assert get_accolades([]) == []
+  assert list(get_accolades([])) == []
 
 
 if __name__ == "__main__":
-  pytest.main(["-xvs", __file__])
+  sys.exit(pytest.main(["-xvs", __file__]))

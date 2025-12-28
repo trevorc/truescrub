@@ -1,9 +1,8 @@
 import collections
 import configparser
 import numbers
+from importlib.resources import files
 from typing import Dict, List, Tuple, Iterator, OrderedDict
-
-import pkg_resources
 
 from truescrub.db import KILL_COEFF, DEATH_COEFF, DAMAGE_COEFF, INTERCEPT
 
@@ -67,8 +66,8 @@ def parse_accolades(resource_string: str) -> Tuple[
 
 
 # Load the accolades configuration
-ACCOLADES, CONDITIONS = parse_accolades(pkg_resources.resource_string(
-  __name__, 'accolades.ini').decode('UTF-8'))
+ACCOLADES, CONDITIONS = parse_accolades(
+  files(__name__).joinpath('accolades.ini').read_bytes().decode('UTF-8'))
 
 
 def compute_expected_rating(rating_details: Dict) -> float:

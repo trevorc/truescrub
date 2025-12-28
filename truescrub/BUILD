@@ -73,7 +73,6 @@ py_binary(
         "//truescrub/tools:__pkg__",
     ],
     deps = [
-        requirement("setuptools"),
         ":db",
         ":models",
     ],
@@ -103,7 +102,6 @@ py_library(
         ":matchmaking",
         ":models",
         requirement("Flask"),
-        requirement("setuptools"),
         requirement("waitress"),
     ],
 )

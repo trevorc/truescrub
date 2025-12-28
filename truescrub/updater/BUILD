@@ -10,9 +10,6 @@ py_library(
     name = "remapper",
     srcs = ["remapper.py"],
     data = ["players.ini"],
-    deps = [
-        requirement("setuptools"),
-    ],
 )
 
 py_library(

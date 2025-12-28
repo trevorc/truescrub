@@ -1,7 +1,6 @@
 import configparser
+from importlib.resources import files
 from typing import Dict, Set
-
-import pkg_resources
 
 
 __all__ = ['apply_player_configurations', 'remap_rounds']
@@ -29,7 +28,7 @@ def parse_player_configuration(resource_string: str) \
 
 
 ROLES, ALIASES, IGNORES = parse_player_configuration(
-    pkg_resources.resource_string(__name__, 'players.ini').decode('UTF-8'))
+    files(__name__).joinpath('players.ini').read_bytes().decode('UTF-8'))
 
 
 def remap_player_ids(teammates):

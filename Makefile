@@ -30,4 +30,4 @@ test:
 
 .PHONY: serve
 serve: ${TRUESCRUB_ZIP_SRC}
-	TRUESCRUB_DATA_DIR=${PWD}/data python3 "$<" -s -p 3000
+	TRUESCRUB_DATA_DIR=${PWD}/data python3.12 "$<" -s -p 3000

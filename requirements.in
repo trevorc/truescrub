@@ -1,10 +1,7 @@
-Flask==1.1.4
-Werkzeug==1.0.1
+Flask==3.1.2
 deap==1.4.3
-markupsafe==2.0.1
-numpy==2.3.1
-pytest==8.4.1
-setuptools==80.9.0
+numpy==2.4.0
+pytest==8.4.2
 tqdm==4.67.1
 trueskill==0.4.5
 waitress==3.0.2
