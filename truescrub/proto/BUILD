@@ -1,5 +1,5 @@
 load("@com_google_protobuf//bazel:py_proto_library.bzl", "py_proto_library")
-load("@rules_proto//proto:defs.bzl", "proto_library")
+load("@com_google_protobuf//bazel:proto_library.bzl", "proto_library")
 
 proto_library(
     name = "game_state_proto",
@@ -12,6 +12,8 @@ py_proto_library(
     visibility = [
         "//truescrub:__pkg__",
         "//truescrub/statewriter:__pkg__",
+        "//truescrub/tools:__pkg__",
+        "//tests:__pkg__",
     ],
     deps = [":game_state_proto"],
 )
