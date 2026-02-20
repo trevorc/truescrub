@@ -1,77 +1,137 @@
+{% extends "layout.html" %}
 {% import "macros.html" as macros -%}
-<html lang="en">
-<head>
-  <title>{{ brand }} Matchmaking</title>
-</head>
-<body>
-<h1>{{ brand }} Matchmaking</h1>
 
-{{ macros.season_menu("/matchmaking", selected_season, seasons) }}
+{% block content %}
+<div class="mb-4">
+  <h1 class="text-4xl font-bold text-white mb-2">Matchmaking</h1>
+  {% if latest %}
+  <p class="text-slate-400">Proposes evenly matched teams given the players in the last round.</p>
+  {% else %}
+  <p class="text-slate-400">Proposes evenly matched teams for a given set of players.</p>
+  {% endif %}
+</div>
 
+<div class="-mt-4 mb-8">
+  {{ macros.season_menu("/matchmaking", selected_season, seasons) }}
+</div>
 
-{% if latest %}
-<p>Proposes evenly matched teams given the players in the last round.</p>
-{% else %}
-<p>Proposes evenly matched teams for a given set of players.</p>
-{% endif %}
+<div class="flex flex-col lg:flex-row gap-8">
 
-<div style="display: flex;">
+  <!-- Selection Form -->
+  <div class="w-full lg:w-1/3">
+    <div class="glass-panel rounded-2xl p-6 sticky top-6">
+      <form action="/matchmaking{{ macros.season_path(selected_season) }}" method="GET" class="flex flex-col h-full">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-xl font-bold text-white">Who is playing?</h2>
+          <button id="toggle" type="button" class="text-xs text-brand-400 hover:text-brand-300 font-medium bg-brand-500/10 hover:bg-brand-500/20 px-3 py-1.5 rounded-full transition-colors">
+            Toggle All
+          </button>
+        </div>
 
-<form action="/matchmaking{{ macros.season_path(selected_season) }}" method="GET" style="min-width: 24em;">
-  <h2>Who is playing?</h2>
-
-  <ul>
-    {% for player in players %}
-    <li>
-      <label for="player-{{ player.player_id }}">
-        <input type="checkbox" name="player" id="player-{{ player.player_id }}" value="{{ player.player_id }}"
-               {% if player.player_id in selected_players %}checked="checked"{% endif %}>
-        {{ player.steam_name }}
-      </label>
-    </li>
-    {% endfor %}
-  </ul>
-
-  <div><button id="toggle" type="button">Toggle selection</button> <input type="submit"></div>
-
-</form>
-
-{% if teams %}
-<div>
-  <h2>Matches</h2>
-
-  {% for match in teams %}
-  <div>
-    <div title="Chance of draw">Quality: {{ (100 * match.quality)|int }}%</div>
-    <div style="display: flex">
-      <div>
-        <h4>Team 1</h4>
-        <div>Win: {{ (100 * match.team1_win_probability)|int }}%</div>
-        <ul>
-          {% for player in match.team1 %}
-          <li>{{ player.steam_name }}</li>
+        <div class="overflow-y-auto max-h-[50vh] pr-2 mb-6 space-y-2 custom-scrollbar">
+          {% for player in players %}
+          <label class="flex items-center p-3 rounded-xl border border-dark-border bg-dark-bg/50 hover:bg-slate-800/80 cursor-pointer transition-colors group">
+            <div class="relative flex items-center justify-center">
+              <input type="checkbox" name="player" id="player-{{ player.player_id }}" value="{{ player.player_id }}"
+                     class="peer sr-only"
+                     {% if player.player_id in selected_players %}checked="checked"{% endif %}>
+              <div class="w-5 h-5 rounded border-2 border-slate-600 peer-checked:bg-brand-500 peer-checked:border-brand-500 transition-colors"></div>
+              <svg class="absolute w-3 h-3 text-white opacity-0 peer-checked:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <span class="ml-3 text-slate-300 group-hover:text-white transition-colors font-medium select-none">{{ player.steam_name }}</span>
+          </label>
           {% endfor %}
-        </ul>
-      </div>
-      <div>
-        <h4>Team 2</h4>
-        <div>Win: {{ (100 * match.team2_win_probability)|int }}%</div>
-        <ul>
-          {% for player in match.team2 %}
-          <li>{{ player.steam_name }}</li>
-          {% endfor %}
-        </ul>
-      </div>
+        </div>
+
+        <button type="submit" class="btn-primary w-full mt-auto py-3 text-lg flex items-center justify-center gap-2">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+          </svg>
+          Generate Matches
+        </button>
+      </form>
     </div>
   </div>
-  {% endfor %}
+
+  <!-- Results -->
+  <div class="w-full lg:w-2/3 space-y-6">
+    {% if teams %}
+      <h2 class="text-2xl font-bold text-white mb-4 flex items-center gap-3">
+        <svg class="w-6 h-6 text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+        </svg>
+        Proposed Matches
+      </h2>
+
+      {% for match in teams %}
+      <div class="glass-panel rounded-2xl overflow-hidden shadow-lg animate-slide-up" style="animation-delay: {{ loop.index0 * 100 }}ms">
+        <!-- Match Header -->
+        <div class="bg-dark-bg/80 border-b border-dark-border px-6 py-3 flex justify-between items-center">
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-medium text-slate-400 uppercase tracking-wide">Match {{ loop.index }}</span>
+          </div>
+          <div class="flex items-center gap-2 bg-slate-800/80 px-3 py-1 rounded-full border border-slate-700" title="Chance of draw">
+            <span class="w-2 h-2 rounded-full {% if match.quality > 0.8 %}bg-green-500{% elif match.quality > 0.5 %}bg-yellow-500{% else %}bg-red-500{% endif %}"></span>
+            <span class="text-sm font-medium text-slate-300">Quality: <span class="text-white">{{ (100 * match.quality)|int }}%</span></span>
+          </div>
+        </div>
+
+        <!-- Teams Container -->
+        <div class="grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-dark-border/50">
+          <!-- Team 1 -->
+          <div class="p-6 bg-gradient-to-br from-brand-900/10 to-transparent">
+            <div class="flex justify-between items-baseline mb-4">
+              <h4 class="text-lg font-bold text-white flex items-center gap-2">
+                <span class="w-3 h-3 rounded-sm bg-brand-500"></span> Team 1
+              </h4>
+              <div class="text-brand-400 font-mono font-bold text-lg">{{ (100 * match.team1_win_probability)|int }}% <span class="text-xs text-slate-500 font-sans font-normal">Win</span></div>
+            </div>
+            <ul class="space-y-2">
+              {% for player in match.team1 %}
+              <li class="flex items-center text-slate-300 py-1 border-b border-dark-border/30 last:border-0">
+                <div class="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center text-xs text-slate-400 mr-3 border border-slate-700">{{ loop.index }}</div>
+                {{ player.steam_name }}
+              </li>
+              {% endfor %}
+            </ul>
+          </div>
+
+          <!-- Team 2 -->
+          <div class="p-6 bg-gradient-to-bl from-purple-900/10 to-transparent">
+            <div class="flex justify-between items-baseline mb-4">
+              <h4 class="text-lg font-bold text-white flex items-center gap-2">
+                <span class="w-3 h-3 rounded-sm bg-purple-500"></span> Team 2
+              </h4>
+              <div class="text-purple-400 font-mono font-bold text-lg">{{ (100 * match.team2_win_probability)|int }}% <span class="text-xs text-slate-500 font-sans font-normal">Win</span></div>
+            </div>
+            <ul class="space-y-2">
+              {% for player in match.team2 %}
+              <li class="flex items-center text-slate-300 py-1 border-b border-dark-border/30 last:border-0">
+                <div class="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center text-xs text-slate-400 mr-3 border border-slate-700">{{ loop.index }}</div>
+                {{ player.steam_name }}
+              </li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="h-64 border-2 border-dashed border-dark-border rounded-2xl flex flex-col items-center justify-center text-slate-500">
+        <svg class="w-16 h-16 mb-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+        </svg>
+        <p class="text-lg font-medium">Select players and generate matches</p>
+      </div>
+    {% endif %}
+  </div>
 
 </div>
+{% endblock %}
 
-{% endif %}
-
-</div>
-
+{% block scripts %}
 <script>
   document.getElementById('toggle').addEventListener('click', function() {
     document.getElementsByName('player').forEach(function(checkbox) {
@@ -79,5 +139,4 @@
     });
   });
 </script>
-</body>
-</html>
+{% endblock %}

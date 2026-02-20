@@ -6,12 +6,15 @@ import importlib.resources
 import logging
 import os
 import threading
+import uuid
 from concurrent.futures import Future
 from contextlib import ExitStack
 from typing import Dict, List
 
+import flask
+import importlib.resources
+import mimetypes
 import waitress.server
-from werkzeug.middleware.shared_data import SharedDataMiddleware
 
 import truescrub
 from truescrub import db
@@ -36,6 +39,7 @@ arg_parser.add_argument('-c', '--recalculate', action='store_true',
                         help='Recalculate rankings.')
 arg_parser.add_argument('-s', '--serve-htdocs', action='store_true',
                         help='Serve static files.')
+
 
 class Service(metaclass=abc.ABCMeta):
   @abc.abstractmethod
@@ -130,6 +134,21 @@ class Watchdog:
     os._exit(-1)
 
 
+START_ID = uuid.uuid4().hex
+
+
+def serve_htdocs(filename):
+  resource = importlib.resources.files(truescrub.__name__) / 'htdocs' / filename
+  if not resource.is_file():
+    return flask.abort(404)
+  return flask.send_file(
+    resource.open('rb'),
+    download_name=filename,
+    max_age=3600 * 24,
+    etag=f'{START_ID}:{filename}',
+  )
+
+
 def main(args: List[str]):
   args = arg_parser.parse_args(args)
 
@@ -149,9 +168,7 @@ def main(args: List[str]):
     updater.run()
     return
   if args.serve_htdocs:
-    app.wsgi_app = SharedDataMiddleware(app.wsgi_app, {
-      '/htdocs': (truescrub.__name__, 'htdocs'),
-    }, cache_timeout=3600 * 24 * 14)
+    app.add_url_rule('/htdocs/<path:filename>', 'serve_htdocs', serve_htdocs)
 
   with Watchdog(futures, interval=8.0), \
       UpdaterService(updater) as updater_service, \

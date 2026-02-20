@@ -1,49 +1,92 @@
+{% extends "layout.html" %}
 {% import "macros.html" as macros -%}
-<html lang="en">
-<head>
-  <title>{{ brand }} Leaderboard</title>
-  <style>
-    th { text-align: left; }
-  </style>
-</head>
-<body>
-<h1>{{ brand }} Leaderboard</h1>
-{{ macros.season_menu("/leaderboard", selected_season, seasons) }}
 
-<table>
-  <thead>
-  <tr>
-    <th>Name</th>
-    <th>MMR</th>
-    <th>Percentile</th>
-    <th>Impact</th>
-    <th>
-      Skill Group
-      {% if selected_season == 4 -%}
-        <span class="bell" style="cursor: pointer;">🔔</span>
-      {%- endif %}
-    </th>
-  </tr>
-  </thead>
-  <tbody>
-  {% for player in leaderboard %}
-    <tr>
-      <td><a href="/profiles/{{ player.player_id }}">{{ player.steam_name|truncate(18, '…') }}</a></td>
-      <td title="{{ player.skill.mu|int }} ± {{ player.skill.sigma|int }}σ">{{ player.mmr }}</td>
-      <td>
-        {{ macros.percentile_estimate(player, 6) }}
-      </td>
-      <td>{{ player.impact_rating }}</td>
-      <td>
-        <span class="skill">{{ player.skill_group }}</span>
-        <span class="skill taco" style="display: none">{{ player.special_skill_group }}</span>
-      </td>
-    </tr>
-  {% endfor %}
-  </tbody>
-</table>
-<p><a href="/skill_groups">Skill Groups</a></p>
+{% block content %}
+<div class="mb-4 flex flex-col md:flex-row md:items-end justify-between gap-4">
+  <div>
+    <h1 class="text-4xl font-bold text-white mb-2">Leaderboard</h1>
+    <p class="text-slate-400">Top ranked players across {{ brand }} matchmaking.</p>
+  </div>
+</div>
 
+<div class="-mt-4 mb-6">
+  {{ macros.season_menu("/leaderboard", selected_season, seasons) }}
+</div>
+
+<div class="glass-panel rounded-2xl overflow-hidden shadow-2xl">
+  <div class="overflow-x-auto">
+    <table class="w-full text-left border-collapse whitespace-nowrap">
+      <thead>
+      <tr class="bg-dark-card border-b border-dark-border text-slate-300 text-sm font-semibold uppercase tracking-wider uppercase">
+        <th class="py-4 px-6">Name</th>
+        <th class="py-4 px-6 text-right">MMR</th>
+        <th class="py-4 px-6">Percentile</th>
+        <th class="py-4 px-6 text-center">Impact</th>
+        <th class="py-4 px-6">
+          <div class="flex items-center gap-2">
+            Skill Group
+            {% if selected_season == 4 -%}
+              <span class="bell hover:bg-slate-700 p-1 rounded-full cursor-pointer transition-colors" title="Toggle special skill groups">🔔</span>
+            {%- endif %}
+          </div>
+        </th>
+      </tr>
+      </thead>
+      <tbody class="divide-y divide-dark-border/50 bg-dark-bg/30">
+      {% for player in leaderboard %}
+        <tr class="hover:bg-slate-800/50 transition-colors group">
+          <td class="py-3 px-6">
+            <a href="/profiles/{{ player.player_id }}" class="font-medium text-white group-hover:text-brand-400 group-hover:underline transition-colors flex items-center gap-3">
+              <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-brand-600 to-purple-600 flex items-center justify-center text-xs font-bold shadow-inner">
+                {{ loop.index }}
+              </div>
+              {{ player.steam_name|truncate(18, '…') }}
+            </a>
+          </td>
+          <td class="py-3 px-6 text-right text-brand-400 font-mono font-bold" title="{{ player.skill.mu|int }} ± {{ player.skill.sigma|int }}σ">
+            {{ player.mmr }}
+          </td>
+          <td class="py-3 px-6">
+            <div class="flex items-center gap-3">
+              <span class="text-sm font-medium text-slate-300 w-12 text-right">{{ player.lower_bound }}%</span>
+              {{ macros.percentile_estimate(player, 12) }}
+              <span class="text-sm font-medium text-slate-300 w-12">{{ player.upper_bound }}%</span>
+            </div>
+          </td>
+          <td class="py-3 px-6 text-center">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if player.impact_rating != '-' and player.impact_rating|float > 1.0 %}bg-green-400/10 text-green-400 border border-green-400/20{% else %}bg-slate-700 text-slate-300{% endif %}">
+              {{ player.impact_rating }}
+            </span>
+          </td>
+          <td class="py-3 px-6">
+            <div class="skill flex items-center gap-2">
+              <img src="/htdocs/img/ranks/{{ player.skill_group|lower|replace(' ', '_')|replace('-', '_') }}.png" alt="{{ player.skill_group }}" class="w-10 h-10 object-contain drop-shadow-md">
+              <span class="inline-block px-2 py-1 bg-dark-card border border-dark-border rounded-lg text-sm text-slate-300 font-medium tracking-wide">
+                {{ player.skill_group }}
+              </span>
+            </div>
+            <span class="skill taco hidden px-3 py-1 bg-gradient-to-r from-yellow-600/20 to-orange-600/20 border border-orange-500/30 text-orange-400 rounded-lg text-sm font-medium tracking-wide">
+              {{ player.special_skill_group }}
+            </span>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="mt-8 text-center pt-8 border-t border-dark-border/50">
+  <a href="/skill_groups" class="inline-flex items-center text-slate-400 hover:text-white transition-colors group">
+    <svg class="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+    Learn about Skill Groups
+  </a>
+</div>
+{% endblock %}
+
+{% block scripts %}
 {% if selected_season == 4 -%}
 <script>
   (function() {
@@ -52,7 +95,13 @@
 
     function toggleSkillGroups() {
       document.querySelectorAll('.skill').forEach(element => {
-        element.style.display = element.style.display === 'none' ? 'inline' : 'none';
+        if (element.classList.contains('hidden')) {
+           element.classList.remove('hidden');
+           element.classList.add('inline-block');
+        } else {
+           element.classList.add('hidden');
+           element.classList.remove('inline-block');
+        }
       });
     }
 
@@ -60,5 +109,4 @@
   })();
 </script>
 {%- endif %}
-</body>
-</html>
+{% endblock %}

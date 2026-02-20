@@ -573,6 +573,16 @@ def get_players_in_last_round(skill_db) -> {int}:
     return {row[0] for row in player_ids}
 
 
+def get_match_days(skill_db, tz: datetime.timezone) -> [str]:
+    tz_offset = adapt_timezone(tz)
+    days = execute(skill_db, '''
+    SELECT DISTINCT date(created_at, ?) AS match_day
+    FROM rounds
+    ORDER BY match_day DESC
+    ''', (tz_offset,))
+    return [day for day, in days]
+
+
 def get_all_rounds(skill_db, round_range: (int, int)) -> [RoundRow]:
     if round_range is not None:
         where_clause = 'WHERE round_id BETWEEN ? AND ?'

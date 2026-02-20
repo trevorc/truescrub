@@ -122,6 +122,21 @@ def highlights(year, month, day, hour, minute, second, tz):
                 'No rounds on {}\n'.format(date.isoformat()), 404)
 
 
+@app.route('/api/match_days', methods={'GET'})
+def match_days_api():
+    tz = request.args.get('tz', '-05:00')
+    try:
+        timezone = parse_timezone(tz)
+    except ValueError:
+        return flask.make_response('Invalid timezone {}'.format(tz), 404)
+    return flask.jsonify(db.get_match_days(g.conn, timezone))
+
+
+@app.route('/accolades', methods={'GET'})
+def accolades():
+    return render_template('accolades.html', brand=TRUESCRUB_BRAND)
+
+
 def make_thin_player_viewmodel(player: Player) -> dict:
     return {
         'player_id': player.player_id,
@@ -332,6 +347,7 @@ def profile(player_id):
     season_ratings.sort(reverse=True)
     player_viewmodel = make_player_viewmodel(player)
     return render_template('profile.html',
+                           brand=TRUESCRUB_BRAND,
                            seasons=seasons,
                            current_season=current_season,
                            player=player_viewmodel,

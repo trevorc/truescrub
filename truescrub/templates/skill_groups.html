@@ -1,24 +1,41 @@
-<html lang="en">
-<head>
-  <title>{{ brand }} Skill Groups</title>
-</head>
-<body>
-<h1>{{ brand }} Skill Groups</h1>
-<table>
-  <thead>
-  <tr>
-    <th>Name</th>
-    <th>MMR Range</th>
-  </tr>
-  </thead>
-  <tbody>
-  {% for skill_group in skill_groups %}
-    <tr>
-      <td>{{ skill_group.name }}</td>
-      <td>{{ skill_group.lower_bound }}&ndash;{{ skill_group.upper_bound }}</td>
-    </tr>
-  {% endfor %}
-  </tbody>
-</table>
-</body>
-</html>
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="mb-8">
+  <h1 class="text-4xl font-bold text-white mb-2">Skill Groups</h1>
+  <p class="text-slate-400">The distribution and MMR boundaries for player skill tiers.</p>
+</div>
+
+<div class="glass-panel rounded-2xl overflow-hidden shadow-2xl">
+  <div class="overflow-x-auto">
+    <table class="w-full text-left border-collapse">
+      <thead>
+      <tr class="bg-dark-card border-b border-dark-border text-slate-300">
+        <th class="py-4 px-6 font-semibold uppercase tracking-wider text-sm">Name</th>
+        <th class="py-4 px-6 font-semibold uppercase tracking-wider text-sm">MMR Range</th>
+      </tr>
+      </thead>
+      <tbody class="divide-y divide-dark-border/50 bg-dark-bg/30">
+      {% for skill_group in skill_groups %}
+        <tr class="hover:bg-slate-800/50 transition-colors group">
+          <td class="py-4 px-6 font-medium text-white group-hover:text-brand-400 transition-colors">
+            <div class="flex items-center gap-4">
+              <div class="w-14 h-14 flex items-center justify-center relative">
+                <div class="absolute inset-0 bg-brand-500/10 rounded-full blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <img src="/htdocs/img/ranks/{{ skill_group.name|lower|replace(' ', '_')|replace('-', '_') }}.png" alt="{{ skill_group.name }}" class="w-full h-full object-contain filter drop-shadow-xl group-hover:scale-110 transition-transform duration-300 relative z-10">
+              </div>
+              <span class="text-lg tracking-wide">{{ skill_group.name }}</span>
+            </div>
+          </td>
+          <td class="py-4 px-6 text-slate-300 font-mono text-sm">
+            <span class="bg-dark-card border border-dark-border px-2 py-1 rounded">{{ skill_group.lower_bound }}</span>
+            <span class="mx-2 text-slate-500">&ndash;</span>
+            <span class="bg-dark-card border border-dark-border px-2 py-1 rounded">{{ skill_group.upper_bound }}</span>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -79,7 +79,8 @@ def compute_expected_rating(rating_details: Dict) -> float:
   )
 
 
-def evaluate_conditions(player_ratings: List[Dict]) -> Dict[int, Dict[str, bool]]:
+def evaluate_conditions(player_ratings: List[Dict]) -> Dict[
+  int, Dict[str, bool]]:
   """
   Determine which conditions each player meets, based on their performance.
 
@@ -223,7 +224,7 @@ def format_accolades(
     }
 
 
-def get_accolades(player_ratings: List[Dict]) -> Iterator[dict]:
+def get_accolades(player_ratings: List[Dict]) -> List[dict]:
   """
   Generate accolades based on player ratings from highlights.get_highlights().
 
@@ -236,4 +237,4 @@ def get_accolades(player_ratings: List[Dict]) -> Iterator[dict]:
 
   triggered_conditions = evaluate_conditions(player_ratings)
   awarded_accolades = compute_accolades(triggered_conditions)
-  return format_accolades(awarded_accolades, player_ratings)
+  return list(format_accolades(awarded_accolades, player_ratings))

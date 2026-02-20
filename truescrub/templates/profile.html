@@ -1,103 +1,220 @@
+{% extends "layout.html" %}
 {% import "macros.html" as macros -%}
-<html lang="en">
-<head>
-  <title>{{ player.steam_name }}'s Profile</title>
-</head>
-<body>
-<h1>{{ player.steam_name }}</h1>
 
-<h2>Record</h2>
-<p>{{ overall_record.rounds_won }} : {{ overall_record.rounds_lost }}</p>
+{% block content %}
+<div class="mb-10 relative">
+  <!-- Decorative Background Glow -->
+  <div class="absolute -top-10 -left-10 w-64 h-64 bg-brand-500/20 rounded-full blur-3xl pointer-events-none"></div>
+  <div class="absolute -top-10 left-40 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
-<h2>Player Skill</h2>
-
-<table>
-  <thead>
-  <tr>
-    <th>Season</th>
-    <th>MMR</th>
-    <th>Percentile</th>
-    <th>Skill Group</th>
-  </tr>
-  </thead>
-  <tbody>
-  {% for season_id, season_player in season_skills %}
-    <tr>
-    <td>{{ season_id }}</td>
-    <td title="{{ season_player.skill.mu|int }} ± {{ season_player.skill.sigma|int }}σ">{{ season_player.mmr|int }}</td>
-    <td>{{ macros.percentile_estimate(season_player, 6) }}</td>
-    <td>{{ season_player.skill_group }}</td>
-    </tr>
-  {% endfor %}
-  </tbody>
-  <tfoot>
-  <tr>
-    <td><em>Overall</em></td>
-    <td title="{{ player.skill.mu|int }} ± {{ player.skill.sigma|int }}σ">{{ player.mmr|int }}</td>
-    <td>{{ macros.percentile_estimate(player, 6) }}</td>
-    <td>{{ player.skill_group }}</td>
-  </tr>
-  </tfoot>
-</table>
-
-<h2>Player Impact</h2>
-
-<table>
-  <thead>
-  <tr>
-    <th>Season</th>
-    <th><abbr title="Percent of rounds MVP">MVP</abbr></th>
-    <th><abbr title="Average kills per round">KPR</abbr></th>
-    <th><abbr title="Average deaths per round">DPR</abbr></th>
-    <th><abbr title="Average damage per round">ADR</abbr></th>
-    <th><abbr title="Percent of rounds with kills, assists or survived">KAS</abbr></th>
-    <th>Impact</th>
-  </tr>
-  </thead>
-  <tbody>
-  {% for season_id, season_rating in season_ratings %}
-    <tr>
-      <td>{{ season_id }}</td>
-      <td>{{ season_rating.mvp_rating }}</td>
-      <td>{{ season_rating.kill_rating }}</td>
-      <td>{{ season_rating.death_rating }}</td>
-      <td>{{ season_rating.damage_rating }}</td>
-      <td>{{ season_rating.kas_rating }}</td>
-      <td>{{ season_rating.impact_rating }}</td>
-    </tr>
-  {% endfor %}
-  </tbody>
-  <tfoot>
-  <tr>
-    <td><em>Overall</em></td>
-    <td>{{ overall_rating.mvp_rating }}</td>
-    <td>{{ overall_rating.kill_rating }}</td>
-    <td>{{ overall_rating.death_rating }}</td>
-    <td>{{ overall_rating.damage_rating }}</td>
-    <td>{{ overall_rating.kas_rating }}</td>
-    <td>{{ overall_rating.impact_rating }}</td>
-  </tr>
-  </tfoot>
-</table>
-
-<h2>Skill History</h2>
-
-<div style="width: 36em; display: flex; justify-content: space-between;">
-  <div id="skill-history-season-selector">
-    {{ macros.season_menu("#", current_season, seasons) }}
+  <div class="flex flex-col md:flex-row items-start md:items-center justify-between w-full mb-4 relative z-10 gap-6">
+    <div class="flex flex-col md:flex-row items-start md:items-center gap-6">
+      <div class="relative group">
+        <div class="absolute inset-0 bg-brand-400 rounded-full blur-xl opacity-30 group-hover:opacity-60 transition-opacity duration-500"></div>
+        <div class="w-24 h-24 rounded-full bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center text-4xl font-black text-white shadow-2xl border-4 border-dark-bg relative z-10 transform group-hover:scale-105 transition-transform duration-500">
+          {{ player.steam_name[0]|upper }}
+        </div>
+      </div>
+      <div>
+        <h1 class="text-5xl text-transparent bg-clip-text bg-gradient-to-br from-white via-brand-100 to-brand-300 md:text-6xl font-black tracking-tight drop-shadow-lg pb-1">{{ player.steam_name }}</h1>
+        <p class="text-slate-400 text-xl font-medium mt-2">Overall Record: <span class="text-white font-bold">{{ overall_record.rounds_won }}</span> <span class="text-green-400 mr-2">W</span> <span class="text-white font-bold">{{ overall_record.rounds_lost }}</span> <span class="text-red-400">L</span></p>
+      </div>
+    </div>
+    
+    <!-- Big Skill Badge -->
+    <div class="flex flex-col items-center justify-center md:items-end">
+      <img src="/htdocs/img/ranks/{{ player.skill_group|lower|replace(' ', '_')|replace('-', '_') }}.png" alt="{{ player.skill_group }}" class="w-32 h-32 object-contain filter drop-shadow-[0_15px_15px_rgba(0,0,0,0.8)] transform hover:scale-110 transition-transform duration-500 hover:drop-shadow-[0_0_25px_rgba(14,165,233,0.5)]">
+      <span class="mt-2 font-bold text-transparent bg-clip-text bg-gradient-to-r from-brand-300 to-purple-400 text-xl tracking-wide drop-shadow-md">{{ player.skill_group }}</span>
+    </div>
   </div>
-
-  <input id="toggle-rating" type="button" value="Show impact" />
 </div>
 
-<div id="skill-history" style="width: 36em; height: 18em;"></div>
+<div class="grid lg:grid-cols-2 gap-8 mb-8">
+  <!-- Player Skill Table -->
+  <div class="glass-panel rounded-[2rem] overflow-hidden shadow-2xl flex flex-col relative">
+    <div class="absolute inset-0 bg-gradient-to-b from-slate-800/50 to-transparent pointer-events-none"></div>
+    <div class="p-6 border-b border-white/10 relative z-10">
+      <h2 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-brand-300 to-brand-500 flex items-center gap-2 drop-shadow-sm">
+        <svg class="w-6 h-6 text-brand-400 drop-shadow-md" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+        </svg>
+        Player Skill
+      </h2>
+    </div>
+    <div class="overflow-x-auto flex-1 relative z-10">
+      <table class="w-full text-left border-collapse">
+        <thead>
+        <tr class="bg-dark-card/50 border-b border-white/5 text-slate-400 text-xs font-bold uppercase tracking-widest">
+          <th class="py-4 px-4 sm:px-6">Season</th>
+          <th class="py-4 px-4 sm:px-6 text-right">MMR</th>
+          <th class="py-4 px-4 sm:px-6">Percentile</th>
+          <th class="py-4 px-4 sm:px-6">Skill Group</th>
+        </tr>
+        </thead>
+        <tbody class="divide-y divide-white/5">
+        {% for season_id, season_player in season_skills %}
+          <tr class="hover:bg-slate-800/30 transition-colors group">
+            <td class="py-3 px-4 sm:px-6 font-medium text-slate-300">{{ season_id }}</td>
+            <td class="py-3 px-4 sm:px-6 text-right font-mono text-brand-400 group-hover:text-brand-300 transition-colors" title="{{ season_player.skill.mu|int }} ± {{ season_player.skill.sigma|int }}σ">{{ season_player.mmr|int }}</td>
+            <td class="py-3 px-4 sm:px-6">
+              <div class="flex items-center gap-3">
+                <span class="text-xs font-medium text-slate-400 w-10 text-right">{{ season_player.lower_bound }}%</span>
+                {{ macros.percentile_estimate(season_player, 12) }}
+                <span class="text-xs font-medium text-slate-400 w-10">{{ season_player.upper_bound }}%</span>
+              </div>
+            </td>
+            <td class="py-3 px-4 sm:px-6">
+              <div class="flex items-center gap-2">
+                <img src="/htdocs/img/ranks/{{ season_player.skill_group|lower|replace(' ', '_')|replace('-', '_') }}.png" alt="{{ season_player.skill_group }}" class="w-8 h-8 object-contain drop-shadow-md">
+                <span class="bg-slate-900/80 px-3 py-1.5 rounded-xl text-xs font-semibold text-brand-300 border border-brand-500/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] whitespace-nowrap">{{ season_player.skill_group }}</span>
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+        <tfoot class="bg-dark-card/50 border-t border-white/10">
+        <tr>
+          <td class="py-4 px-4 sm:px-6 font-bold text-white uppercase tracking-wider text-xs">Overall</td>
+          <td class="py-4 px-4 sm:px-6 text-right font-mono font-bold text-brand-400 text-lg" title="{{ player.skill.mu|int }} ± {{ player.skill.sigma|int }}σ">{{ player.mmr|int }}</td>
+          <td class="py-4 px-4 sm:px-6">
+            <div class="flex items-center gap-3">
+              <span class="text-xs font-bold text-brand-200 w-10 text-right">{{ player.lower_bound }}%</span>
+              {{ macros.percentile_estimate(player, 12) }}
+              <span class="text-xs font-bold text-brand-200 w-10">{{ player.upper_bound }}%</span>
+            </div>
+          </td>
+          <td class="py-4 px-4 sm:px-6">
+            <div class="flex items-center gap-2">
+              <img src="/htdocs/img/ranks/{{ player.skill_group|lower|replace(' ', '_')|replace('-', '_') }}.png" alt="{{ player.skill_group }}" class="w-10 h-10 object-contain drop-shadow-md">
+              <span class="bg-gradient-to-r from-brand-500 to-purple-600 px-3 py-1.5 rounded-xl text-xs font-bold text-white shadow-lg whitespace-nowrap">{{ player.skill_group }}</span>
+            </div>
+          </td>
+        </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
 
+  <!-- Skill History Chart -->
+  <div class="glass-panel rounded-[2rem] overflow-hidden shadow-2xl flex flex-col relative">
+    <div class="absolute inset-0 bg-gradient-to-b from-slate-800/50 to-transparent pointer-events-none"></div>
+    <div class="p-6 border-b border-white/10 relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <h2 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500 flex items-center gap-2 drop-shadow-sm">
+        <svg class="w-6 h-6 text-purple-400 drop-shadow-md" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+        </svg>
+        Skill History
+      </h2>
+      <div class="flex items-center gap-3">
+        <div id="skill-history-season-selector" class="text-sm font-medium">
+          {{ macros.season_menu("#", current_season, seasons) }}
+        </div>
+        <button id="toggle-rating" type="button" class="btn-secondary text-xs px-4 py-1.5 rounded-full font-bold uppercase tracking-wider backdrop-blur-md bg-dark-card/50 hover:bg-white/10 border-white/10 transition-all text-slate-300 hover:text-white">Show impact</button>
+      </div>
+    </div>
+    <!-- Chart Container -->
+    <div class="relative w-full h-80 p-4">
+      <div id="skill-history" class="w-full h-full"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Player Impact Table -->
+<div class="glass-panel rounded-[2rem] overflow-hidden shadow-2xl relative mb-8">
+  <div class="absolute inset-0 bg-gradient-to-b from-slate-800/50 to-transparent pointer-events-none"></div>
+  <div class="p-6 border-b border-white/10 relative z-10">
+    <h2 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-600 flex items-center gap-2 drop-shadow-sm">
+      <svg class="w-6 h-6 text-green-400 drop-shadow-md" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+      </svg>
+      Player Impact
+    </h2>
+  </div>
+  <div class="overflow-x-auto relative z-10">
+    <table class="w-full text-left border-collapse">
+      <thead>
+      <tr class="bg-dark-card/50 border-b border-white/5 text-slate-400 text-xs font-bold uppercase tracking-widest">
+        <th class="py-4 px-4 sm:px-6">Season</th>
+        <th class="py-4 px-4 sm:px-6 text-right" title="Percent of rounds MVP">MVP</th>
+        <th class="py-4 px-4 sm:px-6 text-right" title="Average kills per round">KPR</th>
+        <th class="py-4 px-4 sm:px-6 text-right" title="Average deaths per round">DPR</th>
+        <th class="py-4 px-4 sm:px-6 text-right" title="Average damage per round">ADR</th>
+        <th class="py-4 px-4 sm:px-6 text-right" title="Percent of rounds with kills, assists or survived">KAS</th>
+        <th class="py-4 px-4 sm:px-6 text-center text-green-400">Impact</th>
+      </tr>
+      </thead>
+      <tbody class="divide-y divide-white/5">
+      {% for season_id, season_rating in season_ratings %}
+        <tr class="hover:bg-slate-800/30 transition-colors group">
+          <td class="py-3 px-4 sm:px-6 font-medium text-slate-300">{{ season_id }}</td>
+          <td class="py-3 px-4 sm:px-6 text-right font-mono text-slate-400 group-hover:text-white transition-colors">{{ season_rating.mvp_rating }}</td>
+          <td class="py-3 px-4 sm:px-6 text-right font-mono text-slate-400 group-hover:text-white transition-colors">{{ season_rating.kill_rating }}</td>
+          <td class="py-3 px-4 sm:px-6 text-right font-mono text-slate-400 group-hover:text-white transition-colors">{{ season_rating.death_rating }}</td>
+          <td class="py-3 px-4 sm:px-6 text-right font-mono text-slate-400 group-hover:text-white transition-colors">{{ season_rating.damage_rating }}</td>
+          <td class="py-3 px-4 sm:px-6 text-right font-mono text-slate-400 group-hover:text-white transition-colors">{{ season_rating.kas_rating }}</td>
+          <td class="py-3 px-4 sm:px-6 text-center">
+            <span class="inline-flex items-center px-3 py-1 rounded-xl text-xs font-bold whitespace-nowrap shadow-inner {% if season_rating.impact_rating != '-' and season_rating.impact_rating|float > 1.0 %}bg-green-500/20 text-green-400 border border-green-500/30{% else %}bg-slate-800 text-slate-400 border border-white/5{% endif %}">
+              {{ season_rating.impact_rating }}
+            </span>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+      <tfoot class="bg-dark-card/50 border-t border-white/10">
+      <tr>
+        <td class="py-4 px-4 sm:px-6 font-bold text-white uppercase tracking-wider text-xs">Overall</td>
+        <td class="py-4 px-4 sm:px-6 text-right font-mono font-medium text-lg">{{ overall_rating.mvp_rating }}</td>
+        <td class="py-4 px-4 sm:px-6 text-right font-mono font-medium text-lg">{{ overall_rating.kill_rating }}</td>
+        <td class="py-4 px-4 sm:px-6 text-right font-mono font-medium text-lg">{{ overall_rating.death_rating }}</td>
+        <td class="py-4 px-4 sm:px-6 text-right font-mono font-medium text-lg">{{ overall_rating.damage_rating }}</td>
+        <td class="py-4 px-4 sm:px-6 text-right font-mono font-medium text-lg">{{ overall_rating.kas_rating }}</td>
+        <td class="py-4 px-4 sm:px-6 text-center">
+           <span class="inline-flex items-center px-3 py-1.5 rounded-xl text-sm font-bold whitespace-nowrap shadow-lg {% if overall_rating.impact_rating != '-' and overall_rating.impact_rating|float > 1.0 %}bg-gradient-to-r from-green-400 to-emerald-600 text-white{% else %}bg-slate-700 text-white border border-white/5{% endif %}">
+              {{ overall_rating.impact_rating }}
+            </span>
+        </td>
+      </tr>
+      </tfoot>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
 <script type="application/javascript" src="/htdocs/vendor/highcharts-8.0.0.js"></script>
 <script type="application/javascript" src="/htdocs/vendor/highcharts-more-8.0.0.js"></script>
 
 <script type="application/javascript">
   (function() {
     'use strict';
+
+    // Override Highcharts theme to match Dark Mode visually
+    Highcharts.setOptions({
+      chart: {
+        backgroundColor: 'transparent',
+        style: { fontFamily: 'Outfit, sans-serif' }
+      },
+      title: { style: { color: '#f8fafc' } },
+      xAxis: {
+        gridLineColor: 'rgba(255,255,255,0.05)',
+        labels: { style: { color: '#94a3b8' } },
+        lineColor: 'rgba(255,255,255,0.1)',
+        tickColor: 'rgba(255,255,255,0.1)'
+      },
+      yAxis: {
+        gridLineColor: 'rgba(255,255,255,0.05)',
+        labels: { style: { color: '#94a3b8' } },
+        lineColor: 'rgba(255,255,255,0.1)',
+        tickColor: 'rgba(255,255,255,0.1)'
+      },
+      tooltip: {
+        backgroundColor: 'rgba(15, 23, 42, 0.95)',
+        style: { color: '#f8fafc' },
+        borderColor: 'rgba(255,255,255,0.1)',
+        borderRadius: 12,
+        shadow: true
+      }
+    });
 
     const seasonSelectors = document
       .getElementById('skill-history-season-selector')
@@ -171,9 +288,14 @@
           scatter: {
             marker: {
               symbol: 'circle',
-              radius: 2,
-              fillColor: '#692429'
+              radius: 4,
+              fillColor: '#10b981' /* EMERALD-500 */
             }
+          },
+          spline: {
+             marker: {
+               symbol: 'circle',
+             }
           }
         },
 
@@ -183,14 +305,15 @@
           animation: false,
           zIndex: 2,
           type: 'spline',
+          color: '#22d3ee', /* NEON CYAN */
           marker: {
-            fillColor: 'white',
+            fillColor: '#0f172a',
             lineWidth: 2,
-            lineColor: Highcharts.getOptions().colors[0]
+            lineColor: '#22d3ee'
           },
           tooltip: {
             pointFormatter: function () {
-              return `<strong>${findSkillGroup(this.y)}</strong> (${Math.floor(this.y)})<br/>`;
+              return `<strong>${findSkillGroup(this.y)}</strong> (<span style="color:#22d3ee">${Math.floor(this.y)}</span>)<br/>`;
             }
           }
         }, {
@@ -200,8 +323,8 @@
           type: 'areasplinerange',
           lineWidth: 0,
           linkedTo: ':previous',
-          color: Highcharts.getOptions().colors[0],
-          fillOpacity: 0.3,
+          color: '#c084fc', /* NEON PURPLE */
+          fillOpacity: 0.10,
           zIndex: 0,
           marker: {
             enabled: false
@@ -264,17 +387,19 @@
     function unselectSeason(season) {
       const path = season === 0 ? '' : `/season/${season}`;
       const label = season === 0 ? 'all' : season;
-      seasonSelectors[season].innerHTML = `<a href="#${path}">${label}</a>`;
+      seasonSelectors[season].innerHTML = `<a href="#${path}" class="text-brand-400 hover:text-brand-300 hover:underline transition-colors">${label}</a>`;
     }
 
     function selectSeason(season) {
       const label = season === 0 ? 'all' : season;
-      seasonSelectors[season].innerHTML = `<strong>${label}</strong>`;
+      seasonSelectors[season].innerHTML = `<strong class="px-2.5 py-1 bg-brand-500/20 shadow-inner border border-brand-500/30 rounded-lg text-brand-300">${label}</strong>`;
     }
 
     function onSelectSeason(event) {
       event.preventDefault();
-      let selection = parseInt(event.target.firstChild.nodeValue);
+      // Only handle clicks on anchors
+      if(event.target.tagName !== 'A') return;
+      let selection = parseInt(event.target.textContent);
       if (isNaN(selection)) {
         selection = 0;
       }
@@ -282,16 +407,18 @@
         unselectSeason(selectedSeason);
         selectSeason(selection);
         selectedSeason = selection;
-        loadChart(selectedSeason).then(() => toggleRatings(false));
+        loadChart(selectedSeason).then(() => toggleRatings(ratingToggle.dataset.toggled === 'true'));
       }
     }
 
     function toggleRatings(showRatings) {
       if (showRatings) {
-        ratingToggle.value = 'Hide impact';
+        ratingToggle.textContent = 'Hide impact';
+        ratingToggle.dataset.toggled = 'true';
         skillChart.series[2].show();
       } else {
-        ratingToggle.value = 'Show impact';
+        ratingToggle.textContent = 'Show impact';
+        ratingToggle.dataset.toggled = 'false';
         skillChart.series[2].hide();
       }
     }
@@ -304,15 +431,16 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-      seasonSelectors.forEach(element =>
-          element.addEventListener('click', onSelectSeason));
+      // Setup Initial Season Selector Styles
+      seasonSelectors.forEach((element, i) => {
+          if(i === selectedSeason) selectSeason(i);
+          else unselectSeason(i);
+          element.addEventListener('click', onSelectSeason);
+      });
       document.getElementById('toggle-rating')
         .addEventListener('click', onRatingsToggle);
       loadChart({{ current_season }});
     });
   }).call(window);
 </script>
-
-
-</body>
-</html>
+{% endblock %}
