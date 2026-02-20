@@ -61,7 +61,7 @@ class RiegeliGameStateWriter(QueueConsumer):
     logger.debug('saving %d game states', len(messages))
 
     with self.log.writer(timeout=0) as writer:
-      created_at = datetime.datetime.utcnow()
+      created_at = datetime.datetime.now(datetime.timezone.utc)
       for message in messages:
         game_state_json = json.loads(message['game_state'])
         entry = GameStateEntry(

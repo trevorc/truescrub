@@ -4,7 +4,7 @@ from typing import Dict
 
 import pytest
 
-from tests.db_test_utils import TestDBManager, create_game_state_for_round
+from tests.db_test_utils import MockDBManager, create_game_state_for_round
 from truescrub.highlights import (
   get_highlights, get_round_range_for_day, get_player_ratings_between_rounds,
   get_most_played_maps_between_rounds, get_skill_changes_between_rounds,
@@ -30,7 +30,7 @@ def create_test_db(
   Returns:
       Populated skill database connection
   """
-  db_manager = TestDBManager()
+  db_manager = MockDBManager()
 
   map_distribution = map_distribution or {'de_dust2': 5, 'de_mirage': 3,
                                           'de_nuke': 2}

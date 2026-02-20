@@ -13,6 +13,16 @@ from truescrub.models import Player, RoundRow, SkillHistory, GameStateRow
 from truescrub.models import SKILL_MEAN, SKILL_STDEV
 
 
+def adapt_datetime(dt):
+    return dt.isoformat(sep=" ")
+
+def adapt_date(d):
+    return d.isoformat()
+
+sqlite3.register_adapter(datetime.datetime, adapt_datetime)
+sqlite3.register_adapter(datetime.date, adapt_date)
+
+
 GAME_DB_NAME = 'games.db'
 SKILL_DB_NAME = 'skill.db'
 

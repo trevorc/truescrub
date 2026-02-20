@@ -5,18 +5,18 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from tests.db_test_utils import TestDBManager, TestGameState
+from tests.db_test_utils import MockDBManager, MockGameState
 from truescrub import db
 from truescrub.statewriter.state_writer import GameStateWriter, \
   RiegeliGameStateWriter
 
 original_get_game_db = db.get_game_db
 
-GAME_STATE_DATA_1 = TestGameState(
+GAME_STATE_DATA_1 = MockGameState(
   timestamp=datetime.datetime(2023, 1, 1, 12, 0, 0),
   map_name="de_dust2"
 )
-GAME_STATE_DATA_2 = TestGameState(
+GAME_STATE_DATA_2 = MockGameState(
   timestamp=datetime.datetime(2023, 1, 1, 12, 5, 0),
   map_name="de_inferno"
 )
@@ -24,7 +24,7 @@ GAME_STATE_DATA_2 = TestGameState(
 
 class TestGameStateWriter(unittest.TestCase):
   def setUp(self):
-    self.db_manager = TestDBManager()
+    self.db_manager = MockDBManager()
     self.updater_mock = MagicMock()
     self.writer = GameStateWriter(self.updater_mock)
     db.get_game_db = MagicMock(return_value=self.db_manager.game_db)

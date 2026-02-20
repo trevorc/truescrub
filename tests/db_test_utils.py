@@ -20,7 +20,7 @@ from truescrub.updater.recalculate import (
 )
 
 
-class TestGameState:
+class MockGameState:
   """
   Class representing a test game state with simplified structure.
   Only includes the fields necessary for testing.
@@ -98,7 +98,7 @@ class TestGameState:
     return game_state
 
 
-class TestDBManager:
+class MockDBManager:
   """
   Manager for creating and populating test databases.
   Uses the existing updater logic to transform game states into skill database content.
@@ -118,12 +118,12 @@ class TestDBManager:
       m.setattr(seasoncfg, 'SEASONS_TOML', self.seasons_toml)
       load_seasons(self.skill_db)
 
-  def add_game_states(self, game_states: List[TestGameState]) -> List[int]:
+  def add_game_states(self, game_states: List[MockGameState]) -> List[int]:
     """
     Add game states to the game database and return the game state IDs.
 
     Args:
-        game_states: List of TestGameState objects
+        game_states: List of MockGameState objects
 
     Returns:
         List of inserted game state IDs
@@ -254,7 +254,7 @@ def create_game_state_for_round(
     winner: str,  # "CT" or "T"
     player_stats: Dict[int, Dict] = None
     # {steam_id: {kills, assists, deaths, damage, survived}}
-) -> TestGameState:
+) -> MockGameState:
   """
   Create a game state for a complete round.
 
@@ -267,7 +267,7 @@ def create_game_state_for_round(
       player_stats: Dictionary of player stats by Steam ID
 
   Returns:
-      TestGameState object
+      MockGameState object
   """
   stats = player_stats or {}
   current_players = {}
@@ -325,7 +325,7 @@ def create_game_state_for_round(
       match_mvps=player_stat.get("match_mvps", 0)
     )
 
-  return TestGameState(
+  return MockGameState(
     timestamp=timestamp,
     map_name=map_name,
     round_phase="over",
