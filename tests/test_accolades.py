@@ -269,5 +269,219 @@ def test_get_accolades(monkeypatch):
   assert list(get_accolades([])) == []
 
 
+def _make_player(player_id, name, impact_rating, mvps,
+                 avg_kills, avg_deaths, avg_damage, avg_assists,
+                 rounds_played=10, avg_headshots=0.0):
+  """Helper to build a player_rating dict with all required fields."""
+  total_kills = int(avg_kills * rounds_played)
+  total_deaths = int(avg_deaths * rounds_played)
+  total_headshots = int(avg_headshots * rounds_played)
+  return {
+    'player_id': player_id,
+    'steam_name': name,
+    'impact_rating': impact_rating,
+    'mvps': mvps,
+    'rounds_played': rounds_played,
+    'rating_details': {
+      'average_kills': avg_kills,
+      'average_deaths': avg_deaths,
+      'average_damage': avg_damage,
+      'average_assists': avg_assists,
+      'total_kills': total_kills,
+      'total_deaths': total_deaths,
+      'total_damage': int(avg_damage * rounds_played),
+      'total_assists': int(avg_assists * rounds_played),
+      'kdr': total_kills / max(1.0, total_deaths),
+      'average_headshots': avg_headshots,
+      'total_headshots': total_headshots,
+    },
+  }
+
+
+class TestNewAccoladesTrigger:
+  """Integration tests using the real ACCOLADES config to verify
+  that each new accolade can actually fire given the right stats."""
+
+  def test_glass_cannon_triggers(self):
+    """Glass Cannon = highest damage AND highest deaths.
+    Player must lead in both damage and deaths simultaneously."""
+    players = [
+      # Glass Cannon candidate: highest damage AND highest deaths
+      _make_player(1, 'GlassGuy', 0.9, 0,
+                   avg_kills=1.5, avg_deaths=3.0,
+                   avg_damage=200.0, avg_assists=0.5),
+      # Filler: moderate stats
+      _make_player(2, 'Normal', 1.0, 1,
+                   avg_kills=1.0, avg_deaths=1.0,
+                   avg_damage=80.0, avg_assists=1.0),
+    ]
+    accolades = get_accolades(players)
+    names = {a['accolade'] for a in accolades}
+    assert 'Glass Cannon' in names
+    gc = next(a for a in accolades if a['accolade'] == 'Glass Cannon')
+    assert gc['player_id'] == 1
+
+  def test_decoy_triggers(self):
+    """Decoy = highest deaths AND highest assists.
+    Player must lead in both deaths and assists simultaneously.
+    We need a 3rd player to prevent Moral Support from consuming
+    the decoy candidate (Moral Support needs lowest kills + lowest
+    rating + highest deaths on the SAME player)."""
+    players = [
+      # Decoy candidate: highest deaths AND highest assists,
+      # but NOT the lowest kills or rating
+      _make_player(1, 'DecoyGuy', 0.7, 0,
+                   avg_kills=1.5, avg_deaths=3.0,
+                   avg_damage=50.0, avg_assists=4.0),
+      # Normal player
+      _make_player(2, 'Normal', 1.0, 1,
+                   avg_kills=2.0, avg_deaths=1.0,
+                   avg_damage=100.0, avg_assists=1.0),
+      # This player has lowest kills and lowest rating,
+      # breaking Moral Support's match on player 1
+      _make_player(3, 'Lurker', 0.5, 0,
+                   avg_kills=0.2, avg_deaths=2.0,
+                   avg_damage=30.0, avg_assists=0.5),
+    ]
+    accolades = get_accolades(players)
+    names = {a['accolade'] for a in accolades}
+    assert 'Decoy' in names
+    decoy = next(a for a in accolades if a['accolade'] == 'Decoy')
+    assert decoy['player_id'] == 1
+
+  def test_efficiency_expert_triggers(self):
+    """Efficiency Expert = highest kdr.
+    Player 1 must have the highest KDR without also being
+    the lowest-deaths or highest-rating player, so earlier
+    accolades don't consume them first."""
+    players = [
+      # Highest KDR: 4.0 kills / 1.0 deaths = 4.0 KDR
+      # NOT lowest deaths (player 2 has 0.3)
+      _make_player(1, 'Efficient', 1.0, 1,
+                   avg_kills=4.0, avg_deaths=1.0,
+                   avg_damage=120.0, avg_assists=1.0),
+      # Grand Slamma Jamma target: highest rating + mvps + lowest deaths
+      # KDR = 10/3 ≈ 3.3 — lower than player 1's 4.0
+      _make_player(2, 'StarPlayer', 1.5, 5,
+                   avg_kills=1.0, avg_deaths=0.3,
+                   avg_damage=140.0, avg_assists=2.0),
+      # Low performer
+      _make_player(3, 'Sloppy', 0.6, 0,
+                   avg_kills=0.5, avg_deaths=2.0,
+                   avg_damage=40.0, avg_assists=0.5),
+    ]
+    accolades = get_accolades(players)
+    names = {a['accolade'] for a in accolades}
+    assert 'Efficiency Expert' in names, (
+      f"Efficiency Expert missing, got: {[a['accolade'] for a in accolades]}")
+    ee = next(a for a in accolades if a['accolade'] == 'Efficiency Expert')
+    assert ee['player_id'] == 1
+
+  def test_headshot_hunter_triggers(self):
+    """Headshot Hunter = highest headshots.
+    Need 3 players to prevent greedy multi-condition accolades
+    from consuming all of player 1's conditions."""
+    players = [
+      # High headshot rate
+      _make_player(1, 'Headshotter', 1.0, 1,
+                   avg_kills=2.0, avg_deaths=1.0,
+                   avg_damage=100.0, avg_assists=1.0,
+                   avg_headshots=1.8),
+      # Star player takes mvps/rating
+      _make_player(2, 'StarPlayer', 1.5, 5,
+                   avg_kills=2.5, avg_deaths=0.5,
+                   avg_damage=140.0, avg_assists=2.0,
+                   avg_headshots=0.5),
+      # Low performer
+      _make_player(3, 'Noob', 0.5, 0,
+                   avg_kills=0.5, avg_deaths=2.0,
+                   avg_damage=40.0, avg_assists=0.5,
+                   avg_headshots=0.0),
+    ]
+    accolades = get_accolades(players)
+    names = {a['accolade'] for a in accolades}
+    assert 'Headshot Hunter' in names, (
+      f"Headshot Hunter missing, got: {[a['accolade'] for a in accolades]}")
+    hh = next(a for a in accolades if a['accolade'] == 'Headshot Hunter')
+    assert hh['player_id'] == 1
+
+  def test_wallflower_triggers(self):
+    """Wallflower = lowest assists.
+    Need 3 players so the Wallflower candidate isn't also
+    the match for Moral Support or another greedy accolade."""
+    players = [
+      # Wallflower: lowest assists, but decent kills/rating
+      _make_player(1, 'LoneWolf', 1.0, 1,
+                   avg_kills=2.0, avg_deaths=1.0,
+                   avg_damage=100.0, avg_assists=0.0),
+      # Star player
+      _make_player(2, 'StarPlayer', 1.5, 5,
+                   avg_kills=2.5, avg_deaths=0.5,
+                   avg_damage=140.0, avg_assists=2.0),
+      # Low performer
+      _make_player(3, 'Noob', 0.5, 0,
+                   avg_kills=0.5, avg_deaths=2.0,
+                   avg_damage=40.0, avg_assists=0.5),
+    ]
+    accolades = get_accolades(players)
+    names = {a['accolade'] for a in accolades}
+    assert 'Wallflower' in names, (
+      f"Wallflower missing, got: {[a['accolade'] for a in accolades]}")
+    wf = next(a for a in accolades if a['accolade'] == 'Wallflower')
+    assert wf['player_id'] == 1
+
+  def test_many_accolades_in_large_lobby(self):
+    """With 6 players, many accolades should fire including new ones.
+    Verifies that the priority ordering allows multiple accolades
+    to coexist without consuming each other's conditions."""
+    players = [
+      # Player 1: Glass Cannon — highest damage AND highest deaths
+      _make_player(1, 'GlassGuy', 0.6, 0,
+                   avg_kills=1.5, avg_deaths=4.0,
+                   avg_damage=250.0, avg_assists=0.5),
+      # Player 2: Efficiency Expert — best KDR
+      _make_player(2, 'Efficient', 1.3, 3,
+                   avg_kills=3.5, avg_deaths=0.3,
+                   avg_damage=160.0, avg_assists=1.5,
+                   avg_headshots=2.5),
+      # Player 3: Wallflower — lowest assists
+      _make_player(3, 'WallGuy', 0.9, 0,
+                   avg_kills=1.0, avg_deaths=1.0,
+                   avg_damage=70.0, avg_assists=0.0),
+      # Player 4: moderate stats
+      _make_player(4, 'Average', 1.0, 1,
+                   avg_kills=1.5, avg_deaths=1.5,
+                   avg_damage=90.0, avg_assists=1.0,
+                   avg_headshots=0.5),
+      # Player 5: Low performer
+      _make_player(5, 'Noob', 0.4, 0,
+                   avg_kills=0.3, avg_deaths=2.0,
+                   avg_damage=30.0, avg_assists=0.5,
+                   avg_headshots=0.0),
+      # Player 6: Tanky support
+      _make_player(6, 'Support', 0.8, 0,
+                   avg_kills=0.8, avg_deaths=1.5,
+                   avg_damage=60.0, avg_assists=3.5,
+                   avg_headshots=0.1),
+    ]
+    accolades = get_accolades(players)
+    names = {a['accolade'] for a in accolades}
+
+    # With 6 players and diverse stats, we expect several accolades
+    assert len(accolades) >= 4, (
+      f"Expected at least 4 accolades from 6 players, got {len(accolades)}: "
+      f"{[a['accolade'] for a in accolades]}")
+
+    # Glass Cannon should fire for player 1 (highest damage + highest deaths)
+    assert 'Glass Cannon' in names, (
+      f"Glass Cannon missing from: {[a['accolade'] for a in accolades]}")
+
+    # Efficiency Expert or Headshot Hunter should fire for player 2
+    p2_accolades = {a['accolade'] for a in accolades if a['player_id'] == 2}
+    assert len(p2_accolades) > 0, (
+      f"Player 2 should have an accolade, got: "
+      f"{[a['accolade'] for a in accolades]}")
+
+
 if __name__ == "__main__":
   sys.exit(pytest.main(["-xvs", __file__]))

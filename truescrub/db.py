@@ -32,6 +32,13 @@ DAMAGE_COEFF = 0.00651
 KAS_COEFF = 0.00633
 INTERCEPT = 0.18377
 COEFFICIENTS = KILL_COEFF, DEATH_COEFF, DAMAGE_COEFF, KAS_COEFF, INTERCEPT
+COEFFICIENTS_DICT = {
+    'kill_coeff': KILL_COEFF,
+    'death_coeff': DEATH_COEFF,
+    'damage_coeff': DAMAGE_COEFF,
+    'kas_coeff': KAS_COEFF,
+    'intercept': INTERCEPT,
+}
 
 logger = logging.getLogger(__name__)
 
@@ -40,29 +47,16 @@ logger = logging.getLogger(__name__)
 ### Utilities ###
 #################
 
-def enumerate_rows(cursor: sqlite3.Cursor):
-    while True:
-        row = cursor.fetchone()
-        if row is None:
-            return
-        yield row
-
-
 def execute(connection: sqlite3.Connection, query: str, params=()) \
         -> Iterator[tuple]:
     cursor = connection.cursor()
     cursor.execute(query, params)
-    return enumerate_rows(cursor)
+    return cursor
 
 
 def execute_one(connection: sqlite3.Connection, query: str, params=()) \
         -> tuple:
     return next(execute(connection, query, params))
-
-
-def make_placeholder(columns, rows):
-    row = '({})'.format(str.join(', ', ['?'] * columns))
-    return str.join(', ', [row] * rows)
 
 
 ##########################
@@ -170,33 +164,19 @@ def replace_skill_db(new_db_name: str):
 
 
 def replace_seasons(skill_db, season_rows):
-    placeholder = make_placeholder(2, len(season_rows))
-    params = [
-        param
-        for season in season_rows
-        for param in season
-    ]
-
-    skill_db_cursor = skill_db.cursor()
-    skill_db_cursor.execute('''
+    skill_db.executemany('''
     REPLACE INTO seasons (season_id, start_date)
-    VALUES {}
-    '''.format(placeholder), params)
+    VALUES (?, ?)
+    ''', season_rows)
 
 
 def upsert_player_names(skill_db, players: {int: str}):
-    cursor = skill_db.cursor()
-    placeholder = make_placeholder(2, len(players))
-    params = [value
-              for player in players.items()
-              for value in player]
-
-    cursor.execute('''
+    skill_db.executemany('''
     INSERT INTO players (player_id, steam_name)
-    VALUES {}
+    VALUES (?, ?)
     ON CONFLICT (player_id)
     DO UPDATE SET steam_name = excluded.steam_name
-    '''.format(placeholder), params)
+    ''', players.items())
 
 
 def get_map_names_to_ids(skill_db) -> {str: int}:
@@ -211,18 +191,11 @@ def get_map_names_to_ids(skill_db) -> {str: int}:
 
 
 def replace_maps(skill_db, map_names: {str}):
-    execute(skill_db, '''
+    skill_db.executemany('''
     INSERT INTO maps (map_name)
-    VALUES {}
+    VALUES (?)
     ON CONFLICT (map_name) DO NOTHING
-    '''.format(make_placeholder(1, len(map_names))), list(map_names))
-
-
-def make_batches(items: list, size: int):
-    return (
-        items[i:i + size]
-        for i in range(0, len(items), size)
-    )
+    ''', [(name,) for name in map_names])
 
 
 def insert_rounds(skill_db, rounds: List[Dict]) -> (int, int):
@@ -232,27 +205,21 @@ def insert_rounds(skill_db, rounds: List[Dict]) -> (int, int):
     map_names_to_id = get_map_names_to_ids(skill_db)
 
     cursor = skill_db.cursor()
-    for batch in make_batches(rounds, 128):
-        params = [
-            value
-            for rnd in batch
-            for value in (
-                rnd['season_id'],
-                rnd['game_state_id'],
-                rnd['created_at'],
-                map_names_to_id[rnd['map_name']],
-                rnd['winner'],
-                rnd['loser'],
-                rnd['mvp'],
-            )
-        ]
-        placeholder = make_placeholder(7, len(batch))
+    for rnd in rounds:
         cursor.execute('''
         INSERT INTO rounds (
           season_id, game_state_id, created_at, map_id, winner, loser, mvp
         )
-        VALUES {}
-        '''.format(placeholder), params)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            rnd['season_id'],
+            rnd['game_state_id'],
+            rnd['created_at'],
+            map_names_to_id[rnd['map_name']],
+            rnd['winner'],
+            rnd['loser'],
+            rnd['mvp'],
+        ))
 
     max_round_id = cursor.lastrowid
     return max_round_id - len(rounds) + 1, max_round_id
@@ -274,7 +241,10 @@ def insert_round_stats(skill_db, round_stats_by_game_state_id: Dict[int, Dict]):
         if row[0] in round_stats_by_game_state_id
     }
 
-    round_stats_rows = [
+    skill_db.executemany('''
+    INSERT INTO round_stats (round_id, player_id, kills, assists, damage, survived, headshots)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+    ''', [
         (
             game_state_id_to_round_id[game_state_id],
             player_id,
@@ -282,24 +252,11 @@ def insert_round_stats(skill_db, round_stats_by_game_state_id: Dict[int, Dict]):
             player_stats['assists'],
             player_stats['damage'],
             player_stats['survived'],
+            player_stats.get('headshots', 0),
         )
         for game_state_id, round_stats in round_stats_by_game_state_id.items()
         for player_id, player_stats in round_stats.items()
-
-    ]
-
-    cursor = skill_db.cursor()
-    for batch in make_batches(round_stats_rows, 128):
-        params = [
-            value
-            for row in batch
-            for value in row
-        ]
-        placeholder = make_placeholder(6, len(batch))
-        cursor.execute('''
-        INSERT INTO round_stats (round_id, player_id, kills, assists, damage, survived)
-        VALUES {}
-        '''.format(placeholder), params)
+    ])
 
 
 def get_all_players(skill_db) -> [Player]:
@@ -397,33 +354,33 @@ def get_player_round_stat_averages_by_season(
 def get_overall_impact_ratings(skill_db) -> {int: float}:
     return dict(execute(skill_db, '''
     SELECT rc.player_id
-         , {} * AVG(rc.kill_rating)
-         + {} * AVG(rc.death_rating)
-         + {} * AVG(rc.damage_rating)
-         + {} * AVG(rc.kas_rating)
-         + {}
+         , :kill_coeff * AVG(rc.kill_rating)
+         + :death_coeff * AVG(rc.death_rating)
+         + :damage_coeff * AVG(rc.damage_rating)
+         + :kas_coeff * AVG(rc.kas_rating)
+         + :intercept
          AS rating
      FROM rating_components rc
      GROUP BY rc.player_id
-     '''.format(*COEFFICIENTS)))
+     ''', COEFFICIENTS_DICT))
 
 
 def get_impact_ratings_by_season(skill_db) -> {int: {int: float}}:
     rating_rows = execute(skill_db, '''
     SELECT r.season_id
          , rc.player_id
-         , {} * AVG(rc.kill_rating)
-         + {} * AVG(rc.death_rating)
-         + {} * AVG(rc.damage_rating)
-         + {} * AVG(rc.kas_rating)
-         + {}
+         , :kill_coeff * AVG(rc.kill_rating)
+         + :death_coeff * AVG(rc.death_rating)
+         + :damage_coeff * AVG(rc.damage_rating)
+         + :kas_coeff * AVG(rc.kas_rating)
+         + :intercept
          AS rating
      FROM rating_components rc
      JOIN rounds r ON r.round_id = rc.round_id
      GROUP BY r.season_id
             , rc.player_id
      ORDER BY r.season_id
-     '''.format(*COEFFICIENTS))
+     ''', COEFFICIENTS_DICT)
 
     return {
         season_id: {
@@ -467,8 +424,8 @@ def get_player_rows_by_season(skill_db, seasons):
         where_clause = ''
         params = ()
     else:
-        where_clause = 'WHERE skills.season_id IN {}'.format(
-                make_placeholder(len(seasons), 1))
+        where_clause = 'WHERE skills.season_id IN ({})'.format(
+                ', '.join('?' * len(seasons)))
         params = seasons
 
     player_rows = execute(skill_db, '''
@@ -639,99 +596,72 @@ def save_game_state_progress(skill_db, max_game_state_id):
 
 def update_player_skills(skill_db, ratings: {int: trueskill.Rating},
                          impact_ratings: {int: float}):
-    cursor = skill_db.cursor()
-    for player_id, rating in ratings.items():
-        cursor.execute('''
-        UPDATE players
-        SET skill_mean = ?
-          , skill_stdev = ?
-          , impact_rating = ?
-        WHERE player_id = ?
-        ''', (rating.mu, rating.sigma, impact_ratings[player_id], player_id))
+    skill_db.executemany('''
+    UPDATE players
+    SET skill_mean = ?
+      , skill_stdev = ?
+      , impact_rating = ?
+    WHERE player_id = ?
+    ''', [
+        (rating.mu, rating.sigma, impact_ratings[player_id], player_id)
+        for player_id, rating in ratings.items()
+    ])
 
 
 def replace_overall_skill_history(skill_db, skill_history: [SkillHistory]):
-    cursor = skill_db.cursor()
-    for batch in make_batches(skill_history, 128):
-        params = [
-            value
-            for history in batch
-            for value in (
-                history.player_id,
-                history.round_id,
-                history.skill.mu,
-                history.skill.sigma,
-            )
-        ]
-        placeholder = make_placeholder(4, len(batch))
-        cursor.execute('''
-        REPLACE INTO overall_skill_history (
-            player_id
-          , round_id
-          , skill_mean
-          , skill_stdev
-        )
-        VALUES {}
-        '''.format(placeholder), params)
+    skill_db.executemany('''
+    REPLACE INTO overall_skill_history (
+        player_id
+      , round_id
+      , skill_mean
+      , skill_stdev
+    )
+    VALUES (?, ?, ?, ?)
+    ''', [
+        (h.player_id, h.round_id, h.skill.mu, h.skill.sigma)
+        for h in skill_history
+    ])
 
 
 def replace_season_skills(
         skill_db, season_skills: {(int, int): trueskill.Rating},
         season_impact_ratings: {int: {int: float}}):
-    cursor = skill_db.cursor()
-    params = [
-        param
-        for (player_id, season_id), skill in season_skills.items()
-        for param in (
-            player_id,
-            season_id,
-            skill.mu,
-            skill.sigma,
-            season_impact_ratings[season_id][player_id],
-        )
-    ]
-
-    cursor.execute('''
+    skill_db.executemany('''
     REPLACE INTO skills (
       player_id
     , season_id
     , mean
     , stdev
     , impact_rating
-    ) VALUES {}
-    '''.format(make_placeholder(5, len(season_skills))), params)
-
-
-def _skill_history_sort_key(history: SkillHistory):
-    return history.player_id, history.round_id
+    ) VALUES (?, ?, ?, ?, ?)
+    ''', [
+        (
+            player_id,
+            season_id,
+            skill.mu,
+            skill.sigma,
+            season_impact_ratings[season_id][player_id],
+        )
+        for (player_id, season_id), skill in season_skills.items()
+    ])
 
 
 def replace_season_skill_history(
         skill_db, history_by_season: {int: SkillHistory}):
     skill_history = list(itertools.chain(*history_by_season.values()))
 
-    cursor = skill_db.cursor()
-    for batch in make_batches(skill_history, 128):
-        params = [
-            value
-            for history in batch
-            for value in (
-                history.player_id,
-                history.round_id,
-                history.skill.mu,
-                history.skill.sigma,
-            )
-        ]
-        placeholder = make_placeholder(4, len(batch))
-        cursor.execute('''
-        REPLACE INTO season_skill_history (
-            player_id
-          , round_id
-          , skill_mean
-          , skill_stdev
-        )
-        VALUES {}
-        '''.format(placeholder), params)
+    skill_db.executemany('''
+    REPLACE INTO season_skill_history (
+        player_id
+      , round_id
+      , skill_mean
+      , skill_stdev
+    )
+    VALUES (?, ?, ?, ?)
+    ''', [
+        (h.player_id, h.round_id, h.skill.mu, h.skill.sigma)
+        for h in skill_history
+    ])
 
 
 def make_skill_history(player_id: int, skill_history):
@@ -756,27 +686,26 @@ def get_impact_ratings_by_day(
         -> {str: float}:
     tz_offset = adapt_timezone(tz)
 
-    format_args = list(COEFFICIENTS)
-    params = [tz_offset, player_id]
+    params = {**COEFFICIENTS_DICT, 'tz_offset': tz_offset, 'player_id': player_id}
     if season_id is not None:
-        format_args.append('AND r.season_id = ?')
-        params.append(season_id)
+        season_clause = 'AND r.season_id = :season_id'
+        params['season_id'] = season_id
     else:
-        format_args.append('')
+        season_clause = ''
 
-    ratings = execute(skill_db, '''
-    SELECT date(r.created_at, ?) as round_date
-         , {} * AVG(rc.kill_rating)
-         + {} * AVG(rc.death_rating)
-         + {} * AVG(rc.damage_rating)
-         + {} * AVG(rc.kas_rating)
-         + {} AS rating
+    ratings = execute(skill_db, f'''
+    SELECT date(r.created_at, :tz_offset) as round_date
+         , :kill_coeff * AVG(rc.kill_rating)
+         + :death_coeff * AVG(rc.death_rating)
+         + :damage_coeff * AVG(rc.damage_rating)
+         + :kas_coeff * AVG(rc.kas_rating)
+         + :intercept AS rating
      FROM rating_components rc
      JOIN rounds r on rc.round_id = r.round_id
-     WHERE rc.player_id = ?
-     {}
+     WHERE rc.player_id = :player_id
+     {season_clause}
      GROUP BY round_date
-     '''.format(*format_args), params)
+     ''', params)
     return {date: rating for date, rating in ratings}
 
 
@@ -974,6 +903,7 @@ def initialize_skill_db(skill_db):
     , assists    INTEGER NOT NULL
     , damage     INTEGER NOT NULL
     , survived   BOOLEAN NOT NULL
+    , headshots  INTEGER NOT NULL DEFAULT 0
     , PRIMARY KEY (round_id, player_id)
     , FOREIGN KEY (round_id) REFERENCES rounds (round_id)
     , FOREIGN KEY (player_id) REFERENCES players (player_id)

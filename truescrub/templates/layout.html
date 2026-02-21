@@ -123,10 +123,32 @@
 </main>
 
 <footer class="max-w-7xl mx-auto mt-auto pt-16 pb-4 text-center text-slate-500 text-sm">
+  <div class="flex items-center justify-center gap-2 mb-1">
+    <span class="opacity-50 hover:opacity-100 hover:scale-125 transition-all duration-300 cursor-pointer inline-block" id="footer-chicken">🐔</span>
+    <p id="chicken-quip" class="italic"></p>
+  </div>
   <p>&copy;
     <script>document.write(new Date().getFullYear())</script>
-    {{ brand|default("TrueScrub") }}. Powered by Advanced Matchmaking.
+    {{ brand|default("TrueScrub") }}
   </p>
+  <script>
+    (function() {
+      var quips = [
+        "No chickens were harmed in the making of this leaderboard.",
+        "The chickens believe in you. Probably.",
+        "Chickens spectate every round. They've seen things.",
+        "Fun fact: chickens have a higher survival rate than most players.",
+        "The chicken knows your true rank. It judges silently.",
+        "Somewhere on Inferno, a chicken just witnessed your whiff.",
+        "Powered by free-range matchmaking.",
+        "Bawk bawk. That's chicken for 'git gud'.",
+        "The chicken remembers every teamkill.",
+        "Even the chickens have better crosshair placement.",
+      ];
+      document.getElementById('chicken-quip').textContent =
+        quips[Math.floor(Math.random() * quips.length)];
+    })();
+  </script>
 </footer>
 
 {% block scripts %}

@@ -10,11 +10,10 @@ import itertools
 from typing import List, Optional
 
 import flask
-import jinja2
-from flask import g, request
+from flask import g, request, render_template
 
-import truescrub
 from truescrub import db
+from truescrub import achievements
 from truescrub.highlights import get_highlights
 from truescrub.matchmaking import (
     skill_group_ranges, compute_matches,
@@ -23,21 +22,14 @@ from truescrub.models import Match, Player, skill_groups, skill_group_name
 from truescrub.envconfig import TRUESCRUB_BRAND, SHARED_KEY
 
 
-app = flask.Flask(__name__)
+app = flask.Flask('truescrub')
 app.config['PROPAGATE_EXCEPTIONS'] = True
-
-jinja2_env = jinja2.Environment(
-    loader=jinja2.PackageLoader(truescrub.__name__))
 
 
 TIMEZONE_PATTERN = re.compile(r'([+-])(\d\d):00')
 MAX_MATCHES = 50
 
 logger = logging.getLogger(__name__)
-
-
-def render_template(template_name, **context):
-    return jinja2_env.get_template(template_name).render(**context)
 
 
 @app.before_request
@@ -346,6 +338,9 @@ def profile(player_id):
     ]
     season_ratings.sort(reverse=True)
     player_viewmodel = make_player_viewmodel(player)
+
+    player_achievements = achievements.get_achievements(g.conn, player_id)
+
     return render_template('profile.html',
                            brand=TRUESCRUB_BRAND,
                            seasons=seasons,
@@ -355,7 +350,8 @@ def profile(player_id):
                            overall_rating=overall_rating,
                            season_skills=season_skills,
                            season_ratings=season_ratings,
-                           skill_groups=SKILL_GROUPS_VIEWMODEL)
+                           skill_groups=SKILL_GROUPS_VIEWMODEL,
+                           achievements=player_achievements)
 
 
 @app.route('/matchmaking', methods={'GET'})

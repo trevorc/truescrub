@@ -12,7 +12,6 @@ from contextlib import ExitStack
 from typing import Dict, List
 
 import flask
-import importlib.resources
 import mimetypes
 import waitress.server
 
@@ -57,28 +56,19 @@ class Service(metaclass=abc.ABCMeta):
     return type(self).__name__
 
 
-class StateWriterService(Service):
-  def __init__(self, state_writer):
-    self.state_writer = state_writer
+class QueueConsumerService(Service):
+  def __init__(self, consumer):
+    self.consumer = consumer
 
   def __call__(self):
     logger.info('running %s', self)
-    self.state_writer.run()
+    self.consumer.run()
 
   def stop(self):
-    self.state_writer.stop()
+    self.consumer.stop()
 
-
-class UpdaterService(Service):
-  def __init__(self, updater):
-    self.updater = updater
-
-  def __call__(self):
-    logger.info('running %s', self)
-    self.updater.run()
-
-  def stop(self):
-    self.updater.stop()
+  def __str__(self):
+    return type(self.consumer).__name__
 
 
 class WaitressService(Service):
@@ -171,10 +161,10 @@ def main(args: List[str]):
     app.add_url_rule('/htdocs/<path:filename>', 'serve_htdocs', serve_htdocs)
 
   with Watchdog(futures, interval=8.0), \
-      UpdaterService(updater) as updater_service, \
+      QueueConsumerService(updater) as updater_service, \
       WaitressService(app, host=args.addr, port=args.port) \
           as waitress_service, \
-      StateWriterService(state_writer) as state_writer_service:
+      QueueConsumerService(state_writer) as state_writer_service:
 
     app.state_writer = state_writer
     futures[executor.submit(updater_service)] = updater_service

@@ -23,6 +23,7 @@ def parse_round_stats(allplayers: {int: dict}) -> {int: dict}:
     return {
         int(steam_id): {
             'kills': player['state']['round_kills'],
+            'headshots': player['state'].get('round_killhs', 0),
             'match_assists': assist_counts[steam_id],
             'survived': player['state']['health'] > 0,
             'damage': player['state']['round_totaldmg'],
@@ -173,10 +174,12 @@ def parse_roundover_transition(
         for steamid, player in allplayers.items()
     ]
 
-    created_at = datetime.datetime.utcfromtimestamp(state.timestamp)
+    created_at = datetime.datetime.fromtimestamp(
+        state.timestamp, tz=datetime.timezone.utc)
 
-    season_starts = [datetime.datetime.combine(start_date, datetime.time.min)
-                     for start_date in season_ids]
+    season_starts = [datetime.datetime.combine(
+        start_date, datetime.time.min, tzinfo=datetime.timezone.utc)
+                      for start_date in season_ids]
     season_index = bisect.bisect_left(season_starts, created_at) - 1
     season_id = season_ids[season_starts[season_index].date()]
 

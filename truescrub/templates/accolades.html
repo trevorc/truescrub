@@ -24,20 +24,35 @@
 </div>
 
 <div id="loadingIndicator" class="text-center py-12 text-slate-400 hidden">
-  <div class="animate-pulse flex flex-col items-center">
-    <div
-        class="h-12 w-12 rounded-full border-4 border-brand-500 border-t-transparent animate-spin mb-4"></div>
-    <p>Crunching the stats...</p>
+  <div class="flex flex-col items-center">
+    <img class="chicken-random w-16 h-16 object-contain mb-4" alt="Loading..." style="animation: chickenBounce 0.6s ease-in-out infinite alternate">
+    <p>Chickens are crunching the stats...</p>
   </div>
+  <style>
+    @keyframes chickenBounce {
+      0% { transform: translateY(0) rotate(-5deg); }
+      100% { transform: translateY(-12px) rotate(5deg); }
+    }
+  </style>
 </div>
 
 <div id="errorState" class="text-center py-12 text-red-400 hidden">
   <p>Failed to load accolades. Please try again later.</p>
 </div>
 
-<div id="emptyState" class="text-center py-12 text-slate-400 hidden">
-  <p>No accolades available for this day.</p>
+<div id="emptyState" class="text-center py-16 text-slate-400 hidden">
+  <img class="chicken-random w-32 h-32 object-contain mx-auto mb-4" alt="No data">
+  <p class="text-lg font-medium">No accolades available for this day.</p>
+  <p class="text-sm text-slate-500 mt-1">Even the chickens left.</p>
 </div>
+<script>
+  (function() {
+    var chickens = ['/htdocs/img/chicken_ui.png', '/htdocs/img/chicken_ui2.png', '/htdocs/img/chicken_ui3.png', '/htdocs/img/chicken_ui4.png', '/htdocs/img/chicken_ui5.png'];
+    document.querySelectorAll('.chicken-random').forEach(function(img) {
+      img.src = chickens[Math.floor(Math.random() * chickens.length)];
+    });
+  })();
+</script>
 
 <div id="accoladesGrid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
   <!-- Accolade cards injected here by JS -->

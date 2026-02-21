@@ -130,13 +130,20 @@ def evaluate_conditions(player_ratings: List[Dict]) -> Dict[
 def derive_player_stats(player):
   player_id = player['player_id']
   expected_rating = compute_expected_rating(player['rating_details'])
+  rd = player['rating_details']
+  total_kills = rd.get('total_kills', 0)
+  total_headshots = rd.get('total_headshots', 0)
+  headshot_pct = (100.0 * total_headshots / max(1, total_kills))
   stats = dict(player_id=player_id, rating=player['impact_rating'],
                mvps=player['mvps'], expected_rating=expected_rating,
-               kills=player['rating_details']['average_kills'],
-               deaths=player['rating_details']['average_deaths'],
-               damage=player['rating_details']['average_damage'],
-               assists=player['rating_details']['average_assists'],
-               impact=player['impact_rating'])
+               kills=rd['average_kills'],
+               deaths=rd['average_deaths'],
+               damage=rd['average_damage'],
+               assists=rd.get('average_assists', 0),
+               impact=player['impact_rating'],
+               kdr=rd.get('kdr', 0),
+               headshots=rd.get('average_headshots', 0),
+               headshot_pct=headshot_pct)
   stats['overratedness'], stats['underratedness'] = \
     compute_rating_surprise(expected_rating, player['impact_rating'])
 

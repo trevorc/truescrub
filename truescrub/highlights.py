@@ -2,7 +2,7 @@ import datetime
 import operator
 
 from truescrub.accolades import get_accolades
-from truescrub.db import execute_one, execute, COEFFICIENTS
+from truescrub.db import execute_one, execute, COEFFICIENTS_DICT
 from truescrub.models import Player, SKILL_STDEV, SKILL_MEAN, skill_group_name
 
 
@@ -89,16 +89,18 @@ def get_player_ratings_between_rounds(skill_db, round_range: (int, int)) \
                  , AVG(rc.assists_rating) AS average_assists
                  , COUNT(*) AS rounds_played
                  , SUM(rc.mvp_rating) AS total_mvps
+                 , AVG(rs.headshots) AS average_headshots
             FROM rating_components rc
-            WHERE rc.round_id BETWEEN ? AND ?
+            JOIN round_stats rs ON rc.round_id = rs.round_id AND rc.player_id = rs.player_id
+            WHERE rc.round_id BETWEEN :first_round AND :last_round
             GROUP BY rc.player_id
         ), impact_ratings AS (
             SELECT c.player_id
-                 , {} * c.average_kills
-                 + {} * c.average_deaths
-                 + {} * c.average_damage
-                 + {} * c.average_kas
-                 + {} AS rating
+                 , :kill_coeff * c.average_kills
+                 + :death_coeff * c.average_deaths
+                 + :damage_coeff * c.average_damage
+                 + :kas_coeff * c.average_kas
+                 + :intercept AS rating
                  , c.*
             FROM components c
         ), starting_skills AS (
@@ -109,7 +111,7 @@ def get_player_ratings_between_rounds(skill_db, round_range: (int, int)) \
             JOIN ( SELECT ssh2.player_id
                         , MAX(ssh2.round_id) AS max_round_id
                    FROM season_skill_history ssh2
-                   WHERE ssh2.round_id < ?
+                   WHERE ssh2.round_id < :first_round
                    GROUP BY ssh2.player_id
                ) ms
             ON ms.player_id = ssh.player_id
@@ -125,6 +127,7 @@ def get_player_ratings_between_rounds(skill_db, round_range: (int, int)) \
          , ir.average_assists
          , ir.rounds_played
          , ir.total_mvps
+         , ir.average_headshots
          , s.skill_mean
          , s.skill_stdev
     FROM players
@@ -132,7 +135,7 @@ def get_player_ratings_between_rounds(skill_db, round_range: (int, int)) \
     ON   players.player_id = ir.player_id
     LEFT JOIN starting_skills s
     ON   players.player_id = s.player_id
-    '''.format(*COEFFICIENTS), (round_range[0], round_range[1], round_range[0]))
+    ''', {**COEFFICIENTS_DICT, 'first_round': round_range[0], 'last_round': round_range[1]})
 
   player_ratings = [
     make_player_rating(
@@ -148,10 +151,13 @@ def get_player_ratings_between_rounds(skill_db, round_range: (int, int)) \
         'total_assists': int(average_assists * rounds_played),
         'kdr': (average_kills * rounds_played) /
                max(1.0, average_deaths * rounds_played),
+        'average_headshots': average_headshots,
+        'total_headshots': int(average_headshots * rounds_played),
       }, rounds_played, int(mvps or 0))
     for player_id, steam_name, impact_rating,
     average_kills, average_deaths, average_damage, average_kas,
-    average_assists, rounds_played, mvps, skill_mean, skill_stdev
+    average_assists, rounds_played, mvps, average_headshots,
+    skill_mean, skill_stdev
     in rating_details
   ]
   player_ratings.sort(key=operator.itemgetter('impact_rating'),

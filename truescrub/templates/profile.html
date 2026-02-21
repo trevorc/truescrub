@@ -57,9 +57,9 @@
             <td class="py-3 px-4 sm:px-6 font-medium text-slate-300">{{ season_id }}</td>
             <td class="py-3 px-4 sm:px-6 text-right font-mono text-brand-400 group-hover:text-brand-300 transition-colors" title="{{ season_player.skill.mu|int }} ± {{ season_player.skill.sigma|int }}σ">{{ season_player.mmr|int }}</td>
             <td class="py-3 px-4 sm:px-6">
-              <div class="flex items-center gap-3">
+              <div class="flex items-center gap-2">
                 <span class="text-xs font-medium text-slate-400 w-10 text-right">{{ season_player.lower_bound }}%</span>
-                {{ macros.percentile_estimate(season_player, 12) }}
+                {{ macros.percentile_estimate(season_player, 8) }}
                 <span class="text-xs font-medium text-slate-400 w-10">{{ season_player.upper_bound }}%</span>
               </div>
             </td>
@@ -77,9 +77,9 @@
           <td class="py-4 px-4 sm:px-6 font-bold text-white uppercase tracking-wider text-xs">Overall</td>
           <td class="py-4 px-4 sm:px-6 text-right font-mono font-bold text-brand-400 text-lg" title="{{ player.skill.mu|int }} ± {{ player.skill.sigma|int }}σ">{{ player.mmr|int }}</td>
           <td class="py-4 px-4 sm:px-6">
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2">
               <span class="text-xs font-bold text-brand-200 w-10 text-right">{{ player.lower_bound }}%</span>
-              {{ macros.percentile_estimate(player, 12) }}
+              {{ macros.percentile_estimate(player, 8) }}
               <span class="text-xs font-bold text-brand-200 w-10">{{ player.upper_bound }}%</span>
             </div>
           </td>
@@ -175,6 +175,66 @@
         </td>
       </tr>
       </tfoot>
+    </table>
+  </div>
+</div>
+
+<!-- Achievements -->
+<div class="glass-panel rounded-[2rem] overflow-hidden shadow-2xl relative">
+  <div class="absolute inset-0 bg-gradient-to-b from-slate-800/50 to-transparent pointer-events-none"></div>
+  <div class="p-6 border-b border-white/10 relative z-10">
+    <h2 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-yellow-600 flex items-center gap-2 drop-shadow-sm">
+      🏆 Achievements
+      <span class="text-sm font-normal text-slate-500 ml-auto">
+        {% set ns = namespace(earned=0, total=0) %}
+        {% for a in achievements %}{% for t in a.tiers %}{% set ns.total = ns.total + 1 %}{% if t.earned %}{% set ns.earned = ns.earned + 1 %}{% endif %}{% endfor %}{% endfor %}
+        {{ ns.earned }}/{{ ns.total }}
+      </span>
+    </h2>
+  </div>
+  <div class="overflow-x-auto relative z-10">
+    <table class="w-full text-left border-collapse">
+      <thead>
+      <tr class="bg-dark-card/50 border-b border-white/5 text-slate-400 text-xs font-bold uppercase tracking-widest">
+        <th class="py-3 px-4 sm:px-6 w-[140px]"></th>
+        <th class="py-3 px-4 sm:px-6">Category</th>
+        <th class="py-3 px-4 sm:px-6">Tiers</th>
+        <th class="py-3 px-4 sm:px-6 text-right">Count</th>
+      </tr>
+      </thead>
+      <tbody class="divide-y divide-white/5">
+      {% for achievement in achievements %}
+        <tr class="hover:bg-slate-800/30 transition-colors">
+          <td class="py-3 px-4 sm:px-6">
+            {% if achievement.highest_tier %}
+            <img src="/htdocs/img/achievements/{{ achievement.id }}.png"
+                 alt="" class="h-12 w-[120px] object-cover rounded-lg">
+            {% endif %}
+          </td>
+          <td class="py-4 px-4 sm:px-6">
+            <div class="font-medium text-slate-300 text-sm whitespace-nowrap">{{ achievement.name }}</div>
+          </td>
+          <td class="py-4 px-4 sm:px-6">
+            <div class="flex flex-wrap gap-2">
+              {% for tier in achievement.tiers %}
+              <span class="inline-flex items-center px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap
+                           {% if tier.earned %}
+                             bg-brand-500/20 text-brand-400 border border-brand-500/30
+                           {% else %}
+                             bg-slate-800/50 text-slate-600 border border-white/5
+                           {% endif %}">
+                {% if tier.earned %}✓{% endif %} {{ tier.tier_name }}
+                <span class="ml-1 text-[10px] {% if tier.earned %}text-brand-500/60{% else %}text-slate-700{% endif %}">{{ tier.threshold }}</span>
+              </span>
+              {% endfor %}
+            </div>
+          </td>
+          <td class="py-4 px-4 sm:px-6 text-right">
+            <span class="font-mono text-sm {% if achievement.highest_tier %}text-white{% else %}text-slate-500{% endif %}">{{ achievement.current }}</span>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
     </table>
   </div>
 </div>

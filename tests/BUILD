@@ -85,13 +85,50 @@ py_test(
     ],
 )
 
+py_test(
+    name = "test_state_parser",
+    srcs = ["test_state_parser.py"],
+    deps = [
+        "//truescrub:models",
+        "//truescrub/updater",
+        requirement("pytest"),
+    ],
+)
+
+py_test(
+    name = "test_recalculate",
+    srcs = ["test_recalculate.py"],
+    deps = [
+        "//truescrub:models",
+        "//truescrub/updater",
+        requirement("pytest"),
+        requirement("trueskill"),
+    ],
+)
+
+py_test(
+    name = "test_api",
+    srcs = ["test_api.py"],
+    deps = [
+        ":db_test_utils",
+        "//truescrub:api",
+        "//truescrub:db",
+        "//truescrub:models",
+        requirement("Flask"),
+        requirement("pytest"),
+    ],
+)
+
 test_suite(
     name = "tests",
     tests = [
         "test_accolades",
+        "test_api",
         "test_highlights",
         "test_matchmaking",
         "test_models",
+        "test_recalculate",
+        "test_state_parser",
         "test_state_serialization",
     ],
 )

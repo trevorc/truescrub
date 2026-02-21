@@ -42,14 +42,10 @@ def replace_teams(skill_db, round_teams):
     cursor.execute('INSERT INTO teams DEFAULT VALUES')
     team_id = cursor.lastrowid
 
-    placeholders = str.join(',', ['(?, ?)'] * len(team))
-    params = [param
-              for player_id in team
-              for param in (team_id, player_id)]
-    cursor.execute('''
+    cursor.executemany('''
         INSERT INTO team_membership (team_id, player_id)
-        VALUES {}
-        '''.format(placeholders), params)
+        VALUES (?, ?)
+        ''', [(team_id, player_id) for player_id in team])
     memberships[team] = team_id
 
   return memberships
