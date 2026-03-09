@@ -1,6 +1,5 @@
 import abc
 import argparse
-import atexit
 import concurrent.futures
 import importlib.resources
 import logging
@@ -11,16 +10,14 @@ from concurrent.futures import Future
 from typing import Dict, List, Callable, Tuple
 
 import flask
-import mimetypes
-import waitress.server
-
 import truescrub
+import waitress.server
 from truescrub import db
 from truescrub.api import app
 from truescrub.envconfig import LOG_LEVEL
 from truescrub.queue_consumer import QueueConsumer
-from truescrub.statewriter import GameStateWriter
-from truescrub.statewriter.state_writer import RiegeliGameStateWriter
+from truescrub.statewriter.state_writer import GameStateWriter, \
+  RiegeliGameStateWriter
 from truescrub.updater import Updater
 from truescrub.updater.recalculate import load_seasons
 from truescrub.updater.state_loader import (

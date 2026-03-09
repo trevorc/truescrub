@@ -180,7 +180,7 @@ def parse_roundover_transition(
     season_starts = [datetime.datetime.combine(
         start_date, datetime.time.min, tzinfo=datetime.timezone.utc)
                       for start_date in season_ids]
-    season_index = bisect.bisect_left(season_starts, created_at) - 1
+    season_index = max(0, bisect.bisect_right(season_starts, created_at) - 1)
     season_id = season_ids[season_starts[season_index].date()]
 
     round_stats = parse_round_stats(allplayers)

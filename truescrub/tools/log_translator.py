@@ -4,6 +4,7 @@ import json
 import logging
 import pathlib
 import sqlite3
+
 from google.protobuf.timestamp_pb2 import Timestamp
 from tqdm import tqdm
 from truescrub.proto.game_state_pb2 import GameStateEntry
@@ -38,10 +39,9 @@ def iter_entries_from_db(connection) -> 'Iterator[GameStateEntry]':
       game_state=gs_proto)
 
 
-def db_to_riegeli(db_path: pathlib.Path, riegeli_path: pathlib.Path):
-  if riegeli_path.exists():
-    riegeli_path.unlink()
-  log = GameStateLog(riegeli_path)
+def db_to_riegeli(db_path: pathlib.Path, riegeli_dir: pathlib.Path):
+  from truescrub.envconfig import SEGMENT_MAX_BYTES
+  log = GameStateLog(riegeli_dir, max_bytes=SEGMENT_MAX_BYTES)
 
   connection = sqlite3.connect(db_path)
   try:
@@ -63,15 +63,17 @@ def insert_historical_game_state(game_db: sqlite3.Connection,
   )
 
 
-def riegeli_to_db(riegeli_path: pathlib.Path, db_path: pathlib.Path):
+def riegeli_to_db(riegeli_dir: pathlib.Path, db_path: pathlib.Path):
   if db_path.exists():
     db_path.unlink()
-  log = GameStateLog(riegeli_path)
+
+  from truescrub.envconfig import SEGMENT_MAX_BYTES
+  log = GameStateLog(riegeli_dir, max_bytes=SEGMENT_MAX_BYTES)
   connection = sqlite3.connect(db_path)
   try:
     initialize_game_db(connection)
 
-    with log.reader(0.0) as reader:
+    with log.reader() as reader:
       for entry in tqdm(reader, desc="Translating to SQLite"):
         created_at = entry.created_at.ToDatetime().replace(
           tzinfo=datetime.timezone.utc)
@@ -87,22 +89,25 @@ def make_arg_parser():
   arg_parser = argparse.ArgumentParser(
     description="Translate between SQLite and Riegeli game state logs.")
   arg_parser.add_argument('-i', '--input', type=pathlib.Path, required=True,
-                          help='Input file (.db or .riegeli)')
+                          help='Input path (.db file or riegeli directory)')
   arg_parser.add_argument('-o', '--output', type=pathlib.Path, required=True,
-                          help='Output file (.db or .riegeli)')
+                          help='Output path (.db file or riegeli directory)')
   return arg_parser
 
 
 def main():
   opts = make_arg_parser().parse_args()
 
-  if opts.input.suffix == '.db' and opts.output.suffix == '.riegeli':
+  is_db_to_log = opts.input.suffix == '.db'
+  out_is_db = opts.output.suffix == '.db'
+
+  if is_db_to_log and not out_is_db:
     db_to_riegeli(opts.input, opts.output)
-  elif opts.input.suffix == '.riegeli' and opts.output.suffix == '.db':
+  elif not is_db_to_log and out_is_db:
     riegeli_to_db(opts.input, opts.output)
   else:
     raise ValueError(
-      f"Unsupported translation direction: {opts.input.suffix} to {opts.output.suffix}. Expected .db to .riegeli or .riegeli to .db")
+      "Unsupported translation direction. Expected .db file to directory or directory to .db file")
 
 
 if __name__ == '__main__':

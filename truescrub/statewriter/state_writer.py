@@ -12,7 +12,7 @@ from truescrub.statewriter.game_state_log import GameStateLog, \
   NoSuchRecordException
 from truescrub.statewriter.state_parsing import parse_game_state
 
-LOG_FILE_NAME = 'game_states.riegeli'
+LOG_DIR_NAME = 'game_states'
 logger = logging.getLogger(__name__)
 
 
@@ -43,15 +43,11 @@ class RiegeliGameStateWriter(QueueConsumer):
 
   @classmethod
   def from_env(cls, updater) -> QueueConsumer:
-    log_path = DATA_DIR.joinpath(LOG_FILE_NAME)
+    log_path = DATA_DIR.joinpath(LOG_DIR_NAME)
     return cls(GameStateLog(log_path), updater)
 
   def _get_last_entry_id(self):
-    try:
-      reader = self.log.reader(timeout=0)
-    except FileNotFoundError:
-      return 0
-    with reader:
+    with self.log.reader() as reader:
       try:
         return reader.fetch_last().game_state_id
       except NoSuchRecordException:

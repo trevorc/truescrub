@@ -6,21 +6,19 @@ import sys
 from google.protobuf import text_format
 from truescrub.proto.game_state_pb2 import GameStateEntry
 
-import riegeli
-from truescrub.statewriter.game_state_log import StateLogWriter, \
-  ReaderWriterLock
+from truescrub.statewriter.game_state_log import GameStateLog
 
 
 def make_arg_parser():
   arg_parser = argparse.ArgumentParser()
   arg_parser.add_argument('input_log', type=pathlib.Path,
-                          help='path to corrupted riegeli game state log file')
+                          help='path to corrupted riegeli game state directory or file')
   arg_parser.add_argument('--output', type=pathlib.Path, required=True,
-                          help='path to write recovered records')
+                          help='path to write recovered records directory')
   arg_parser.add_argument('--verbose', action='store_true',
                           help='print verbose output')
   arg_parser.add_argument('--fix-dangerously', action='store_true',
-                          help='attempt to fix block header hash mismatches by rewriting the file')
+                          help='attempt to fix block header hash mismatches by rewriting the file(s)')
   return arg_parser
 
 
@@ -35,21 +33,32 @@ def run_recovery(opts):
     error_count += 1
     return True
 
-  with riegeli.RecordReader(open(opts.input_log, 'rb'),
-                            recovery=recovery_callback) as reader, \
-      StateLogWriter.create(open(opts.output, 'wb'), ReaderWriterLock(),
-                            timeout=None) as writer:
-    while True:
-      try:
-        record = reader.read_message(GameStateEntry)
-        if record is None:
-          break
-        writer.append(record)
-        recovered_count += 1
-      except Exception as e:
-        print(f"Unexpected error: {e}", file=sys.stderr)
-        error_count += 1
-        break
+  if opts.input_log.is_file():
+    inputs = [opts.input_log]
+  else:
+    from truescrub.statewriter.game_state_log import list_segments
+    inputs = [seg.path for seg in list_segments(opts.input_log)]
+
+  from truescrub.envconfig import SEGMENT_MAX_BYTES
+  output_log = GameStateLog(opts.output, max_bytes=SEGMENT_MAX_BYTES)
+
+  with output_log.writer(timeout=0) as writer:
+    for input_file in inputs:
+      if opts.verbose:
+        print(f"Recovering from {input_file}", file=sys.stderr)
+
+      with riegeli.RecordReader(open(input_file, 'rb'), recovery=recovery_callback) as reader:
+        while True:
+          try:
+            record = reader.read_message(GameStateEntry)
+            if record is None:
+              break
+            writer.append(record)
+            recovered_count += 1
+          except Exception as e:
+            print(f"Unexpected error in {input_file}: {e}", file=sys.stderr)
+            error_count += 1
+            break
 
   print(f"Recovery complete.")
   print(f"Recovered {recovered_count} records.")
@@ -57,14 +66,20 @@ def run_recovery(opts):
 
 
 def run_repair(opts):
-  print("Starting repair pass...", file=sys.stderr)
   repair_count = 0
-  current_offset = 0
-  file_size = opts.input_log.stat().st_size
+  if opts.input_log.is_file():
+    inputs = [opts.input_log]
+  else:
+    from truescrub.statewriter.game_state_log import list_segments
+    inputs = [seg.path for seg in list_segments(opts.input_log)]
 
-  while current_offset < file_size:
-    restart_needed = False
-    next_offset = current_offset
+  for input_file in inputs:
+    current_offset = 0
+    file_size = input_file.stat().st_size
+
+    while current_offset < file_size:
+      restart_needed = False
+      next_offset = current_offset
 
     def repair_callback(skipped_region):
       nonlocal repair_count
@@ -88,7 +103,7 @@ def run_repair(opts):
           f"Attempting fix at offset {block_offset} with hash {computed_hex}...",
           file=sys.stderr)
         try:
-          with open(opts.input_log, 'r+b') as f:
+          with open(input_file, 'r+b') as f:
             f.seek(block_offset)
             f.write(struct.pack('<Q', computed_val))
           print("Fix applied successfully.", file=sys.stderr)
@@ -97,16 +112,15 @@ def run_repair(opts):
           next_offset = block_offset
           return False  # Stop reading to restart at this block
         except Exception as e:
-          print(f"Failed to fix file: {e}", file=sys.stderr)
+          print(f"Failed to fix file {input_file}: {e}", file=sys.stderr)
 
       # Always continue scanning
       return True
 
-    if opts.verbose:
-      print(f"Scanning from offset {current_offset}...", file=sys.stderr)
+      print(f"Scanning {input_file} from offset {current_offset}...", file=sys.stderr)
 
     # Open file and seek to current_offset
-    f = open(opts.input_log, 'rb')
+    f = open(input_file, 'rb')
     f.seek(current_offset)
 
     try:

@@ -11,7 +11,7 @@ from truescrub.seasoncfg import get_seasons_by_start_date
 from truescrub.statewriter import GameStateLog
 from truescrub.statewriter.state_serialization import (
   ROUND_PHASES, TEAMS, MAP_PHASES, serialize_allplayers_entry)
-from truescrub.statewriter.state_writer import LOG_FILE_NAME
+from truescrub.statewriter.state_writer import LOG_DIR_NAME
 from truescrub.updater.state_parser import parse_game_states, RoundsAndPlayers
 
 
@@ -69,7 +69,7 @@ class RiegeliStateLoader(StateLoader):
 
   @classmethod
   def from_env(cls) -> StateLoader:
-    log_path = DATA_DIR.joinpath(LOG_FILE_NAME)
+    log_path = DATA_DIR.joinpath(LOG_DIR_NAME)
     return cls(GameStateLog(log_path))
 
   def __enter__(self):

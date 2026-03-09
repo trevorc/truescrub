@@ -123,10 +123,8 @@ class TestBackendParity:
       riegeli_max_id, riegeli_rounds = compute_rounds_and_players(
         riegeli_loader, skill_db)
 
-    if riegeli_rounds is not None:
-      riegeli_round_count = riegeli_rounds[1] - riegeli_rounds[0] + 1
-    else:
-      riegeli_round_count = 0
+    assert riegeli_rounds is not None, "Expected riegeli_rounds to not be None, failing test"
+    riegeli_round_count = riegeli_rounds[1] - riegeli_rounds[0] + 1
 
     assert riegeli_round_count == sqlite_round_count, (
       f'Riegeli produced {riegeli_round_count} rounds, '
@@ -467,8 +465,23 @@ class TestSurgeryFilter:
       tmp_path / 'source.riegeli', tmp_path / 'output.riegeli')
     purge_rounds_with_player(backend, player_id=99999)
 
-    # Output log should not be created (or be empty) since no states were found
-    assert not (tmp_path / 'output.riegeli').exists()
+    output_dir = tmp_path / 'output.riegeli'
+    assert not list(output_dir.glob('*.riegeli'))
+
+
+class TestRiegeliStateLoaderInit:
+  """Unit tests for RiegeliStateLoader construction helpers."""
+
+  def test_from_env_constructs_correct_path(self, tmp_path, monkeypatch):
+    """from_env() should combine DATA_DIR and LOG_DIR_NAME into the log path."""
+    import truescrub.updater.state_loader as state_loader_module
+    from truescrub.statewriter.state_writer import LOG_DIR_NAME
+
+    monkeypatch.setattr(state_loader_module, 'DATA_DIR', tmp_path)
+
+    loader = RiegeliStateLoader.from_env()
+    expected = tmp_path / LOG_DIR_NAME
+    assert loader.log.log_dir == expected
 
 
 if __name__ == '__main__':

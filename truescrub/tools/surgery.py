@@ -9,6 +9,11 @@ import pathlib
 import sys
 from typing import Tuple
 
+from truescrub.db import execute
+from truescrub.db import execute_one
+from truescrub.envconfig import SEGMENT_MAX_BYTES
+from truescrub.statewriter.game_state_log import GameStateLog
+
 logger = logging.getLogger(__name__)
 
 
@@ -78,54 +83,54 @@ class SqliteBackend(SurgeryBackend):
 
   def get_impacted_stats(self, player_id: int) -> ImpactedGameStateStats:
     return _sqlite_stats(self.game_db,
-      f"json_type(game_state, '$.allplayers.{player_id}') IS NOT NULL")
+                         f"json_type(game_state, '$.allplayers.{player_id}') IS NOT NULL")
 
   def get_expanded_range(
       self, stats: ImpactedGameStateStats) -> Tuple[int, int]:
-    from truescrub.db import execute_one
     round_start_id, _ = execute_one(self.game_db, '''
-    SELECT game_state_id
-         , json_extract(game_state, '$.round.phase')
-    FROM game_state
-    WHERE game_state_id =
-          ( SELECT MAX(g2.game_state_id)
-            FROM game_state g2
-            WHERE g2.game_state_id < ?
-                    AND json_extract(g2.game_state,
-                                     '$.previously.round.phase') = 'over'
-          );
-    ''', [stats.min_id])
+                                                  SELECT game_state_id
+                                                       , json_extract(game_state, '$.round.phase')
+                                                  FROM game_state
+                                                  WHERE game_state_id =
+                                                        (SELECT MAX(g2.game_state_id)
+                                                         FROM game_state g2
+                                                         WHERE g2.game_state_id < ? AND
+                                                               json_extract(
+                                                                       g2.game_state,
+                                                                       '$.previously.round.phase') =
+                                                               'over');
+                                                  ''', [stats.min_id])
     round_end_id, _ = execute_one(self.game_db, '''
-    SELECT game_state_id
-         , json_extract(game_state, '$.round.phase')
-    FROM game_state
-    WHERE game_state_id =
-          ( SELECT MIN(g2.game_state_id)
-            FROM game_state g2
-            WHERE g2.game_state_id > ?
-                    AND json_extract(g2.game_state,
-                                     '$.previously.round.phase') = 'over'
-          );
-    ''', [stats.max_id])
+                                                SELECT game_state_id
+                                                     , json_extract(game_state, '$.round.phase')
+                                                FROM game_state
+                                                WHERE game_state_id =
+                                                      (SELECT MIN(g2.game_state_id)
+                                                       FROM game_state g2
+                                                       WHERE g2.game_state_id > ? AND
+                                                             json_extract(
+                                                                     g2.game_state,
+                                                                     '$.previously.round.phase') =
+                                                             'over');
+                                                ''', [stats.max_id])
     logger.info('Calculated range: %d - %d', round_start_id, round_end_id)
     return round_start_id, round_end_id
 
   def get_range_stats(
       self, start_id: int, end_id: int) -> ImpactedGameStateStats:
     return _sqlite_stats(self.game_db,
-      f'game_state_id BETWEEN {start_id} AND {end_id}')
+                         f'game_state_id BETWEEN {start_id} AND {end_id}')
 
   def execute(self, start_id: int, end_id: int):
-    from truescrub.db import execute
     execute(self.game_db, '''
-    DELETE FROM game_state
-    WHERE game_state_id BETWEEN ? AND ?
-    ''', (start_id, end_id))
+                          DELETE
+                          FROM game_state
+                          WHERE game_state_id BETWEEN ? AND ?
+                          ''', (start_id, end_id))
     logger.debug('Deleted game states from %d to %d', start_id, end_id)
 
 
 def _sqlite_stats(game_db, condition: str) -> ImpactedGameStateStats:
-  from truescrub.db import execute
   stats = ImpactedGameStateStats()
   for game_state_id, map_name, round_phase, previous_phase \
       in execute(game_db, f'''
@@ -152,10 +157,9 @@ def _sqlite_stats(game_db, condition: str) -> ImpactedGameStateStats:
 class RiegeliBackend(SurgeryBackend):
   def __init__(self, source_path: pathlib.Path,
                output_path: pathlib.Path):
-    from truescrub.statewriter.game_state_log import GameStateLog
-    self.source_log = GameStateLog(source_path)
+    self.source_log = GameStateLog(source_path, max_bytes=SEGMENT_MAX_BYTES)
     self.output_path = output_path
-    self.output_log = GameStateLog(output_path)
+    self.output_log = GameStateLog(output_path, max_bytes=SEGMENT_MAX_BYTES)
 
   def get_impacted_stats(self, player_id: int) -> ImpactedGameStateStats:
     stats = ImpactedGameStateStats()
@@ -249,11 +253,11 @@ def make_arg_parser():
                              help='SteamID of the player to purge')
 
   riegeli_parser = subparsers.add_parser(
-    'riegeli', help='Filter a Riegeli game state log')
+    'riegeli', help='Filter a Riegeli game state log directory')
   riegeli_parser.add_argument('source_log', type=pathlib.Path,
-                              help='Source Riegeli log file path')
+                              help='Source Riegeli log directory path')
   riegeli_parser.add_argument('output_log', type=pathlib.Path,
-                              help='Output Riegeli log file path')
+                              help='Output Riegeli log directory path')
   riegeli_parser.add_argument('--player_id', type=int, required=True,
                               help='SteamID of the player to filter by')
 
@@ -284,11 +288,12 @@ def main():
 
   elif opts.backend == 'riegeli':
     if not opts.source_log.exists():
-      logger.error('Source log file not found: %s', opts.source_log)
+      logger.error('Source log directory not found: %s', opts.source_log)
       return
     if opts.output_log.exists():
-      logger.warning('Output log file %s exists and will be overwritten.',
-                     opts.output_log)
+      logger.warning(
+        'Output log directory %s exists and files may be overwritten.',
+        opts.output_log)
     backend = RiegeliBackend(opts.source_log, opts.output_log)
     purge_rounds_with_player(backend, opts.player_id)
 

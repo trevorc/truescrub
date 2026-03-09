@@ -1,0 +1,5957 @@
+[
+  {
+    "provider": {
+      "name": "Counter-Strike: Global Offensive",
+      "appid": 730,
+      "version": 13800,
+      "steamid": "70000000000000007",
+      "timestamp": 1629338402
+    },
+    "map": {
+      "mode": "scrimcomp2v2",
+      "name": "de_safehouse",
+      "phase": "intermission",
+      "round": 20,
+      "team_ct": {
+        "score": 9,
+        "name": "Negevs Only",
+        "flag": "US",
+        "consecutive_round_losses": 0,
+        "timeouts_remaining": 1,
+        "matches_won_this_series": 0
+      },
+      "team_t": {
+        "score": 10,
+        "name": "Three Guys One Glock",
+        "flag": "US",
+        "consecutive_round_losses": 4,
+        "timeouts_remaining": 1,
+        "matches_won_this_series": 2
+      }
+    },
+    "round": {
+      "phase": "over",
+      "win_team": "CT",
+      "bomb": "defused"
+    },
+    "allplayers": {
+      "70000000000000001": {
+        "name": "Alpha",
+        "observer_slot": 4,
+        "team": "CT",
+        "match_stats": {
+          "kills": 16,
+          "assists": 3,
+          "deaths": 12,
+          "mvps": 5,
+          "score": 44
+        },
+        "state": {
+          "health": 100,
+          "armor": 100,
+          "helmet": true,
+          "flashed": 0,
+          "burning": 0,
+          "money": 3800,
+          "round_kills": 1,
+          "round_killhs": 0,
+          "round_totaldmg": 61,
+          "equip_value": 7250
+        },
+        "weapons": {
+          "weapon_0": {
+            "name": "weapon_knife_tactical",
+            "type": "Knife",
+            "state": "holstered"
+          },
+          "weapon_1": {
+            "name": "weapon_usp_silencer",
+            "type": "Pistol",
+            "ammo_clip": 12,
+            "ammo_clip_max": 12,
+            "ammo_reserve": 24,
+            "state": "holstered"
+          },
+          "weapon_2": {
+            "name": "weapon_awp",
+            "type": "SniperRifle",
+            "ammo_clip": 9,
+            "ammo_clip_max": 10,
+            "ammo_reserve": 30,
+            "state": "active"
+          },
+          "weapon_3": {
+            "name": "weapon_incgrenade",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          },
+          "weapon_4": {
+            "name": "weapon_smokegrenade",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          }
+        }
+      },
+      "70000000000000003": {
+        "name": "Bravo",
+        "observer_slot": 5,
+        "team": "CT",
+        "match_stats": {
+          "kills": 18,
+          "assists": 2,
+          "deaths": 14,
+          "mvps": 4,
+          "score": 38
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 10800,
+          "round_kills": 1,
+          "round_killhs": 0,
+          "round_totaldmg": 198,
+          "equip_value": 4950
+        },
+        "weapons": {}
+      },
+      "70000000000000004": {
+        "name": "Charlie",
+        "observer_slot": 1,
+        "team": "T",
+        "match_stats": {
+          "kills": 16,
+          "assists": 2,
+          "deaths": 13,
+          "mvps": 3,
+          "score": 44
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 3750,
+          "round_kills": 0,
+          "round_killhs": 0,
+          "round_totaldmg": 61,
+          "equip_value": 5100
+        },
+        "weapons": {}
+      },
+      "70000000000000006": {
+        "name": "Delta",
+        "observer_slot": 2,
+        "team": "T",
+        "match_stats": {
+          "kills": 13,
+          "assists": 0,
+          "deaths": 13,
+          "mvps": 3,
+          "score": 29
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 4200,
+          "round_kills": 1,
+          "round_killhs": 0,
+          "round_totaldmg": 39,
+          "equip_value": 4900
+        },
+        "weapons": {}
+      },
+      "70000000000000002": {
+        "name": "Echo",
+        "observer_slot": 3,
+        "team": "T",
+        "match_stats": {
+          "kills": 10,
+          "assists": 7,
+          "deaths": 15,
+          "mvps": 4,
+          "score": 35
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 5250,
+          "round_kills": 1,
+          "round_killhs": 0,
+          "round_totaldmg": 100,
+          "equip_value": 5000
+        },
+        "weapons": {}
+      },
+      "70000000000000005": {
+        "name": "Foxtrot",
+        "observer_slot": 6,
+        "team": "CT",
+        "match_stats": {
+          "kills": 7,
+          "assists": 1,
+          "deaths": 13,
+          "mvps": 1,
+          "score": 19
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 10100,
+          "round_kills": 1,
+          "round_killhs": 0,
+          "round_totaldmg": 41,
+          "equip_value": 5900
+        },
+        "weapons": {}
+      }
+    },
+    "previously": {
+      "round": {
+        "phase": "live",
+        "bomb": "planted"
+      },
+      "allplayers": {
+        "70000000000000001": {
+          "match_stats": {
+            "mvps": 4,
+            "score": 42
+          },
+          "state": {
+            "money": 250
+          }
+        },
+        "70000000000000003": {
+          "state": {
+            "money": 7550
+          }
+        },
+        "70000000000000004": {
+          "state": {
+            "money": 50
+          }
+        },
+        "70000000000000006": {
+          "state": {
+            "money": 500
+          }
+        },
+        "70000000000000002": {
+          "state": {
+            "money": 1550
+          }
+        },
+        "70000000000000005": {
+          "state": {
+            "money": 6850
+          }
+        }
+      }
+    }
+  },
+  {
+    "provider": {
+      "name": "Counter-Strike: Global Offensive",
+      "appid": 730,
+      "version": 13800,
+      "steamid": "70000000000000007",
+      "timestamp": 1629338446
+    },
+    "map": {
+      "mode": "scrimcomp2v2",
+      "name": "de_safehouse",
+      "phase": "live",
+      "round": 21,
+      "team_ct": {
+        "score": 10,
+        "name": "Negevs Only",
+        "flag": "US",
+        "consecutive_round_losses": 2,
+        "timeouts_remaining": 1,
+        "matches_won_this_series": 0
+      },
+      "team_t": {
+        "score": 11,
+        "name": "Three Guys One Glock",
+        "flag": "US",
+        "consecutive_round_losses": 0,
+        "timeouts_remaining": 1,
+        "matches_won_this_series": 2
+      }
+    },
+    "round": {
+      "phase": "over",
+      "win_team": "T"
+    },
+    "allplayers": {
+      "70000000000000001": {
+        "name": "Alpha",
+        "observer_slot": 4,
+        "team": "CT",
+        "match_stats": {
+          "kills": 16,
+          "assists": 4,
+          "deaths": 13,
+          "mvps": 5,
+          "score": 45
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 7600,
+          "round_kills": 0,
+          "round_killhs": 0,
+          "round_totaldmg": 94,
+          "equip_value": 4700
+        },
+        "weapons": {}
+      },
+      "70000000000000003": {
+        "name": "Bravo",
+        "observer_slot": 5,
+        "team": "CT",
+        "match_stats": {
+          "kills": 20,
+          "assists": 2,
+          "deaths": 15,
+          "mvps": 4,
+          "score": 42
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 7550,
+          "round_kills": 2,
+          "round_killhs": 1,
+          "round_totaldmg": 196,
+          "equip_value": 5350
+        },
+        "weapons": {}
+      },
+      "70000000000000004": {
+        "name": "Charlie",
+        "observer_slot": 1,
+        "team": "T",
+        "match_stats": {
+          "kills": 16,
+          "assists": 2,
+          "deaths": 14,
+          "mvps": 3,
+          "score": 44
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 8700,
+          "round_kills": 0,
+          "round_killhs": 0,
+          "round_totaldmg": 0,
+          "equip_value": 4500
+        },
+        "weapons": {}
+      },
+      "70000000000000006": {
+        "name": "Delta",
+        "observer_slot": 2,
+        "team": "T",
+        "match_stats": {
+          "kills": 14,
+          "assists": 0,
+          "deaths": 14,
+          "mvps": 3,
+          "score": 33
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 9300,
+          "round_kills": 1,
+          "round_killhs": 0,
+          "round_totaldmg": 53,
+          "equip_value": 4500
+        },
+        "weapons": {}
+      },
+      "70000000000000002": {
+        "name": "Echo",
+        "observer_slot": 3,
+        "team": "T",
+        "match_stats": {
+          "kills": 12,
+          "assists": 7,
+          "deaths": 15,
+          "mvps": 5,
+          "score": 40
+        },
+        "state": {
+          "health": 10,
+          "armor": 77,
+          "helmet": true,
+          "flashed": 0,
+          "burning": 0,
+          "money": 9600,
+          "round_kills": 2,
+          "round_killhs": 1,
+          "round_totaldmg": 151,
+          "equip_value": 4500
+        },
+        "weapons": {
+          "weapon_0": {
+            "name": "weapon_knife_t",
+            "type": "Knife",
+            "state": "holstered"
+          },
+          "weapon_1": {
+            "name": "weapon_glock",
+            "type": "Pistol",
+            "ammo_clip": 20,
+            "ammo_clip_max": 20,
+            "ammo_reserve": 120,
+            "state": "holstered"
+          },
+          "weapon_2": {
+            "name": "weapon_ak47",
+            "type": "Rifle",
+            "ammo_clip": 9,
+            "ammo_clip_max": 30,
+            "ammo_reserve": 90,
+            "state": "active"
+          },
+          "weapon_3": {
+            "name": "weapon_smokegrenade",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          },
+          "weapon_4": {
+            "name": "weapon_hegrenade",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          }
+        }
+      },
+      "70000000000000005": {
+        "name": "Foxtrot",
+        "observer_slot": 6,
+        "team": "CT",
+        "match_stats": {
+          "kills": 7,
+          "assists": 1,
+          "deaths": 14,
+          "mvps": 1,
+          "score": 19
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 6900,
+          "round_kills": 0,
+          "round_killhs": 0,
+          "round_totaldmg": 0,
+          "equip_value": 5400
+        },
+        "weapons": {}
+      }
+    },
+    "previously": {
+      "round": {
+        "phase": "live",
+        "bomb": "planted"
+      },
+      "allplayers": {
+        "70000000000000001": {
+          "state": {
+            "money": 5500
+          }
+        },
+        "70000000000000003": {
+          "match_stats": {
+            "deaths": 14
+          },
+          "state": {
+            "health": 12,
+            "armor": 76,
+            "helmet": true,
+            "money": 5450
+          },
+          "weapons": {
+            "weapon_0": {
+              "name": "weapon_knife_gypsy_jackknife",
+              "type": "Knife",
+              "state": "holstered"
+            },
+            "weapon_1": {
+              "name": "weapon_usp_silencer",
+              "type": "Pistol",
+              "ammo_clip": 12,
+              "ammo_clip_max": 12,
+              "ammo_reserve": 24,
+              "state": "holstered"
+            },
+            "weapon_2": {
+              "name": "weapon_p90",
+              "type": "Submachine Gun",
+              "ammo_clip": 22,
+              "ammo_clip_max": 50,
+              "ammo_reserve": 79,
+              "state": "active"
+            },
+            "weapon_3": {
+              "name": "weapon_flashbang",
+              "type": "Grenade",
+              "ammo_reserve": 1,
+              "state": "holstered"
+            },
+            "weapon_4": {
+              "name": "weapon_smokegrenade",
+              "type": "Grenade",
+              "ammo_reserve": 1,
+              "state": "holstered"
+            },
+            "weapon_5": {
+              "name": "weapon_incgrenade",
+              "type": "Grenade",
+              "ammo_reserve": 1,
+              "state": "holstered"
+            }
+          }
+        },
+        "70000000000000004": {
+          "state": {
+            "money": 5700
+          }
+        },
+        "70000000000000006": {
+          "state": {
+            "money": 6300
+          }
+        },
+        "70000000000000002": {
+          "match_stats": {
+            "kills": 11,
+            "mvps": 4,
+            "score": 37
+          },
+          "state": {
+            "money": 6300,
+            "round_kills": 1,
+            "round_totaldmg": 139
+          },
+          "weapons": {
+            "weapon_2": {
+              "ammo_clip": 14
+            }
+          }
+        },
+        "70000000000000005": {
+          "state": {
+            "money": 4800
+          }
+        }
+      }
+    }
+  },
+  {
+    "provider": {
+      "name": "Counter-Strike: Global Offensive",
+      "appid": 730,
+      "version": 13800,
+      "steamid": "70000000000000007",
+      "timestamp": 1629338535
+    },
+    "map": {
+      "mode": "scrimcomp2v2",
+      "name": "de_safehouse",
+      "phase": "live",
+      "round": 22,
+      "team_ct": {
+        "score": 11,
+        "name": "Negevs Only",
+        "flag": "US",
+        "consecutive_round_losses": 0,
+        "timeouts_remaining": 1,
+        "matches_won_this_series": 0
+      },
+      "team_t": {
+        "score": 11,
+        "name": "Three Guys One Glock",
+        "flag": "US",
+        "consecutive_round_losses": 1,
+        "timeouts_remaining": 1,
+        "matches_won_this_series": 2
+      }
+    },
+    "round": {
+      "phase": "over",
+      "win_team": "CT"
+    },
+    "allplayers": {
+      "70000000000000001": {
+        "name": "Alpha",
+        "observer_slot": 4,
+        "team": "CT",
+        "match_stats": {
+          "kills": 17,
+          "assists": 4,
+          "deaths": 13,
+          "mvps": 5,
+          "score": 47
+        },
+        "state": {
+          "health": 100,
+          "armor": 100,
+          "helmet": true,
+          "flashed": 0,
+          "burning": 0,
+          "money": 4550,
+          "round_kills": 1,
+          "round_killhs": 0,
+          "round_totaldmg": 100,
+          "equip_value": 4600
+        },
+        "weapons": {
+          "weapon_0": {
+            "name": "weapon_knife_tactical",
+            "type": "Knife",
+            "state": "holstered"
+          },
+          "weapon_1": {
+            "name": "weapon_usp_silencer",
+            "type": "Pistol",
+            "ammo_clip": 12,
+            "ammo_clip_max": 12,
+            "ammo_reserve": 24,
+            "state": "holstered"
+          },
+          "weapon_2": {
+            "name": "weapon_ak47",
+            "type": "Rifle",
+            "ammo_clip": 30,
+            "ammo_clip_max": 30,
+            "ammo_reserve": 89,
+            "state": "active"
+          },
+          "weapon_3": {
+            "name": "weapon_smokegrenade",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          }
+        }
+      },
+      "70000000000000003": {
+        "name": "Bravo",
+        "observer_slot": 5,
+        "team": "CT",
+        "match_stats": {
+          "kills": 20,
+          "assists": 3,
+          "deaths": 16,
+          "mvps": 4,
+          "score": 43
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 6000,
+          "round_kills": 0,
+          "round_killhs": 0,
+          "round_totaldmg": 84,
+          "equip_value": 4750
+        },
+        "weapons": {}
+      },
+      "70000000000000004": {
+        "name": "Charlie",
+        "observer_slot": 1,
+        "team": "T",
+        "match_stats": {
+          "kills": 16,
+          "assists": 2,
+          "deaths": 15,
+          "mvps": 3,
+          "score": 44
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 5900,
+          "round_kills": 0,
+          "round_killhs": 0,
+          "round_totaldmg": 0,
+          "equip_value": 4700
+        },
+        "weapons": {}
+      },
+      "70000000000000006": {
+        "name": "Delta",
+        "observer_slot": 2,
+        "team": "T",
+        "match_stats": {
+          "kills": 14,
+          "assists": 0,
+          "deaths": 15,
+          "mvps": 3,
+          "score": 33
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 6700,
+          "round_kills": 0,
+          "round_killhs": 0,
+          "round_totaldmg": 41,
+          "equip_value": 4500
+        },
+        "weapons": {}
+      },
+      "70000000000000002": {
+        "name": "Echo",
+        "observer_slot": 3,
+        "team": "T",
+        "match_stats": {
+          "kills": 13,
+          "assists": 7,
+          "deaths": 16,
+          "mvps": 5,
+          "score": 42
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 10750,
+          "round_kills": 1,
+          "round_killhs": 1,
+          "round_totaldmg": 100,
+          "equip_value": 4700
+        },
+        "weapons": {}
+      },
+      "70000000000000005": {
+        "name": "Foxtrot",
+        "observer_slot": 6,
+        "team": "CT",
+        "match_stats": {
+          "kills": 9,
+          "assists": 1,
+          "deaths": 14,
+          "mvps": 2,
+          "score": 23
+        },
+        "state": {
+          "health": 59,
+          "armor": 93,
+          "helmet": true,
+          "flashed": 0,
+          "burning": 0,
+          "money": 5000,
+          "round_kills": 2,
+          "round_killhs": 1,
+          "round_totaldmg": 101,
+          "equip_value": 5700
+        },
+        "weapons": {
+          "weapon_0": {
+            "name": "weapon_knife",
+            "type": "Knife",
+            "state": "holstered"
+          },
+          "weapon_1": {
+            "name": "weapon_hkp2000",
+            "type": "Pistol",
+            "ammo_clip": 13,
+            "ammo_clip_max": 13,
+            "ammo_reserve": 52,
+            "state": "holstered"
+          },
+          "weapon_2": {
+            "name": "weapon_aug",
+            "type": "Rifle",
+            "ammo_clip": 30,
+            "ammo_clip_max": 30,
+            "ammo_reserve": 60,
+            "state": "active"
+          },
+          "weapon_3": {
+            "name": "weapon_smokegrenade",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          },
+          "weapon_4": {
+            "name": "weapon_flashbang",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          }
+        }
+      }
+    },
+    "previously": {
+      "round": {
+        "phase": "live"
+      },
+      "allplayers": {
+        "70000000000000001": {
+          "state": {
+            "money": 1550
+          },
+          "weapons": {
+            "weapon_2": {
+              "ammo_clip": 29,
+              "ammo_reserve": 90
+            }
+          }
+        },
+        "70000000000000003": {
+          "state": {
+            "money": 3000
+          }
+        },
+        "70000000000000004": {
+          "state": {
+            "money": 4200
+          }
+        },
+        "70000000000000006": {
+          "match_stats": {
+            "deaths": 14
+          },
+          "state": {
+            "health": 65,
+            "armor": 93,
+            "helmet": true,
+            "money": 5000,
+            "round_totaldmg": 0
+          },
+          "weapons": {
+            "weapon_0": {
+              "name": "weapon_knife_t",
+              "type": "Knife",
+              "state": "holstered"
+            },
+            "weapon_1": {
+              "name": "weapon_glock",
+              "type": "Pistol",
+              "ammo_clip": 20,
+              "ammo_clip_max": 20,
+              "ammo_reserve": 120,
+              "state": "holstered"
+            },
+            "weapon_2": {
+              "name": "weapon_ak47",
+              "type": "Rifle",
+              "ammo_clip": 30,
+              "ammo_clip_max": 30,
+              "ammo_reserve": 63,
+              "state": "active"
+            },
+            "weapon_3": {
+              "name": "weapon_hegrenade",
+              "type": "Grenade",
+              "ammo_reserve": 1,
+              "state": "holstered"
+            }
+          }
+        },
+        "70000000000000002": {
+          "state": {
+            "money": 9050
+          }
+        },
+        "70000000000000005": {
+          "match_stats": {
+            "kills": 8,
+            "mvps": 1,
+            "score": 21
+          },
+          "state": {
+            "health": 100,
+            "armor": 100,
+            "money": 1700,
+            "round_kills": 1,
+            "round_totaldmg": 36
+          },
+          "weapons": {
+            "weapon_2": {
+              "ammo_clip": 10,
+              "ammo_reserve": 90
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "provider": {
+      "name": "Counter-Strike: Global Offensive",
+      "appid": 730,
+      "version": 13800,
+      "steamid": "70000000000000007",
+      "timestamp": 1629338575
+    },
+    "map": {
+      "mode": "scrimcomp2v2",
+      "name": "de_safehouse",
+      "phase": "intermission",
+      "round": 23,
+      "team_ct": {
+        "score": 11,
+        "name": "Negevs Only",
+        "flag": "US",
+        "consecutive_round_losses": 1,
+        "timeouts_remaining": 1,
+        "matches_won_this_series": 0
+      },
+      "team_t": {
+        "score": 12,
+        "name": "Three Guys One Glock",
+        "flag": "US",
+        "consecutive_round_losses": 0,
+        "timeouts_remaining": 1,
+        "matches_won_this_series": 2
+      }
+    },
+    "round": {
+      "phase": "over",
+      "win_team": "T"
+    },
+    "allplayers": {
+      "70000000000000001": {
+        "name": "Alpha",
+        "observer_slot": 4,
+        "team": "CT",
+        "match_stats": {
+          "kills": 18,
+          "assists": 4,
+          "deaths": 14,
+          "mvps": 5,
+          "score": 49
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 6550,
+          "round_kills": 1,
+          "round_killhs": 1,
+          "round_totaldmg": 178,
+          "equip_value": 4600
+        },
+        "weapons": {}
+      },
+      "70000000000000003": {
+        "name": "Bravo",
+        "observer_slot": 5,
+        "team": "CT",
+        "match_stats": {
+          "kills": 20,
+          "assists": 3,
+          "deaths": 17,
+          "mvps": 4,
+          "score": 43
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 2550,
+          "round_kills": 0,
+          "round_killhs": 0,
+          "round_totaldmg": 68,
+          "equip_value": 5350
+        },
+        "weapons": {}
+      },
+      "70000000000000004": {
+        "name": "Charlie",
+        "observer_slot": 1,
+        "team": "T",
+        "match_stats": {
+          "kills": 19,
+          "assists": 2,
+          "deaths": 15,
+          "mvps": 4,
+          "score": 55
+        },
+        "state": {
+          "health": 32,
+          "armor": 84,
+          "helmet": true,
+          "flashed": 0,
+          "burning": 0,
+          "money": 5800,
+          "round_kills": 3,
+          "round_killhs": 2,
+          "round_totaldmg": 300,
+          "equip_value": 4800
+        },
+        "weapons": {
+          "weapon_0": {
+            "name": "weapon_knife_t",
+            "type": "Knife",
+            "state": "holstered"
+          },
+          "weapon_1": {
+            "name": "weapon_glock",
+            "type": "Pistol",
+            "ammo_clip": 20,
+            "ammo_clip_max": 20,
+            "ammo_reserve": 120,
+            "state": "holstered"
+          },
+          "weapon_2": {
+            "name": "weapon_incgrenade",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          },
+          "weapon_3": {
+            "name": "weapon_ak47",
+            "type": "Rifle",
+            "ammo_clip": 2,
+            "ammo_clip_max": 30,
+            "ammo_reserve": 90,
+            "state": "active"
+          },
+          "weapon_4": {
+            "name": "weapon_hegrenade",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          }
+        }
+      },
+      "70000000000000006": {
+        "name": "Delta",
+        "observer_slot": 2,
+        "team": "T",
+        "match_stats": {
+          "kills": 14,
+          "assists": 0,
+          "deaths": 15,
+          "mvps": 3,
+          "score": 33
+        },
+        "state": {
+          "health": 22,
+          "armor": 88,
+          "helmet": true,
+          "flashed": 0,
+          "burning": 0,
+          "money": 5000,
+          "round_kills": 0,
+          "round_killhs": 0,
+          "round_totaldmg": 0,
+          "equip_value": 4900
+        },
+        "weapons": {
+          "weapon_0": {
+            "name": "weapon_knife_t",
+            "type": "Knife",
+            "state": "holstered"
+          },
+          "weapon_1": {
+            "name": "weapon_glock",
+            "type": "Pistol",
+            "ammo_clip": 19,
+            "ammo_clip_max": 20,
+            "ammo_reserve": 120,
+            "state": "holstered"
+          },
+          "weapon_2": {
+            "name": "weapon_ak47",
+            "type": "Rifle",
+            "ammo_clip": 25,
+            "ammo_clip_max": 30,
+            "ammo_reserve": 90,
+            "state": "active"
+          },
+          "weapon_3": {
+            "name": "weapon_smokegrenade",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          },
+          "weapon_4": {
+            "name": "weapon_hegrenade",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          },
+          "weapon_5": {
+            "name": "weapon_molotov",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          }
+        }
+      },
+      "70000000000000002": {
+        "name": "Echo",
+        "observer_slot": 3,
+        "team": "T",
+        "match_stats": {
+          "kills": 13,
+          "assists": 7,
+          "deaths": 17,
+          "mvps": 5,
+          "score": 42
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 9550,
+          "round_kills": 0,
+          "round_killhs": 0,
+          "round_totaldmg": 0,
+          "equip_value": 4400
+        },
+        "weapons": {}
+      },
+      "70000000000000005": {
+        "name": "Foxtrot",
+        "observer_slot": 6,
+        "team": "CT",
+        "match_stats": {
+          "kills": 9,
+          "assists": 1,
+          "deaths": 15,
+          "mvps": 2,
+          "score": 23
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 6700,
+          "round_kills": 0,
+          "round_killhs": 0,
+          "round_totaldmg": 0,
+          "equip_value": 5700
+        },
+        "weapons": {}
+      }
+    },
+    "previously": {
+      "round": {
+        "phase": "live",
+        "bomb": "planted"
+      },
+      "allplayers": {
+        "70000000000000001": {
+          "match_stats": {
+            "deaths": 13
+          },
+          "state": {
+            "health": 100,
+            "armor": 100,
+            "helmet": true,
+            "money": 4850
+          },
+          "weapons": {
+            "weapon_0": {
+              "name": "weapon_knife_tactical",
+              "type": "Knife",
+              "state": "holstered"
+            },
+            "weapon_1": {
+              "name": "weapon_usp_silencer",
+              "type": "Pistol",
+              "ammo_clip": 12,
+              "ammo_clip_max": 12,
+              "ammo_reserve": 24,
+              "state": "holstered"
+            },
+            "weapon_2": {
+              "name": "weapon_ak47",
+              "type": "Rifle",
+              "ammo_clip": 17,
+              "ammo_clip_max": 30,
+              "ammo_reserve": 90,
+              "state": "active"
+            },
+            "weapon_3": {
+              "name": "weapon_smokegrenade",
+              "type": "Grenade",
+              "ammo_reserve": 1,
+              "state": "holstered"
+            }
+          }
+        },
+        "70000000000000003": {
+          "state": {
+            "money": 850
+          }
+        },
+        "70000000000000004": {
+          "match_stats": {
+            "kills": 17,
+            "mvps": 3,
+            "score": 49
+          },
+          "state": {
+            "money": 2200,
+            "round_kills": 1,
+            "round_killhs": 0,
+            "round_totaldmg": 100
+          },
+          "weapons": {
+            "weapon_3": {
+              "ammo_clip": 17
+            }
+          }
+        },
+        "70000000000000006": {
+          "state": {
+            "money": 2000
+          }
+        },
+        "70000000000000002": {
+          "state": {
+            "money": 6550
+          }
+        },
+        "70000000000000005": {
+          "match_stats": {
+            "deaths": 14
+          },
+          "state": {
+            "health": 100,
+            "armor": 93,
+            "helmet": true,
+            "money": 5000
+          },
+          "weapons": {
+            "weapon_0": {
+              "name": "weapon_knife",
+              "type": "Knife",
+              "state": "holstered"
+            },
+            "weapon_1": {
+              "name": "weapon_hkp2000",
+              "type": "Pistol",
+              "ammo_clip": 13,
+              "ammo_clip_max": 13,
+              "ammo_reserve": 52,
+              "state": "holstered"
+            },
+            "weapon_2": {
+              "name": "weapon_aug",
+              "type": "Rifle",
+              "ammo_clip": 30,
+              "ammo_clip_max": 30,
+              "ammo_reserve": 55,
+              "state": "active"
+            },
+            "weapon_3": {
+              "name": "weapon_smokegrenade",
+              "type": "Grenade",
+              "ammo_reserve": 1,
+              "state": "holstered"
+            },
+            "weapon_4": {
+              "name": "weapon_flashbang",
+              "type": "Grenade",
+              "ammo_reserve": 1,
+              "state": "holstered"
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "provider": {
+      "name": "Counter-Strike: Global Offensive",
+      "appid": 730,
+      "version": 13800,
+      "steamid": "70000000000000007",
+      "timestamp": 1629338657
+    },
+    "map": {
+      "mode": "scrimcomp2v2",
+      "name": "de_safehouse",
+      "phase": "live",
+      "round": 24,
+      "team_ct": {
+        "score": 12,
+        "name": "Three Guys One Glock",
+        "flag": "US",
+        "consecutive_round_losses": 2,
+        "timeouts_remaining": 1,
+        "matches_won_this_series": 2
+      },
+      "team_t": {
+        "score": 12,
+        "name": "Negevs Only",
+        "flag": "US",
+        "consecutive_round_losses": 0,
+        "timeouts_remaining": 1,
+        "matches_won_this_series": 0
+      }
+    },
+    "round": {
+      "phase": "over",
+      "win_team": "T"
+    },
+    "allplayers": {
+      "70000000000000001": {
+        "name": "Alpha",
+        "observer_slot": 4,
+        "team": "T",
+        "match_stats": {
+          "kills": 18,
+          "assists": 4,
+          "deaths": 15,
+          "mvps": 5,
+          "score": 49
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 6050,
+          "round_kills": 0,
+          "round_killhs": 0,
+          "round_totaldmg": 0,
+          "equip_value": 7150
+        },
+        "weapons": {}
+      },
+      "70000000000000003": {
+        "name": "Bravo",
+        "observer_slot": 5,
+        "team": "T",
+        "match_stats": {
+          "kills": 21,
+          "assists": 4,
+          "deaths": 18,
+          "mvps": 4,
+          "score": 46
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 8950,
+          "round_kills": 1,
+          "round_killhs": 0,
+          "round_totaldmg": 170,
+          "equip_value": 4550
+        },
+        "weapons": {}
+      },
+      "70000000000000004": {
+        "name": "Charlie",
+        "observer_slot": 1,
+        "team": "CT",
+        "match_stats": {
+          "kills": 19,
+          "assists": 2,
+          "deaths": 16,
+          "mvps": 4,
+          "score": 55
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 7100,
+          "round_kills": 0,
+          "round_killhs": 0,
+          "round_totaldmg": 0,
+          "equip_value": 5200
+        },
+        "weapons": {}
+      },
+      "70000000000000006": {
+        "name": "Delta",
+        "observer_slot": 2,
+        "team": "CT",
+        "match_stats": {
+          "kills": 14,
+          "assists": 1,
+          "deaths": 16,
+          "mvps": 3,
+          "score": 34
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 6300,
+          "round_kills": 0,
+          "round_killhs": 0,
+          "round_totaldmg": 80,
+          "equip_value": 6000
+        },
+        "weapons": {}
+      },
+      "70000000000000002": {
+        "name": "Echo",
+        "observer_slot": 3,
+        "team": "CT",
+        "match_stats": {
+          "kills": 15,
+          "assists": 7,
+          "deaths": 18,
+          "mvps": 5,
+          "score": 46
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 8300,
+          "round_kills": 2,
+          "round_killhs": 0,
+          "round_totaldmg": 184,
+          "equip_value": 4600
+        },
+        "weapons": {}
+      },
+      "70000000000000005": {
+        "name": "Foxtrot",
+        "observer_slot": 6,
+        "team": "T",
+        "match_stats": {
+          "kills": 11,
+          "assists": 1,
+          "deaths": 15,
+          "mvps": 3,
+          "score": 27
+        },
+        "state": {
+          "health": 36,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 9400,
+          "round_kills": 2,
+          "round_killhs": 2,
+          "round_totaldmg": 130,
+          "equip_value": 4100
+        },
+        "weapons": {
+          "weapon_0": {
+            "name": "weapon_knife_t",
+            "type": "Knife",
+            "state": "holstered"
+          },
+          "weapon_1": {
+            "name": "weapon_glock",
+            "type": "Pistol",
+            "ammo_clip": 20,
+            "ammo_clip_max": 20,
+            "ammo_reserve": 120,
+            "state": "holstered"
+          },
+          "weapon_2": {
+            "name": "weapon_molotov",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          },
+          "weapon_3": {
+            "name": "weapon_c4",
+            "type": "C4",
+            "state": "active"
+          },
+          "weapon_4": {
+            "name": "weapon_hegrenade",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          },
+          "weapon_5": {
+            "name": "weapon_flashbang",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          },
+          "weapon_6": {
+            "name": "weapon_sg556",
+            "type": "Rifle",
+            "ammo_clip": 8,
+            "ammo_clip_max": 30,
+            "ammo_reserve": 90,
+            "state": "holstered"
+          }
+        }
+      }
+    },
+    "previously": {
+      "round": {
+        "phase": "live"
+      },
+      "allplayers": {
+        "70000000000000001": {
+          "state": {
+            "money": 3050
+          }
+        },
+        "70000000000000003": {
+          "match_stats": {
+            "assists": 3,
+            "score": 45
+          },
+          "state": {
+            "money": 5950
+          }
+        },
+        "70000000000000004": {
+          "state": {
+            "money": 5000
+          }
+        },
+        "70000000000000006": {
+          "state": {
+            "money": 4200
+          }
+        },
+        "70000000000000002": {
+          "match_stats": {
+            "deaths": 17
+          },
+          "state": {
+            "health": 30,
+            "armor": 82,
+            "helmet": true,
+            "money": 6200,
+            "round_totaldmg": 152
+          },
+          "weapons": {
+            "weapon_0": {
+              "name": "weapon_knife",
+              "type": "Knife",
+              "state": "holstered"
+            },
+            "weapon_1": {
+              "name": "weapon_usp_silencer",
+              "type": "Pistol",
+              "ammo_clip": 12,
+              "ammo_clip_max": 12,
+              "ammo_reserve": 24,
+              "state": "holstered"
+            },
+            "weapon_2": {
+              "name": "weapon_m4a1_silencer",
+              "type": "Rifle",
+              "ammo_clip": 20,
+              "ammo_clip_max": 25,
+              "ammo_reserve": 60,
+              "state": "active"
+            },
+            "weapon_3": {
+              "name": "weapon_smokegrenade",
+              "type": "Grenade",
+              "ammo_reserve": 1,
+              "state": "holstered"
+            },
+            "weapon_4": {
+              "name": "weapon_flashbang",
+              "type": "Grenade",
+              "ammo_reserve": 1,
+              "state": "holstered"
+            }
+          }
+        },
+        "70000000000000005": {
+          "match_stats": {
+            "kills": 10,
+            "mvps": 2,
+            "score": 25
+          },
+          "state": {
+            "health": 68,
+            "money": 6100,
+            "round_kills": 1,
+            "round_killhs": 1,
+            "round_totaldmg": 100
+          },
+          "weapons": {
+            "weapon_3": {
+              "state": "holstered"
+            },
+            "weapon_6": {
+              "ammo_clip": 13,
+              "state": "active"
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "provider": {
+      "name": "Counter-Strike: Global Offensive",
+      "appid": 730,
+      "version": 13800,
+      "steamid": "70000000000000007",
+      "timestamp": 1629338713
+    },
+    "map": {
+      "mode": "scrimcomp2v2",
+      "name": "de_safehouse",
+      "phase": "live",
+      "round": 25,
+      "team_ct": {
+        "score": 13,
+        "name": "Three Guys One Glock",
+        "flag": "US",
+        "consecutive_round_losses": 0,
+        "timeouts_remaining": 1,
+        "matches_won_this_series": 2
+      },
+      "team_t": {
+        "score": 12,
+        "name": "Negevs Only",
+        "flag": "US",
+        "consecutive_round_losses": 1,
+        "timeouts_remaining": 1,
+        "matches_won_this_series": 0
+      }
+    },
+    "round": {
+      "phase": "over",
+      "win_team": "CT",
+      "bomb": "defused"
+    },
+    "allplayers": {
+      "70000000000000001": {
+        "name": "Alpha",
+        "observer_slot": 4,
+        "team": "T",
+        "match_stats": {
+          "kills": 18,
+          "assists": 4,
+          "deaths": 16,
+          "mvps": 5,
+          "score": 49
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 4850,
+          "round_kills": 0,
+          "round_killhs": 0,
+          "round_totaldmg": 0,
+          "equip_value": 3900
+        },
+        "weapons": {}
+      },
+      "70000000000000003": {
+        "name": "Bravo",
+        "observer_slot": 5,
+        "team": "T",
+        "match_stats": {
+          "kills": 22,
+          "assists": 4,
+          "deaths": 19,
+          "mvps": 4,
+          "score": 51
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 7700,
+          "round_kills": 1,
+          "round_killhs": 0,
+          "round_totaldmg": 100,
+          "equip_value": 4550
+        },
+        "weapons": {}
+      },
+      "70000000000000004": {
+        "name": "Charlie",
+        "observer_slot": 1,
+        "team": "CT",
+        "match_stats": {
+          "kills": 19,
+          "assists": 3,
+          "deaths": 17,
+          "mvps": 4,
+          "score": 56
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 5350,
+          "round_kills": 0,
+          "round_killhs": 0,
+          "round_totaldmg": 57,
+          "equip_value": 5200
+        },
+        "weapons": {}
+      },
+      "70000000000000006": {
+        "name": "Delta",
+        "observer_slot": 2,
+        "team": "CT",
+        "match_stats": {
+          "kills": 15,
+          "assists": 2,
+          "deaths": 17,
+          "mvps": 3,
+          "score": 37
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 5250,
+          "round_kills": 1,
+          "round_killhs": 0,
+          "round_totaldmg": 144,
+          "equip_value": 4800
+        },
+        "weapons": {}
+      },
+      "70000000000000002": {
+        "name": "Echo",
+        "observer_slot": 3,
+        "team": "CT",
+        "match_stats": {
+          "kills": 17,
+          "assists": 7,
+          "deaths": 18,
+          "mvps": 6,
+          "score": 52
+        },
+        "state": {
+          "health": 100,
+          "armor": 100,
+          "helmet": true,
+          "flashed": 0,
+          "burning": 0,
+          "money": 8250,
+          "round_kills": 2,
+          "round_killhs": 0,
+          "round_totaldmg": 99,
+          "equip_value": 4900
+        },
+        "weapons": {
+          "weapon_0": {
+            "name": "weapon_knife",
+            "type": "Knife",
+            "state": "holstered"
+          },
+          "weapon_1": {
+            "name": "weapon_m4a1_silencer",
+            "type": "Rifle",
+            "ammo_clip": 16,
+            "ammo_clip_max": 25,
+            "ammo_reserve": 57,
+            "state": "active"
+          },
+          "weapon_2": {
+            "name": "weapon_smokegrenade",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          },
+          "weapon_3": {
+            "name": "weapon_hegrenade",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          }
+        }
+      },
+      "70000000000000005": {
+        "name": "Foxtrot",
+        "observer_slot": 6,
+        "team": "T",
+        "match_stats": {
+          "kills": 12,
+          "assists": 1,
+          "deaths": 16,
+          "mvps": 3,
+          "score": 29
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 11200,
+          "round_kills": 1,
+          "round_killhs": 1,
+          "round_totaldmg": 100,
+          "equip_value": 5100
+        },
+        "weapons": {}
+      }
+    },
+    "previously": {
+      "round": {
+        "phase": "live",
+        "bomb": "planted"
+      },
+      "allplayers": {
+        "70000000000000001": {
+          "state": {
+            "money": 2350
+          }
+        },
+        "70000000000000003": {
+          "state": {
+            "money": 5200
+          }
+        },
+        "70000000000000004": {
+          "state": {
+            "money": 2100
+          }
+        },
+        "70000000000000006": {
+          "state": {
+            "money": 2000
+          }
+        },
+        "70000000000000002": {
+          "match_stats": {
+            "mvps": 5,
+            "score": 50
+          },
+          "state": {
+            "money": 4700
+          }
+        },
+        "70000000000000005": {
+          "state": {
+            "money": 8700
+          }
+        }
+      }
+    }
+  },
+  {
+    "provider": {
+      "name": "Counter-Strike: Global Offensive",
+      "appid": 730,
+      "version": 13800,
+      "steamid": "70000000000000007",
+      "timestamp": 1629338752
+    },
+    "map": {
+      "mode": "scrimcomp2v2",
+      "name": "de_safehouse",
+      "phase": "intermission",
+      "round": 26,
+      "team_ct": {
+        "score": 13,
+        "name": "Three Guys One Glock",
+        "flag": "US",
+        "consecutive_round_losses": 1,
+        "timeouts_remaining": 1,
+        "matches_won_this_series": 2
+      },
+      "team_t": {
+        "score": 13,
+        "name": "Negevs Only",
+        "flag": "US",
+        "consecutive_round_losses": 0,
+        "timeouts_remaining": 1,
+        "matches_won_this_series": 0
+      }
+    },
+    "round": {
+      "phase": "over",
+      "win_team": "T"
+    },
+    "allplayers": {
+      "70000000000000001": {
+        "name": "Alpha",
+        "observer_slot": 4,
+        "team": "T",
+        "match_stats": {
+          "kills": 19,
+          "assists": 4,
+          "deaths": 16,
+          "mvps": 5,
+          "score": 51
+        },
+        "state": {
+          "health": 10,
+          "armor": 80,
+          "helmet": true,
+          "flashed": 0,
+          "burning": 0,
+          "money": 3750,
+          "round_kills": 1,
+          "round_killhs": 0,
+          "round_totaldmg": 76,
+          "equip_value": 4600
+        },
+        "weapons": {
+          "weapon_0": {
+            "name": "weapon_knife_survival_bowie",
+            "type": "Knife",
+            "state": "holstered"
+          },
+          "weapon_1": {
+            "name": "weapon_glock",
+            "type": "Pistol",
+            "ammo_clip": 20,
+            "ammo_clip_max": 20,
+            "ammo_reserve": 120,
+            "state": "holstered"
+          },
+          "weapon_2": {
+            "name": "weapon_ak47",
+            "type": "Rifle",
+            "ammo_clip": 18,
+            "ammo_clip_max": 30,
+            "ammo_reserve": 90,
+            "state": "active"
+          },
+          "weapon_3": {
+            "name": "weapon_molotov",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          },
+          "weapon_4": {
+            "name": "weapon_hegrenade",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          }
+        }
+      },
+      "70000000000000003": {
+        "name": "Bravo",
+        "observer_slot": 5,
+        "team": "T",
+        "match_stats": {
+          "kills": 23,
+          "assists": 4,
+          "deaths": 20,
+          "mvps": 5,
+          "score": 53
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 5950,
+          "round_kills": 1,
+          "round_killhs": 0,
+          "round_totaldmg": 124,
+          "equip_value": 5050
+        },
+        "weapons": {}
+      },
+      "70000000000000004": {
+        "name": "Charlie",
+        "observer_slot": 1,
+        "team": "CT",
+        "match_stats": {
+          "kills": 19,
+          "assists": 3,
+          "deaths": 18,
+          "mvps": 4,
+          "score": 56
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 1750,
+          "round_kills": 0,
+          "round_killhs": 0,
+          "round_totaldmg": 0,
+          "equip_value": 5500
+        },
+        "weapons": {}
+      },
+      "70000000000000006": {
+        "name": "Delta",
+        "observer_slot": 2,
+        "team": "CT",
+        "match_stats": {
+          "kills": 15,
+          "assists": 2,
+          "deaths": 18,
+          "mvps": 3,
+          "score": 37
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 1950,
+          "round_kills": 0,
+          "round_killhs": 0,
+          "round_totaldmg": 0,
+          "equip_value": 5200
+        },
+        "weapons": {}
+      },
+      "70000000000000002": {
+        "name": "Echo",
+        "observer_slot": 3,
+        "team": "CT",
+        "match_stats": {
+          "kills": 18,
+          "assists": 7,
+          "deaths": 19,
+          "mvps": 6,
+          "score": 54
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 9450,
+          "round_kills": 1,
+          "round_killhs": 1,
+          "round_totaldmg": 190,
+          "equip_value": 5900
+        },
+        "weapons": {}
+      },
+      "70000000000000005": {
+        "name": "Foxtrot",
+        "observer_slot": 6,
+        "team": "T",
+        "match_stats": {
+          "kills": 13,
+          "assists": 1,
+          "deaths": 16,
+          "mvps": 3,
+          "score": 31
+        },
+        "state": {
+          "health": 100,
+          "armor": 100,
+          "helmet": true,
+          "flashed": 0,
+          "burning": 0,
+          "money": 9700,
+          "round_kills": 1,
+          "round_killhs": 0,
+          "round_totaldmg": 100,
+          "equip_value": 5000
+        },
+        "weapons": {
+          "weapon_0": {
+            "name": "weapon_knife_t",
+            "type": "Knife",
+            "state": "holstered"
+          },
+          "weapon_1": {
+            "name": "weapon_glock",
+            "type": "Pistol",
+            "ammo_clip": 20,
+            "ammo_clip_max": 20,
+            "ammo_reserve": 120,
+            "state": "holstered"
+          },
+          "weapon_2": {
+            "name": "weapon_c4",
+            "type": "C4",
+            "state": "active"
+          },
+          "weapon_3": {
+            "name": "weapon_sg556",
+            "type": "Rifle",
+            "ammo_clip": 18,
+            "ammo_clip_max": 30,
+            "ammo_reserve": 90,
+            "state": "holstered"
+          },
+          "weapon_4": {
+            "name": "weapon_flashbang",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          },
+          "weapon_5": {
+            "name": "weapon_hegrenade",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          },
+          "weapon_6": {
+            "name": "weapon_smokegrenade",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          }
+        }
+      }
+    },
+    "previously": {
+      "round": {
+        "phase": "live"
+      },
+      "allplayers": {
+        "70000000000000001": {
+          "match_stats": {
+            "kills": 18,
+            "score": 49
+          },
+          "state": {
+            "health": 100,
+            "armor": 100,
+            "money": 450,
+            "round_kills": 0,
+            "round_totaldmg": 52
+          },
+          "weapons": {
+            "weapon_2": {
+              "ammo_clip": 22
+            }
+          }
+        },
+        "70000000000000003": {
+          "match_stats": {
+            "deaths": 19,
+            "mvps": 4
+          },
+          "state": {
+            "health": 4,
+            "armor": 83,
+            "helmet": true,
+            "money": 2950
+          },
+          "weapons": {
+            "weapon_0": {
+              "name": "weapon_knife_gypsy_jackknife",
+              "type": "Knife",
+              "state": "holstered"
+            },
+            "weapon_1": {
+              "name": "weapon_deagle",
+              "type": "Pistol",
+              "ammo_clip": 5,
+              "ammo_clip_max": 7,
+              "ammo_reserve": 35,
+              "state": "active"
+            },
+            "weapon_2": {
+              "name": "weapon_p90",
+              "type": "Submachine Gun",
+              "ammo_clip": 0,
+              "ammo_clip_max": 50,
+              "ammo_reserve": 100,
+              "state": "holstered"
+            },
+            "weapon_3": {
+              "name": "weapon_flashbang",
+              "type": "Grenade",
+              "ammo_reserve": 1,
+              "state": "holstered"
+            },
+            "weapon_4": {
+              "name": "weapon_hegrenade",
+              "type": "Grenade",
+              "ammo_reserve": 1,
+              "state": "holstered"
+            },
+            "weapon_5": {
+              "name": "weapon_smokegrenade",
+              "type": "Grenade",
+              "ammo_reserve": 1,
+              "state": "holstered"
+            }
+          }
+        },
+        "70000000000000004": {
+          "state": {
+            "money": 50
+          }
+        },
+        "70000000000000006": {
+          "state": {
+            "money": 250
+          }
+        },
+        "70000000000000002": {
+          "match_stats": {
+            "kills": 17,
+            "deaths": 18,
+            "score": 52
+          },
+          "state": {
+            "health": 24,
+            "armor": 86,
+            "helmet": true,
+            "money": 7450,
+            "round_kills": 0,
+            "round_killhs": 0,
+            "round_totaldmg": 96
+          },
+          "weapons": {
+            "weapon_0": {
+              "name": "weapon_knife",
+              "type": "Knife",
+              "state": "holstered"
+            },
+            "weapon_1": {
+              "name": "weapon_m4a1_silencer",
+              "type": "Rifle",
+              "ammo_clip": 21,
+              "ammo_clip_max": 25,
+              "ammo_reserve": 45,
+              "state": "active"
+            },
+            "weapon_2": {
+              "name": "weapon_smokegrenade",
+              "type": "Grenade",
+              "ammo_reserve": 1,
+              "state": "holstered"
+            },
+            "weapon_3": {
+              "name": "weapon_hegrenade",
+              "type": "Grenade",
+              "ammo_reserve": 1,
+              "state": "holstered"
+            },
+            "weapon_4": {
+              "name": "weapon_usp_silencer",
+              "type": "Pistol",
+              "ammo_clip": 12,
+              "ammo_clip_max": 12,
+              "ammo_reserve": 24,
+              "state": "holstered"
+            },
+            "weapon_5": {
+              "name": "weapon_flashbang",
+              "type": "Grenade",
+              "ammo_reserve": 1,
+              "state": "holstered"
+            },
+            "weapon_6": {
+              "name": "weapon_incgrenade",
+              "type": "Grenade",
+              "ammo_reserve": 1,
+              "state": "holstered"
+            }
+          }
+        },
+        "70000000000000005": {
+          "state": {
+            "money": 6700
+          }
+        }
+      }
+    }
+  },
+  {
+    "provider": {
+      "name": "Counter-Strike: Global Offensive",
+      "appid": 730,
+      "version": 13800,
+      "steamid": "70000000000000007",
+      "timestamp": 1629338807
+    },
+    "map": {
+      "mode": "scrimcomp2v2",
+      "name": "de_safehouse",
+      "phase": "live",
+      "round": 27,
+      "team_ct": {
+        "score": 13,
+        "name": "Three Guys One Glock",
+        "flag": "US",
+        "consecutive_round_losses": 0,
+        "timeouts_remaining": 1,
+        "matches_won_this_series": 2
+      },
+      "team_t": {
+        "score": 13,
+        "name": "Negevs Only",
+        "flag": "US",
+        "consecutive_round_losses": 2,
+        "timeouts_remaining": 1,
+        "matches_won_this_series": 0
+      }
+    },
+    "round": {
+      "phase": "over",
+      "win_team": "CT",
+      "bomb": "defused"
+    },
+    "allplayers": {
+      "70000000000000001": {
+        "name": "Alpha",
+        "observer_slot": 4,
+        "team": "T",
+        "match_stats": {
+          "kills": 20,
+          "assists": 4,
+          "deaths": 17,
+          "mvps": 5,
+          "score": 56
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 6850,
+          "round_kills": 1,
+          "round_killhs": 0,
+          "round_totaldmg": 78,
+          "equip_value": 6650
+        },
+        "weapons": {}
+      },
+      "70000000000000003": {
+        "name": "Bravo",
+        "observer_slot": 5,
+        "team": "T",
+        "match_stats": {
+          "kills": 23,
+          "assists": 4,
+          "deaths": 21,
+          "mvps": 5,
+          "score": 53
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 8050,
+          "round_kills": 0,
+          "round_killhs": 0,
+          "round_totaldmg": 32,
+          "equip_value": 4850
+        },
+        "weapons": {}
+      },
+      "70000000000000004": {
+        "name": "Charlie",
+        "observer_slot": 1,
+        "team": "CT",
+        "match_stats": {
+          "kills": 20,
+          "assists": 4,
+          "deaths": 19,
+          "mvps": 4,
+          "score": 59
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 8250,
+          "round_kills": 1,
+          "round_killhs": 0,
+          "round_totaldmg": 172,
+          "equip_value": 5700
+        },
+        "weapons": {}
+      },
+      "70000000000000006": {
+        "name": "Delta",
+        "observer_slot": 2,
+        "team": "CT",
+        "match_stats": {
+          "kills": 16,
+          "assists": 2,
+          "deaths": 18,
+          "mvps": 3,
+          "score": 40
+        },
+        "state": {
+          "health": 84,
+          "armor": 98,
+          "helmet": true,
+          "flashed": 0,
+          "burning": 0,
+          "money": 7950,
+          "round_kills": 1,
+          "round_killhs": 0,
+          "round_totaldmg": 28,
+          "equip_value": 5800
+        },
+        "weapons": {
+          "weapon_0": {
+            "name": "weapon_knife",
+            "type": "Knife",
+            "state": "holstered"
+          },
+          "weapon_1": {
+            "name": "weapon_hkp2000",
+            "type": "Pistol",
+            "ammo_clip": 13,
+            "ammo_clip_max": 13,
+            "ammo_reserve": 52,
+            "state": "holstered"
+          },
+          "weapon_2": {
+            "name": "weapon_aug",
+            "type": "Rifle",
+            "ammo_clip": 25,
+            "ammo_clip_max": 30,
+            "ammo_reserve": 66,
+            "state": "active"
+          },
+          "weapon_3": {
+            "name": "weapon_incgrenade",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          },
+          "weapon_4": {
+            "name": "weapon_hegrenade",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          }
+        }
+      },
+      "70000000000000002": {
+        "name": "Echo",
+        "observer_slot": 3,
+        "team": "CT",
+        "match_stats": {
+          "kills": 19,
+          "assists": 7,
+          "deaths": 19,
+          "mvps": 7,
+          "score": 58
+        },
+        "state": {
+          "health": 68,
+          "armor": 92,
+          "helmet": true,
+          "flashed": 0,
+          "burning": 0,
+          "money": 9450,
+          "round_kills": 1,
+          "round_killhs": 0,
+          "round_totaldmg": 100,
+          "equip_value": 5000
+        },
+        "weapons": {
+          "weapon_0": {
+            "name": "weapon_knife",
+            "type": "Knife",
+            "state": "holstered"
+          },
+          "weapon_1": {
+            "name": "weapon_usp_silencer",
+            "type": "Pistol",
+            "ammo_clip": 12,
+            "ammo_clip_max": 12,
+            "ammo_reserve": 24,
+            "state": "holstered"
+          },
+          "weapon_2": {
+            "name": "weapon_m4a1_silencer",
+            "type": "Rifle",
+            "ammo_clip": 23,
+            "ammo_clip_max": 25,
+            "ammo_reserve": 60,
+            "state": "active"
+          },
+          "weapon_3": {
+            "name": "weapon_smokegrenade",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          },
+          "weapon_4": {
+            "name": "weapon_flashbang",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          }
+        }
+      },
+      "70000000000000005": {
+        "name": "Foxtrot",
+        "observer_slot": 6,
+        "team": "T",
+        "match_stats": {
+          "kills": 13,
+          "assists": 1,
+          "deaths": 17,
+          "mvps": 3,
+          "score": 31
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 8100,
+          "round_kills": 0,
+          "round_killhs": 0,
+          "round_totaldmg": 22,
+          "equip_value": 5000
+        },
+        "weapons": {}
+      }
+    },
+    "previously": {
+      "round": {
+        "phase": "live",
+        "bomb": "planted"
+      },
+      "allplayers": {
+        "70000000000000001": {
+          "state": {
+            "money": 3950
+          }
+        },
+        "70000000000000003": {
+          "state": {
+            "money": 5150
+          }
+        },
+        "70000000000000004": {
+          "state": {
+            "money": 5000
+          }
+        },
+        "70000000000000006": {
+          "match_stats": {
+            "score": 39
+          },
+          "state": {
+            "money": 4700
+          }
+        },
+        "70000000000000002": {
+          "match_stats": {
+            "mvps": 6,
+            "score": 56
+          },
+          "state": {
+            "money": 5900
+          }
+        },
+        "70000000000000005": {
+          "state": {
+            "money": 5200
+          }
+        }
+      }
+    }
+  },
+  {
+    "provider": {
+      "name": "Counter-Strike: Global Offensive",
+      "appid": 730,
+      "version": 13800,
+      "steamid": "70000000000000007",
+      "timestamp": 1629338876
+    },
+    "map": {
+      "mode": "scrimcomp2v2",
+      "name": "de_safehouse",
+      "phase": "live",
+      "round": 28,
+      "team_ct": {
+        "score": 14,
+        "name": "Three Guys One Glock",
+        "flag": "US",
+        "consecutive_round_losses": 1,
+        "timeouts_remaining": 1,
+        "matches_won_this_series": 2
+      },
+      "team_t": {
+        "score": 13,
+        "name": "Negevs Only",
+        "flag": "US",
+        "consecutive_round_losses": 0,
+        "timeouts_remaining": 1,
+        "matches_won_this_series": 0
+      }
+    },
+    "round": {
+      "phase": "over",
+      "win_team": "T"
+    },
+    "allplayers": {
+      "70000000000000001": {
+        "name": "Alpha",
+        "observer_slot": 4,
+        "team": "T",
+        "match_stats": {
+          "kills": 22,
+          "assists": 4,
+          "deaths": 18,
+          "mvps": 6,
+          "score": 60
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 3600,
+          "round_kills": 2,
+          "round_killhs": 1,
+          "round_totaldmg": 200,
+          "equip_value": 6650
+        },
+        "weapons": {}
+      },
+      "70000000000000003": {
+        "name": "Bravo",
+        "observer_slot": 5,
+        "team": "T",
+        "match_stats": {
+          "kills": 23,
+          "assists": 4,
+          "deaths": 22,
+          "mvps": 5,
+          "score": 53
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 6700,
+          "round_kills": 0,
+          "round_killhs": 0,
+          "round_totaldmg": 19,
+          "equip_value": 4550
+        },
+        "weapons": {}
+      },
+      "70000000000000004": {
+        "name": "Charlie",
+        "observer_slot": 1,
+        "team": "CT",
+        "match_stats": {
+          "kills": 20,
+          "assists": 4,
+          "deaths": 20,
+          "mvps": 4,
+          "score": 59
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 4350,
+          "round_kills": 0,
+          "round_killhs": 0,
+          "round_totaldmg": 0,
+          "equip_value": 5800
+        },
+        "weapons": {}
+      },
+      "70000000000000006": {
+        "name": "Delta",
+        "observer_slot": 2,
+        "team": "CT",
+        "match_stats": {
+          "kills": 16,
+          "assists": 3,
+          "deaths": 19,
+          "mvps": 3,
+          "score": 41
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 8800,
+          "round_kills": 0,
+          "round_killhs": 0,
+          "round_totaldmg": 52,
+          "equip_value": 6000
+        },
+        "weapons": {}
+      },
+      "70000000000000002": {
+        "name": "Echo",
+        "observer_slot": 3,
+        "team": "CT",
+        "match_stats": {
+          "kills": 21,
+          "assists": 7,
+          "deaths": 20,
+          "mvps": 7,
+          "score": 62
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 10900,
+          "round_kills": 2,
+          "round_killhs": 2,
+          "round_totaldmg": 148,
+          "equip_value": 5600
+        },
+        "weapons": {}
+      },
+      "70000000000000005": {
+        "name": "Foxtrot",
+        "observer_slot": 6,
+        "team": "T",
+        "match_stats": {
+          "kills": 14,
+          "assists": 1,
+          "deaths": 17,
+          "mvps": 3,
+          "score": 33
+        },
+        "state": {
+          "health": 100,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 7900,
+          "round_kills": 1,
+          "round_killhs": 0,
+          "round_totaldmg": 81,
+          "equip_value": 3700
+        },
+        "weapons": {
+          "weapon_0": {
+            "name": "weapon_knife_t",
+            "type": "Knife",
+            "state": "holstered"
+          },
+          "weapon_1": {
+            "name": "weapon_glock",
+            "type": "Pistol",
+            "ammo_clip": 20,
+            "ammo_clip_max": 20,
+            "ammo_reserve": 120,
+            "state": "holstered"
+          },
+          "weapon_2": {
+            "name": "weapon_sg556",
+            "type": "Rifle",
+            "ammo_clip": 14,
+            "ammo_clip_max": 30,
+            "ammo_reserve": 90,
+            "state": "active"
+          },
+          "weapon_3": {
+            "name": "weapon_flashbang",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          },
+          "weapon_4": {
+            "name": "weapon_hegrenade",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          },
+          "weapon_5": {
+            "name": "weapon_c4",
+            "type": "C4",
+            "state": "holstered"
+          }
+        }
+      }
+    },
+    "previously": {
+      "round": {
+        "phase": "live"
+      },
+      "allplayers": {
+        "70000000000000001": {
+          "match_stats": {
+            "mvps": 5
+          },
+          "state": {
+            "money": 600
+          }
+        },
+        "70000000000000003": {
+          "state": {
+            "money": 3700
+          }
+        },
+        "70000000000000004": {
+          "state": {
+            "money": 2650
+          }
+        },
+        "70000000000000006": {
+          "state": {
+            "money": 7100
+          }
+        },
+        "70000000000000002": {
+          "match_stats": {
+            "deaths": 19
+          },
+          "state": {
+            "health": 52,
+            "armor": 100,
+            "helmet": true,
+            "money": 9200
+          },
+          "weapons": {
+            "weapon_0": {
+              "name": "weapon_knife",
+              "type": "Knife",
+              "state": "holstered"
+            },
+            "weapon_1": {
+              "name": "weapon_usp_silencer",
+              "type": "Pistol",
+              "ammo_clip": 12,
+              "ammo_clip_max": 12,
+              "ammo_reserve": 24,
+              "state": "holstered"
+            },
+            "weapon_2": {
+              "name": "weapon_m4a1_silencer",
+              "type": "Rifle",
+              "ammo_clip": 25,
+              "ammo_clip_max": 25,
+              "ammo_reserve": 52,
+              "state": "active"
+            },
+            "weapon_3": {
+              "name": "weapon_smokegrenade",
+              "type": "Grenade",
+              "ammo_reserve": 1,
+              "state": "holstered"
+            },
+            "weapon_4": {
+              "name": "weapon_flashbang",
+              "type": "Grenade",
+              "ammo_reserve": 2,
+              "state": "holstered"
+            },
+            "weapon_5": {
+              "name": "weapon_molotov",
+              "type": "Grenade",
+              "ammo_reserve": 1,
+              "state": "holstered"
+            }
+          }
+        },
+        "70000000000000005": {
+          "match_stats": {
+            "kills": 13,
+            "score": 31
+          },
+          "state": {
+            "money": 4600,
+            "round_kills": 0,
+            "round_totaldmg": 29
+          },
+          "weapons": {
+            "weapon_2": {
+              "ammo_clip": 20
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "provider": {
+      "name": "Counter-Strike: Global Offensive",
+      "appid": 730,
+      "version": 13800,
+      "steamid": "70000000000000007",
+      "timestamp": 1629338930
+    },
+    "map": {
+      "mode": "scrimcomp2v2",
+      "name": "de_safehouse",
+      "phase": "intermission",
+      "round": 29,
+      "team_ct": {
+        "score": 14,
+        "name": "Three Guys One Glock",
+        "flag": "US",
+        "consecutive_round_losses": 2,
+        "timeouts_remaining": 1,
+        "matches_won_this_series": 2
+      },
+      "team_t": {
+        "score": 15,
+        "name": "Negevs Only",
+        "flag": "US",
+        "consecutive_round_losses": 0,
+        "timeouts_remaining": 1,
+        "matches_won_this_series": 0
+      }
+    },
+    "round": {
+      "phase": "over",
+      "win_team": "T"
+    },
+    "allplayers": {
+      "70000000000000001": {
+        "name": "Alpha",
+        "observer_slot": 4,
+        "team": "T",
+        "match_stats": {
+          "kills": 24,
+          "assists": 4,
+          "deaths": 18,
+          "mvps": 7,
+          "score": 65
+        },
+        "state": {
+          "health": 100,
+          "armor": 100,
+          "helmet": true,
+          "flashed": 0,
+          "burning": 0,
+          "money": 3700,
+          "round_kills": 2,
+          "round_killhs": 0,
+          "round_totaldmg": 200,
+          "equip_value": 3700
+        },
+        "weapons": {
+          "weapon_0": {
+            "name": "weapon_knife_survival_bowie",
+            "type": "Knife",
+            "state": "holstered"
+          },
+          "weapon_1": {
+            "name": "weapon_glock",
+            "type": "Pistol",
+            "ammo_clip": 20,
+            "ammo_clip_max": 20,
+            "ammo_reserve": 120,
+            "state": "holstered"
+          },
+          "weapon_2": {
+            "name": "weapon_galilar",
+            "type": "Rifle",
+            "ammo_clip": 35,
+            "ammo_clip_max": 35,
+            "ammo_reserve": 76,
+            "state": "active"
+          },
+          "weapon_3": {
+            "name": "weapon_hegrenade",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          }
+        }
+      },
+      "70000000000000003": {
+        "name": "Bravo",
+        "observer_slot": 5,
+        "team": "T",
+        "match_stats": {
+          "kills": 23,
+          "assists": 4,
+          "deaths": 22,
+          "mvps": 5,
+          "score": 53
+        },
+        "state": {
+          "health": 100,
+          "armor": 100,
+          "helmet": true,
+          "flashed": 0,
+          "burning": 0,
+          "money": 3150,
+          "round_kills": 0,
+          "round_killhs": 0,
+          "round_totaldmg": 0,
+          "equip_value": 6750
+        },
+        "weapons": {
+          "weapon_0": {
+            "name": "weapon_knife_gypsy_jackknife",
+            "type": "Knife",
+            "state": "holstered"
+          },
+          "weapon_1": {
+            "name": "weapon_glock",
+            "type": "Pistol",
+            "ammo_clip": 20,
+            "ammo_clip_max": 20,
+            "ammo_reserve": 120,
+            "state": "holstered"
+          },
+          "weapon_2": {
+            "name": "weapon_awp",
+            "type": "SniperRifle",
+            "ammo_clip": 7,
+            "ammo_clip_max": 10,
+            "ammo_reserve": 30,
+            "state": "active"
+          },
+          "weapon_3": {
+            "name": "weapon_flashbang",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          },
+          "weapon_4": {
+            "name": "weapon_hegrenade",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          },
+          "weapon_5": {
+            "name": "weapon_smokegrenade",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          }
+        }
+      },
+      "70000000000000004": {
+        "name": "Charlie",
+        "observer_slot": 1,
+        "team": "CT",
+        "match_stats": {
+          "kills": 20,
+          "assists": 4,
+          "deaths": 21,
+          "mvps": 4,
+          "score": 59
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 2350,
+          "round_kills": 0,
+          "round_killhs": 0,
+          "round_totaldmg": 0,
+          "equip_value": 4300
+        },
+        "weapons": {}
+      },
+      "70000000000000006": {
+        "name": "Delta",
+        "observer_slot": 2,
+        "team": "CT",
+        "match_stats": {
+          "kills": 16,
+          "assists": 3,
+          "deaths": 20,
+          "mvps": 3,
+          "score": 41
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 5300,
+          "round_kills": 0,
+          "round_killhs": 0,
+          "round_totaldmg": 0,
+          "equip_value": 5800
+        },
+        "weapons": {}
+      },
+      "70000000000000002": {
+        "name": "Echo",
+        "observer_slot": 3,
+        "team": "CT",
+        "match_stats": {
+          "kills": 21,
+          "assists": 7,
+          "deaths": 21,
+          "mvps": 7,
+          "score": 62
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 8600,
+          "round_kills": 0,
+          "round_killhs": 0,
+          "round_totaldmg": 0,
+          "equip_value": 4600
+        },
+        "weapons": {}
+      },
+      "70000000000000005": {
+        "name": "Foxtrot",
+        "observer_slot": 6,
+        "team": "T",
+        "match_stats": {
+          "kills": 15,
+          "assists": 1,
+          "deaths": 17,
+          "mvps": 3,
+          "score": 38
+        },
+        "state": {
+          "health": 100,
+          "armor": 100,
+          "helmet": true,
+          "flashed": 0,
+          "burning": 0,
+          "money": 9800,
+          "round_kills": 1,
+          "round_killhs": 0,
+          "round_totaldmg": 100,
+          "equip_value": 5400
+        },
+        "weapons": {
+          "weapon_0": {
+            "name": "weapon_knife_t",
+            "type": "Knife",
+            "state": "holstered"
+          },
+          "weapon_1": {
+            "name": "weapon_glock",
+            "type": "Pistol",
+            "ammo_clip": 20,
+            "ammo_clip_max": 20,
+            "ammo_reserve": 120,
+            "state": "holstered"
+          },
+          "weapon_2": {
+            "name": "weapon_sg556",
+            "type": "Rifle",
+            "ammo_clip": 24,
+            "ammo_clip_max": 30,
+            "ammo_reserve": 90,
+            "state": "active"
+          },
+          "weapon_3": {
+            "name": "weapon_flashbang",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          },
+          "weapon_4": {
+            "name": "weapon_hegrenade",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          },
+          "weapon_5": {
+            "name": "weapon_molotov",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          }
+        }
+      }
+    },
+    "previously": {
+      "round": {
+        "phase": "live",
+        "bomb": "planted"
+      },
+      "allplayers": {
+        "70000000000000001": {
+          "match_stats": {
+            "mvps": 6
+          },
+          "state": {
+            "money": 700
+          },
+          "weapons": {
+            "weapon_2": {
+              "ammo_clip": 21,
+              "ammo_reserve": 90
+            }
+          }
+        },
+        "70000000000000003": {
+          "state": {
+            "money": 150
+          }
+        },
+        "70000000000000004": {
+          "state": {
+            "money": 250
+          }
+        },
+        "70000000000000006": {
+          "match_stats": {
+            "deaths": 19
+          },
+          "state": {
+            "health": 100,
+            "armor": 100,
+            "helmet": true,
+            "money": 3200
+          },
+          "weapons": {
+            "weapon_0": {
+              "name": "weapon_knife",
+              "type": "Knife",
+              "state": "holstered"
+            },
+            "weapon_1": {
+              "name": "weapon_hkp2000",
+              "type": "Pistol",
+              "ammo_clip": 13,
+              "ammo_clip_max": 13,
+              "ammo_reserve": 52,
+              "state": "holstered"
+            },
+            "weapon_2": {
+              "name": "weapon_aug",
+              "type": "Rifle",
+              "ammo_clip": 7,
+              "ammo_clip_max": 30,
+              "ammo_reserve": 90,
+              "state": "active"
+            },
+            "weapon_3": {
+              "name": "weapon_hegrenade",
+              "type": "Grenade",
+              "ammo_reserve": 1,
+              "state": "holstered"
+            },
+            "weapon_4": {
+              "name": "weapon_incgrenade",
+              "type": "Grenade",
+              "ammo_reserve": 1,
+              "state": "holstered"
+            }
+          }
+        },
+        "70000000000000002": {
+          "state": {
+            "money": 6500
+          }
+        },
+        "70000000000000005": {
+          "match_stats": {
+            "kills": 14,
+            "score": 35
+          },
+          "state": {
+            "money": 6500,
+            "round_kills": 0,
+            "round_totaldmg": 0
+          },
+          "weapons": {
+            "weapon_2": {
+              "ammo_clip": 29
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "provider": {
+      "name": "Counter-Strike: Global Offensive",
+      "appid": 730,
+      "version": 13800,
+      "steamid": "70000000000000007",
+      "timestamp": 1629338985
+    },
+    "map": {
+      "mode": "scrimcomp2v2",
+      "name": "de_safehouse",
+      "phase": "live",
+      "round": 30,
+      "team_ct": {
+        "score": 15,
+        "name": "Negevs Only",
+        "flag": "US",
+        "consecutive_round_losses": 2,
+        "timeouts_remaining": 1,
+        "matches_won_this_series": 0
+      },
+      "team_t": {
+        "score": 14,
+        "name": "Three Guys One Glock",
+        "flag": "US",
+        "consecutive_round_losses": 0,
+        "timeouts_remaining": 1,
+        "matches_won_this_series": 2
+      }
+    },
+    "round": {
+      "phase": "over",
+      "win_team": "T"
+    },
+    "allplayers": {
+      "70000000000000001": {
+        "name": "Alpha",
+        "observer_slot": 4,
+        "team": "CT",
+        "match_stats": {
+          "kills": 24,
+          "assists": 4,
+          "deaths": 19,
+          "mvps": 7,
+          "score": 65
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 5050,
+          "round_kills": 0,
+          "round_killhs": 0,
+          "round_totaldmg": 0,
+          "equip_value": 7250
+        },
+        "weapons": {}
+      },
+      "70000000000000003": {
+        "name": "Bravo",
+        "observer_slot": 5,
+        "team": "CT",
+        "match_stats": {
+          "kills": 23,
+          "assists": 4,
+          "deaths": 23,
+          "mvps": 5,
+          "score": 53
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 5050,
+          "round_kills": 0,
+          "round_killhs": 0,
+          "round_totaldmg": 0,
+          "equip_value": 4900
+        },
+        "weapons": {}
+      },
+      "70000000000000004": {
+        "name": "Charlie",
+        "observer_slot": 1,
+        "team": "T",
+        "match_stats": {
+          "kills": 22,
+          "assists": 4,
+          "deaths": 21,
+          "mvps": 5,
+          "score": 63
+        },
+        "state": {
+          "health": 100,
+          "armor": 100,
+          "helmet": true,
+          "flashed": 0,
+          "burning": 0,
+          "money": 6850,
+          "round_kills": 2,
+          "round_killhs": 1,
+          "round_totaldmg": 142,
+          "equip_value": 6550
+        },
+        "weapons": {
+          "weapon_0": {
+            "name": "weapon_knife_t",
+            "type": "Knife",
+            "state": "holstered"
+          },
+          "weapon_1": {
+            "name": "weapon_glock",
+            "type": "Pistol",
+            "ammo_clip": 20,
+            "ammo_clip_max": 20,
+            "ammo_reserve": 120,
+            "state": "holstered"
+          },
+          "weapon_2": {
+            "name": "weapon_awp",
+            "type": "SniperRifle",
+            "ammo_clip": 8,
+            "ammo_clip_max": 10,
+            "ammo_reserve": 30,
+            "state": "active"
+          },
+          "weapon_3": {
+            "name": "weapon_hegrenade",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          },
+          "weapon_4": {
+            "name": "weapon_smokegrenade",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          }
+        }
+      },
+      "70000000000000006": {
+        "name": "Delta",
+        "observer_slot": 2,
+        "team": "T",
+        "match_stats": {
+          "kills": 17,
+          "assists": 3,
+          "deaths": 20,
+          "mvps": 3,
+          "score": 45
+        },
+        "state": {
+          "health": 100,
+          "armor": 100,
+          "helmet": true,
+          "flashed": 0,
+          "burning": 0,
+          "money": 9300,
+          "round_kills": 1,
+          "round_killhs": 0,
+          "round_totaldmg": 100,
+          "equip_value": 4500
+        },
+        "weapons": {
+          "weapon_0": {
+            "name": "weapon_knife_t",
+            "type": "Knife",
+            "state": "holstered"
+          },
+          "weapon_1": {
+            "name": "weapon_glock",
+            "type": "Pistol",
+            "ammo_clip": 19,
+            "ammo_clip_max": 20,
+            "ammo_reserve": 120,
+            "state": "holstered"
+          },
+          "weapon_2": {
+            "name": "weapon_ak47",
+            "type": "Rifle",
+            "ammo_clip": 19,
+            "ammo_clip_max": 30,
+            "ammo_reserve": 90,
+            "state": "active"
+          },
+          "weapon_3": {
+            "name": "weapon_hegrenade",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          }
+        }
+      },
+      "70000000000000002": {
+        "name": "Echo",
+        "observer_slot": 3,
+        "team": "T",
+        "match_stats": {
+          "kills": 21,
+          "assists": 8,
+          "deaths": 21,
+          "mvps": 7,
+          "score": 63
+        },
+        "state": {
+          "health": 100,
+          "armor": 100,
+          "helmet": true,
+          "flashed": 0,
+          "burning": 0,
+          "money": 8800,
+          "round_kills": 0,
+          "round_killhs": 0,
+          "round_totaldmg": 58,
+          "equip_value": 4400
+        },
+        "weapons": {
+          "weapon_0": {
+            "name": "weapon_knife_t",
+            "type": "Knife",
+            "state": "holstered"
+          },
+          "weapon_1": {
+            "name": "weapon_glock",
+            "type": "Pistol",
+            "ammo_clip": 20,
+            "ammo_clip_max": 20,
+            "ammo_reserve": 120,
+            "state": "holstered"
+          },
+          "weapon_2": {
+            "name": "weapon_ak47",
+            "type": "Rifle",
+            "ammo_clip": 19,
+            "ammo_clip_max": 30,
+            "ammo_reserve": 90,
+            "state": "active"
+          },
+          "weapon_3": {
+            "name": "weapon_smokegrenade",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          },
+          "weapon_4": {
+            "name": "weapon_flashbang",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          }
+        }
+      },
+      "70000000000000005": {
+        "name": "Foxtrot",
+        "observer_slot": 6,
+        "team": "CT",
+        "match_stats": {
+          "kills": 15,
+          "assists": 1,
+          "deaths": 18,
+          "mvps": 3,
+          "score": 38
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 6800,
+          "round_kills": 0,
+          "round_killhs": 0,
+          "round_totaldmg": 0,
+          "equip_value": 5500
+        },
+        "weapons": {}
+      }
+    },
+    "previously": {
+      "round": {
+        "phase": "live",
+        "bomb": "planted"
+      },
+      "allplayers": {
+        "70000000000000001": {
+          "state": {
+            "money": 2950
+          }
+        },
+        "70000000000000003": {
+          "state": {
+            "money": 2950
+          }
+        },
+        "70000000000000004": {
+          "match_stats": {
+            "kills": 21,
+            "mvps": 4,
+            "score": 61
+          },
+          "state": {
+            "money": 3750,
+            "round_kills": 1,
+            "round_killhs": 0,
+            "round_totaldmg": 100
+          },
+          "weapons": {
+            "weapon_2": {
+              "ammo_clip": 9
+            }
+          }
+        },
+        "70000000000000006": {
+          "state": {
+            "money": 6300
+          }
+        },
+        "70000000000000002": {
+          "match_stats": {
+            "assists": 7,
+            "score": 62
+          },
+          "state": {
+            "money": 5800
+          }
+        },
+        "70000000000000005": {
+          "match_stats": {
+            "deaths": 17
+          },
+          "state": {
+            "health": 42,
+            "armor": 91,
+            "helmet": true,
+            "money": 4700
+          },
+          "weapons": {
+            "weapon_0": {
+              "name": "weapon_knife",
+              "type": "Knife",
+              "state": "holstered"
+            },
+            "weapon_1": {
+              "name": "weapon_hkp2000",
+              "type": "Pistol",
+              "ammo_clip": 13,
+              "ammo_clip_max": 13,
+              "ammo_reserve": 52,
+              "state": "holstered"
+            },
+            "weapon_2": {
+              "name": "weapon_aug",
+              "type": "Rifle",
+              "ammo_clip": 22,
+              "ammo_clip_max": 30,
+              "ammo_reserve": 85,
+              "state": "active"
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "provider": {
+      "name": "Counter-Strike: Global Offensive",
+      "appid": 730,
+      "version": 13800,
+      "steamid": "70000000000000007",
+      "timestamp": 1629339045
+    },
+    "map": {
+      "mode": "scrimcomp2v2",
+      "name": "de_safehouse",
+      "phase": "live",
+      "round": 31,
+      "team_ct": {
+        "score": 16,
+        "name": "Negevs Only",
+        "flag": "US",
+        "consecutive_round_losses": 0,
+        "timeouts_remaining": 1,
+        "matches_won_this_series": 0
+      },
+      "team_t": {
+        "score": 15,
+        "name": "Three Guys One Glock",
+        "flag": "US",
+        "consecutive_round_losses": 1,
+        "timeouts_remaining": 1,
+        "matches_won_this_series": 2
+      }
+    },
+    "round": {
+      "phase": "over",
+      "win_team": "CT"
+    },
+    "allplayers": {
+      "70000000000000001": {
+        "name": "Alpha",
+        "observer_slot": 4,
+        "team": "CT",
+        "match_stats": {
+          "kills": 26,
+          "assists": 4,
+          "deaths": 19,
+          "mvps": 8,
+          "score": 69
+        },
+        "state": {
+          "health": 1,
+          "armor": 83,
+          "helmet": true,
+          "flashed": 0,
+          "burning": 0,
+          "money": 4150,
+          "round_kills": 2,
+          "round_killhs": 1,
+          "round_totaldmg": 200,
+          "equip_value": 4700
+        },
+        "weapons": {
+          "weapon_0": {
+            "name": "weapon_knife_tactical",
+            "type": "Knife",
+            "state": "holstered"
+          },
+          "weapon_1": {
+            "name": "weapon_usp_silencer",
+            "type": "Pistol",
+            "ammo_clip": 12,
+            "ammo_clip_max": 12,
+            "ammo_reserve": 24,
+            "state": "holstered"
+          },
+          "weapon_2": {
+            "name": "weapon_m4a1",
+            "type": "Rifle",
+            "ammo_clip": 22,
+            "ammo_clip_max": 30,
+            "ammo_reserve": 71,
+            "state": "active"
+          }
+        }
+      },
+      "70000000000000003": {
+        "name": "Bravo",
+        "observer_slot": 5,
+        "team": "CT",
+        "match_stats": {
+          "kills": 24,
+          "assists": 4,
+          "deaths": 23,
+          "mvps": 5,
+          "score": 55
+        },
+        "state": {
+          "health": 100,
+          "armor": 100,
+          "helmet": true,
+          "flashed": 0,
+          "burning": 0,
+          "money": 3650,
+          "round_kills": 1,
+          "round_killhs": 0,
+          "round_totaldmg": 100,
+          "equip_value": 5300
+        },
+        "weapons": {
+          "weapon_0": {
+            "name": "weapon_knife_gypsy_jackknife",
+            "type": "Knife",
+            "state": "holstered"
+          },
+          "weapon_1": {
+            "name": "weapon_usp_silencer",
+            "type": "Pistol",
+            "ammo_clip": 11,
+            "ammo_clip_max": 12,
+            "ammo_reserve": 24,
+            "state": "holstered"
+          },
+          "weapon_2": {
+            "name": "weapon_aug",
+            "type": "Rifle",
+            "ammo_clip": 30,
+            "ammo_clip_max": 30,
+            "ammo_reserve": 80,
+            "state": "active"
+          }
+        }
+      },
+      "70000000000000004": {
+        "name": "Charlie",
+        "observer_slot": 1,
+        "team": "T",
+        "match_stats": {
+          "kills": 22,
+          "assists": 4,
+          "deaths": 22,
+          "mvps": 5,
+          "score": 63
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 8150,
+          "round_kills": 0,
+          "round_killhs": 0,
+          "round_totaldmg": 0,
+          "equip_value": 6950
+        },
+        "weapons": {}
+      },
+      "70000000000000006": {
+        "name": "Delta",
+        "observer_slot": 2,
+        "team": "T",
+        "match_stats": {
+          "kills": 17,
+          "assists": 3,
+          "deaths": 21,
+          "mvps": 3,
+          "score": 45
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 10700,
+          "round_kills": 0,
+          "round_killhs": 0,
+          "round_totaldmg": 54,
+          "equip_value": 4500
+        },
+        "weapons": {}
+      },
+      "70000000000000002": {
+        "name": "Echo",
+        "observer_slot": 3,
+        "team": "T",
+        "match_stats": {
+          "kills": 22,
+          "assists": 8,
+          "deaths": 22,
+          "mvps": 7,
+          "score": 65
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 10300,
+          "round_kills": 1,
+          "round_killhs": 1,
+          "round_totaldmg": 145,
+          "equip_value": 4600
+        },
+        "weapons": {}
+      },
+      "70000000000000005": {
+        "name": "Foxtrot",
+        "observer_slot": 6,
+        "team": "CT",
+        "match_stats": {
+          "kills": 15,
+          "assists": 1,
+          "deaths": 19,
+          "mvps": 3,
+          "score": 38
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 4200,
+          "round_kills": 0,
+          "round_killhs": 0,
+          "round_totaldmg": 0,
+          "equip_value": 5800
+        },
+        "weapons": {}
+      }
+    },
+    "previously": {
+      "round": {
+        "phase": "live"
+      },
+      "allplayers": {
+        "70000000000000001": {
+          "match_stats": {
+            "kills": 25,
+            "mvps": 7,
+            "score": 67
+          },
+          "state": {
+            "health": 27,
+            "money": 850,
+            "round_kills": 1,
+            "round_killhs": 0,
+            "round_totaldmg": 122
+          },
+          "weapons": {
+            "weapon_2": {
+              "ammo_clip": 28
+            }
+          }
+        },
+        "70000000000000003": {
+          "state": {
+            "money": 650
+          }
+        },
+        "70000000000000004": {
+          "state": {
+            "money": 6450
+          }
+        },
+        "70000000000000006": {
+          "state": {
+            "money": 9000
+          }
+        },
+        "70000000000000002": {
+          "match_stats": {
+            "deaths": 21
+          },
+          "state": {
+            "health": 78,
+            "armor": 95,
+            "helmet": true,
+            "money": 8600,
+            "round_totaldmg": 119
+          },
+          "weapons": {
+            "weapon_0": {
+              "name": "weapon_knife_t",
+              "type": "Knife",
+              "state": "holstered"
+            },
+            "weapon_1": {
+              "name": "weapon_glock",
+              "type": "Pistol",
+              "ammo_clip": 20,
+              "ammo_clip_max": 20,
+              "ammo_reserve": 120,
+              "state": "holstered"
+            },
+            "weapon_2": {
+              "name": "weapon_ak47",
+              "type": "Rifle",
+              "ammo_clip": 30,
+              "ammo_clip_max": 30,
+              "ammo_reserve": 71,
+              "state": "active"
+            },
+            "weapon_3": {
+              "name": "weapon_smokegrenade",
+              "type": "Grenade",
+              "ammo_reserve": 1,
+              "state": "holstered"
+            },
+            "weapon_4": {
+              "name": "weapon_flashbang",
+              "type": "Grenade",
+              "ammo_reserve": 2,
+              "state": "holstered"
+            },
+            "weapon_5": {
+              "name": "weapon_c4",
+              "type": "C4",
+              "state": "holstered"
+            }
+          }
+        },
+        "70000000000000005": {
+          "state": {
+            "money": 1200
+          }
+        }
+      }
+    }
+  },
+  {
+    "provider": {
+      "name": "Counter-Strike: Global Offensive",
+      "appid": 730,
+      "version": 13800,
+      "steamid": "70000000000000007",
+      "timestamp": 1629339113
+    },
+    "map": {
+      "mode": "scrimcomp2v2",
+      "name": "de_safehouse",
+      "phase": "intermission",
+      "round": 32,
+      "team_ct": {
+        "score": 16,
+        "name": "Negevs Only",
+        "flag": "US",
+        "consecutive_round_losses": 1,
+        "timeouts_remaining": 1,
+        "matches_won_this_series": 0
+      },
+      "team_t": {
+        "score": 15,
+        "name": "Three Guys One Glock",
+        "flag": "US",
+        "consecutive_round_losses": 0,
+        "timeouts_remaining": 1,
+        "matches_won_this_series": 2
+      }
+    },
+    "round": {
+      "phase": "over",
+      "win_team": "T"
+    },
+    "allplayers": {
+      "70000000000000001": {
+        "name": "Alpha",
+        "observer_slot": 4,
+        "team": "CT",
+        "match_stats": {
+          "kills": 26,
+          "assists": 4,
+          "deaths": 20,
+          "mvps": 8,
+          "score": 69
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 5200,
+          "round_kills": 0,
+          "round_killhs": 0,
+          "round_totaldmg": 0,
+          "equip_value": 5000
+        },
+        "weapons": {}
+      },
+      "70000000000000003": {
+        "name": "Bravo",
+        "observer_slot": 5,
+        "team": "CT",
+        "match_stats": {
+          "kills": 25,
+          "assists": 4,
+          "deaths": 24,
+          "mvps": 5,
+          "score": 57
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 4650,
+          "round_kills": 1,
+          "round_killhs": 0,
+          "round_totaldmg": 100,
+          "equip_value": 5900
+        },
+        "weapons": {}
+      },
+      "70000000000000004": {
+        "name": "Charlie",
+        "observer_slot": 1,
+        "team": "T",
+        "match_stats": {
+          "kills": 25,
+          "assists": 4,
+          "deaths": 22,
+          "mvps": 6,
+          "score": 69
+        },
+        "state": {
+          "health": 100,
+          "armor": 100,
+          "helmet": true,
+          "flashed": 0,
+          "burning": 0,
+          "money": 5900,
+          "round_kills": 3,
+          "round_killhs": 1,
+          "round_totaldmg": 248,
+          "equip_value": 4300
+        },
+        "weapons": {
+          "weapon_0": {
+            "name": "weapon_knife_t",
+            "type": "Knife",
+            "state": "holstered"
+          },
+          "weapon_1": {
+            "name": "weapon_glock",
+            "type": "Pistol",
+            "ammo_clip": 20,
+            "ammo_clip_max": 20,
+            "ammo_reserve": 120,
+            "state": "holstered"
+          },
+          "weapon_2": {
+            "name": "weapon_m4a1",
+            "type": "Rifle",
+            "ammo_clip": 15,
+            "ammo_clip_max": 30,
+            "ammo_reserve": 90,
+            "state": "active"
+          }
+        }
+      },
+      "70000000000000006": {
+        "name": "Delta",
+        "observer_slot": 2,
+        "team": "T",
+        "match_stats": {
+          "kills": 17,
+          "assists": 4,
+          "deaths": 22,
+          "mvps": 3,
+          "score": 46
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 9250,
+          "round_kills": 0,
+          "round_killhs": 0,
+          "round_totaldmg": 52,
+          "equip_value": 4650
+        },
+        "weapons": {}
+      },
+      "70000000000000002": {
+        "name": "Echo",
+        "observer_slot": 3,
+        "team": "T",
+        "match_stats": {
+          "kills": 22,
+          "assists": 8,
+          "deaths": 22,
+          "mvps": 7,
+          "score": 65
+        },
+        "state": {
+          "health": 100,
+          "armor": 100,
+          "helmet": true,
+          "flashed": 0,
+          "burning": 0,
+          "money": 9100,
+          "round_kills": 0,
+          "round_killhs": 0,
+          "round_totaldmg": 0,
+          "equip_value": 4400
+        },
+        "weapons": {
+          "weapon_0": {
+            "name": "weapon_knife_t",
+            "type": "Knife",
+            "state": "holstered"
+          },
+          "weapon_1": {
+            "name": "weapon_glock",
+            "type": "Pistol",
+            "ammo_clip": 20,
+            "ammo_clip_max": 20,
+            "ammo_reserve": 120,
+            "state": "holstered"
+          },
+          "weapon_2": {
+            "name": "weapon_c4",
+            "type": "C4",
+            "state": "holstered"
+          },
+          "weapon_3": {
+            "name": "weapon_ak47",
+            "type": "Rifle",
+            "ammo_clip": 30,
+            "ammo_clip_max": 30,
+            "ammo_reserve": 75,
+            "state": "active"
+          },
+          "weapon_4": {
+            "name": "weapon_smokegrenade",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          },
+          "weapon_5": {
+            "name": "weapon_flashbang",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          }
+        }
+      },
+      "70000000000000005": {
+        "name": "Foxtrot",
+        "observer_slot": 6,
+        "team": "CT",
+        "match_stats": {
+          "kills": 15,
+          "assists": 1,
+          "deaths": 20,
+          "mvps": 3,
+          "score": 38
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 1700,
+          "round_kills": 0,
+          "round_killhs": 0,
+          "round_totaldmg": 0,
+          "equip_value": 4300
+        },
+        "weapons": {}
+      }
+    },
+    "previously": {
+      "round": {
+        "phase": "live"
+      },
+      "allplayers": {
+        "70000000000000001": {
+          "state": {
+            "money": 3500
+          }
+        },
+        "70000000000000003": {
+          "state": {
+            "money": 2950
+          }
+        },
+        "70000000000000004": {
+          "match_stats": {
+            "kills": 24,
+            "mvps": 5,
+            "score": 67
+          },
+          "state": {
+            "money": 2600,
+            "round_kills": 2,
+            "round_killhs": 0,
+            "round_totaldmg": 148
+          },
+          "weapons": {
+            "weapon_2": {
+              "ammo_clip": 25
+            }
+          }
+        },
+        "70000000000000006": {
+          "state": {
+            "money": 6250
+          }
+        },
+        "70000000000000002": {
+          "state": {
+            "money": 6100
+          }
+        },
+        "70000000000000005": {
+          "match_stats": {
+            "deaths": 19
+          },
+          "state": {
+            "health": 100,
+            "money": 0
+          },
+          "weapons": {
+            "weapon_0": {
+              "name": "weapon_knife",
+              "type": "Knife",
+              "state": "holstered"
+            },
+            "weapon_1": {
+              "name": "weapon_hkp2000",
+              "type": "Pistol",
+              "ammo_clip": 13,
+              "ammo_clip_max": 13,
+              "ammo_reserve": 52,
+              "state": "holstered"
+            },
+            "weapon_2": {
+              "name": "weapon_aug",
+              "type": "Rifle",
+              "ammo_clip": 25,
+              "ammo_clip_max": 30,
+              "ammo_reserve": 90,
+              "state": "active"
+            },
+            "weapon_3": {
+              "name": "weapon_flashbang",
+              "type": "Grenade",
+              "ammo_reserve": 2,
+              "state": "holstered"
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "provider": {
+      "name": "Counter-Strike: Global Offensive",
+      "appid": 730,
+      "version": 13800,
+      "steamid": "70000000000000007",
+      "timestamp": 1629339188
+    },
+    "map": {
+      "mode": "scrimcomp2v2",
+      "name": "de_safehouse",
+      "phase": "live",
+      "round": 33,
+      "team_ct": {
+        "score": 16,
+        "name": "Negevs Only",
+        "flag": "US",
+        "consecutive_round_losses": 0,
+        "timeouts_remaining": 0,
+        "matches_won_this_series": 0
+      },
+      "team_t": {
+        "score": 16,
+        "name": "Three Guys One Glock",
+        "flag": "US",
+        "consecutive_round_losses": 2,
+        "timeouts_remaining": 1,
+        "matches_won_this_series": 2
+      }
+    },
+    "round": {
+      "phase": "over",
+      "win_team": "CT"
+    },
+    "allplayers": {
+      "70000000000000001": {
+        "name": "Alpha",
+        "observer_slot": 4,
+        "team": "CT",
+        "match_stats": {
+          "kills": 27,
+          "assists": 4,
+          "deaths": 20,
+          "mvps": 9,
+          "score": 71
+        },
+        "state": {
+          "health": 60,
+          "armor": 99,
+          "helmet": true,
+          "flashed": 0,
+          "burning": 0,
+          "money": 6950,
+          "round_kills": 1,
+          "round_killhs": 0,
+          "round_totaldmg": 100,
+          "equip_value": 6350
+        },
+        "weapons": {
+          "weapon_0": {
+            "name": "weapon_knife_tactical",
+            "type": "Knife",
+            "state": "holstered"
+          },
+          "weapon_1": {
+            "name": "weapon_usp_silencer",
+            "type": "Pistol",
+            "ammo_clip": 12,
+            "ammo_clip_max": 12,
+            "ammo_reserve": 24,
+            "state": "holstered"
+          },
+          "weapon_2": {
+            "name": "weapon_awp",
+            "type": "SniperRifle",
+            "ammo_clip": 9,
+            "ammo_clip_max": 10,
+            "ammo_reserve": 30,
+            "state": "active"
+          }
+        }
+      },
+      "70000000000000003": {
+        "name": "Bravo",
+        "observer_slot": 5,
+        "team": "CT",
+        "match_stats": {
+          "kills": 26,
+          "assists": 4,
+          "deaths": 25,
+          "mvps": 5,
+          "score": 59
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 8000,
+          "round_kills": 1,
+          "round_killhs": 1,
+          "round_totaldmg": 100,
+          "equip_value": 5500
+        },
+        "weapons": {}
+      },
+      "70000000000000004": {
+        "name": "Charlie",
+        "observer_slot": 1,
+        "team": "T",
+        "match_stats": {
+          "kills": 25,
+          "assists": 4,
+          "deaths": 23,
+          "mvps": 6,
+          "score": 69
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 6350,
+          "round_kills": 0,
+          "round_killhs": 0,
+          "round_totaldmg": 40,
+          "equip_value": 5950
+        },
+        "weapons": {}
+      },
+      "70000000000000006": {
+        "name": "Delta",
+        "observer_slot": 2,
+        "team": "T",
+        "match_stats": {
+          "kills": 17,
+          "assists": 5,
+          "deaths": 23,
+          "mvps": 3,
+          "score": 47
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 7700,
+          "round_kills": 0,
+          "round_killhs": 0,
+          "round_totaldmg": 78,
+          "equip_value": 4600
+        },
+        "weapons": {}
+      },
+      "70000000000000002": {
+        "name": "Echo",
+        "observer_slot": 3,
+        "team": "T",
+        "match_stats": {
+          "kills": 23,
+          "assists": 8,
+          "deaths": 23,
+          "mvps": 7,
+          "score": 67
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 8000,
+          "round_kills": 1,
+          "round_killhs": 0,
+          "round_totaldmg": 22,
+          "equip_value": 4600
+        },
+        "weapons": {}
+      },
+      "70000000000000005": {
+        "name": "Foxtrot",
+        "observer_slot": 6,
+        "team": "CT",
+        "match_stats": {
+          "kills": 16,
+          "assists": 1,
+          "deaths": 20,
+          "mvps": 3,
+          "score": 40
+        },
+        "state": {
+          "health": 100,
+          "armor": 100,
+          "helmet": true,
+          "flashed": 0,
+          "burning": 0,
+          "money": 7800,
+          "round_kills": 1,
+          "round_killhs": 0,
+          "round_totaldmg": 100,
+          "equip_value": 5700
+        },
+        "weapons": {
+          "weapon_0": {
+            "name": "weapon_knife",
+            "type": "Knife",
+            "state": "holstered"
+          },
+          "weapon_1": {
+            "name": "weapon_hkp2000",
+            "type": "Pistol",
+            "ammo_clip": 13,
+            "ammo_clip_max": 13,
+            "ammo_reserve": 52,
+            "state": "holstered"
+          },
+          "weapon_2": {
+            "name": "weapon_aug",
+            "type": "Rifle",
+            "ammo_clip": 23,
+            "ammo_clip_max": 30,
+            "ammo_reserve": 90,
+            "state": "active"
+          },
+          "weapon_3": {
+            "name": "weapon_flashbang",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          },
+          "weapon_4": {
+            "name": "weapon_smokegrenade",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          },
+          "weapon_5": {
+            "name": "weapon_hegrenade",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          }
+        }
+      }
+    },
+    "previously": {
+      "round": {
+        "phase": "live"
+      },
+      "allplayers": {
+        "70000000000000001": {
+          "match_stats": {
+            "kills": 26,
+            "mvps": 8,
+            "score": 69
+          },
+          "state": {
+            "money": 3850,
+            "round_kills": 0,
+            "round_totaldmg": 0
+          },
+          "weapons": {
+            "weapon_2": {
+              "ammo_clip": 10
+            }
+          }
+        },
+        "70000000000000003": {
+          "state": {
+            "money": 5000
+          }
+        },
+        "70000000000000004": {
+          "match_stats": {
+            "deaths": 22
+          },
+          "state": {
+            "health": 100,
+            "armor": 100,
+            "helmet": true,
+            "money": 4250
+          },
+          "weapons": {
+            "weapon_0": {
+              "name": "weapon_knife_t",
+              "type": "Knife",
+              "state": "holstered"
+            },
+            "weapon_1": {
+              "name": "weapon_glock",
+              "type": "Pistol",
+              "ammo_clip": 20,
+              "ammo_clip_max": 20,
+              "ammo_reserve": 120,
+              "state": "holstered"
+            },
+            "weapon_2": {
+              "name": "weapon_awp",
+              "type": "SniperRifle",
+              "ammo_clip": 9,
+              "ammo_clip_max": 10,
+              "ammo_reserve": 30,
+              "state": "active"
+            }
+          }
+        },
+        "70000000000000006": {
+          "state": {
+            "money": 5600
+          }
+        },
+        "70000000000000002": {
+          "state": {
+            "money": 5900
+          }
+        },
+        "70000000000000005": {
+          "state": {
+            "money": 4800
+          }
+        }
+      }
+    }
+  },
+  {
+    "provider": {
+      "name": "Counter-Strike: Global Offensive",
+      "appid": 730,
+      "version": 13800,
+      "steamid": "70000000000000007",
+      "timestamp": 1629339317
+    },
+    "map": {
+      "mode": "scrimcomp2v2",
+      "name": "de_safehouse",
+      "phase": "live",
+      "round": 34,
+      "team_ct": {
+        "score": 17,
+        "name": "Negevs Only",
+        "flag": "US",
+        "consecutive_round_losses": 1,
+        "timeouts_remaining": 0,
+        "matches_won_this_series": 0
+      },
+      "team_t": {
+        "score": 16,
+        "name": "Three Guys One Glock",
+        "flag": "US",
+        "consecutive_round_losses": 0,
+        "timeouts_remaining": 1,
+        "matches_won_this_series": 2
+      }
+    },
+    "round": {
+      "phase": "over",
+      "win_team": "T"
+    },
+    "allplayers": {
+      "70000000000000001": {
+        "name": "Alpha",
+        "observer_slot": 4,
+        "team": "CT",
+        "match_stats": {
+          "kills": 28,
+          "assists": 4,
+          "deaths": 21,
+          "mvps": 9,
+          "score": 73
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 8750,
+          "round_kills": 1,
+          "round_killhs": 0,
+          "round_totaldmg": 70,
+          "equip_value": 6950
+        },
+        "weapons": {}
+      },
+      "70000000000000003": {
+        "name": "Bravo",
+        "observer_slot": 5,
+        "team": "CT",
+        "match_stats": {
+          "kills": 27,
+          "assists": 4,
+          "deaths": 26,
+          "mvps": 5,
+          "score": 61
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 5700,
+          "round_kills": 1,
+          "round_killhs": 0,
+          "round_totaldmg": 93,
+          "equip_value": 4500
+        },
+        "weapons": {}
+      },
+      "70000000000000004": {
+        "name": "Charlie",
+        "observer_slot": 1,
+        "team": "T",
+        "match_stats": {
+          "kills": 26,
+          "assists": 4,
+          "deaths": 24,
+          "mvps": 6,
+          "score": 72
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 5150,
+          "round_kills": 1,
+          "round_killhs": 0,
+          "round_totaldmg": 66,
+          "equip_value": 4700
+        },
+        "weapons": {}
+      },
+      "70000000000000006": {
+        "name": "Delta",
+        "observer_slot": 2,
+        "team": "T",
+        "match_stats": {
+          "kills": 17,
+          "assists": 5,
+          "deaths": 24,
+          "mvps": 3,
+          "score": 47
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 6400,
+          "round_kills": 0,
+          "round_killhs": 0,
+          "round_totaldmg": 34,
+          "equip_value": 4500
+        },
+        "weapons": {}
+      },
+      "70000000000000002": {
+        "name": "Echo",
+        "observer_slot": 3,
+        "team": "T",
+        "match_stats": {
+          "kills": 25,
+          "assists": 8,
+          "deaths": 23,
+          "mvps": 8,
+          "score": 75
+        },
+        "state": {
+          "health": 28,
+          "armor": 83,
+          "helmet": true,
+          "flashed": 0,
+          "burning": 0,
+          "money": 7700,
+          "round_kills": 2,
+          "round_killhs": 1,
+          "round_totaldmg": 200,
+          "equip_value": 4400
+        },
+        "weapons": {
+          "weapon_0": {
+            "name": "weapon_knife_t",
+            "type": "Knife",
+            "state": "holstered"
+          },
+          "weapon_1": {
+            "name": "weapon_glock",
+            "type": "Pistol",
+            "ammo_clip": 20,
+            "ammo_clip_max": 20,
+            "ammo_reserve": 120,
+            "state": "holstered"
+          },
+          "weapon_2": {
+            "name": "weapon_ak47",
+            "type": "Rifle",
+            "ammo_clip": 0,
+            "ammo_clip_max": 30,
+            "ammo_reserve": 90,
+            "state": "active"
+          },
+          "weapon_3": {
+            "name": "weapon_smokegrenade",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          }
+        }
+      },
+      "70000000000000005": {
+        "name": "Foxtrot",
+        "observer_slot": 6,
+        "team": "CT",
+        "match_stats": {
+          "kills": 16,
+          "assists": 2,
+          "deaths": 21,
+          "mvps": 3,
+          "score": 41
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 9300,
+          "round_kills": 0,
+          "round_killhs": 0,
+          "round_totaldmg": 109,
+          "equip_value": 5900
+        },
+        "weapons": {}
+      }
+    },
+    "previously": {
+      "round": {
+        "phase": "live",
+        "bomb": "planted"
+      },
+      "allplayers": {
+        "70000000000000001": {
+          "match_stats": {
+            "deaths": 20
+          },
+          "state": {
+            "health": 73,
+            "armor": 95,
+            "helmet": true,
+            "money": 7050
+          },
+          "weapons": {
+            "weapon_0": {
+              "name": "weapon_knife_tactical",
+              "type": "Knife",
+              "state": "holstered"
+            },
+            "weapon_1": {
+              "name": "weapon_usp_silencer",
+              "type": "Pistol",
+              "ammo_clip": 12,
+              "ammo_clip_max": 12,
+              "ammo_reserve": 24,
+              "state": "holstered"
+            },
+            "weapon_2": {
+              "name": "weapon_awp",
+              "type": "SniperRifle",
+              "ammo_clip": 7,
+              "ammo_clip_max": 10,
+              "ammo_reserve": 30,
+              "state": "active"
+            },
+            "weapon_3": {
+              "name": "weapon_smokegrenade",
+              "type": "Grenade",
+              "ammo_reserve": 1,
+              "state": "holstered"
+            },
+            "weapon_4": {
+              "name": "weapon_hegrenade",
+              "type": "Grenade",
+              "ammo_reserve": 1,
+              "state": "holstered"
+            }
+          }
+        },
+        "70000000000000003": {
+          "state": {
+            "money": 4000
+          }
+        },
+        "70000000000000004": {
+          "state": {
+            "money": 2150
+          }
+        },
+        "70000000000000006": {
+          "state": {
+            "money": 3400
+          }
+        },
+        "70000000000000002": {
+          "match_stats": {
+            "kills": 24,
+            "mvps": 7,
+            "score": 72
+          },
+          "state": {
+            "money": 4400,
+            "round_kills": 1,
+            "round_killhs": 0,
+            "round_totaldmg": 127
+          },
+          "weapons": {
+            "weapon_2": {
+              "ammo_clip": 9
+            }
+          }
+        },
+        "70000000000000005": {
+          "state": {
+            "money": 7600
+          }
+        }
+      }
+    }
+  },
+  {
+    "provider": {
+      "name": "Counter-Strike: Global Offensive",
+      "appid": 730,
+      "version": 13800,
+      "steamid": "70000000000000007",
+      "timestamp": 1629339392
+    },
+    "map": {
+      "mode": "scrimcomp2v2",
+      "name": "de_safehouse",
+      "phase": "intermission",
+      "round": 35,
+      "team_ct": {
+        "score": 17,
+        "name": "Negevs Only",
+        "flag": "US",
+        "consecutive_round_losses": 2,
+        "timeouts_remaining": 0,
+        "matches_won_this_series": 0
+      },
+      "team_t": {
+        "score": 18,
+        "name": "Three Guys One Glock",
+        "flag": "US",
+        "consecutive_round_losses": 0,
+        "timeouts_remaining": 1,
+        "matches_won_this_series": 2
+      }
+    },
+    "round": {
+      "phase": "over",
+      "win_team": "T"
+    },
+    "allplayers": {
+      "70000000000000001": {
+        "name": "Alpha",
+        "observer_slot": 4,
+        "team": "CT",
+        "match_stats": {
+          "kills": 30,
+          "assists": 4,
+          "deaths": 22,
+          "mvps": 9,
+          "score": 77
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 4000,
+          "round_kills": 2,
+          "round_killhs": 0,
+          "round_totaldmg": 128,
+          "equip_value": 7250
+        },
+        "weapons": {}
+      },
+      "70000000000000003": {
+        "name": "Bravo",
+        "observer_slot": 5,
+        "team": "CT",
+        "match_stats": {
+          "kills": 27,
+          "assists": 4,
+          "deaths": 27,
+          "mvps": 5,
+          "score": 61
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 3750,
+          "round_kills": 0,
+          "round_killhs": 0,
+          "round_totaldmg": 54,
+          "equip_value": 4250
+        },
+        "weapons": {}
+      },
+      "70000000000000004": {
+        "name": "Charlie",
+        "observer_slot": 1,
+        "team": "T",
+        "match_stats": {
+          "kills": 26,
+          "assists": 4,
+          "deaths": 25,
+          "mvps": 6,
+          "score": 72
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 3950,
+          "round_kills": 0,
+          "round_killhs": 0,
+          "round_totaldmg": 0,
+          "equip_value": 4400
+        },
+        "weapons": {}
+      },
+      "70000000000000006": {
+        "name": "Delta",
+        "observer_slot": 2,
+        "team": "T",
+        "match_stats": {
+          "kills": 17,
+          "assists": 5,
+          "deaths": 25,
+          "mvps": 3,
+          "score": 47
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 5000,
+          "round_kills": 0,
+          "round_killhs": 0,
+          "round_totaldmg": 0,
+          "equip_value": 4600
+        },
+        "weapons": {}
+      },
+      "70000000000000002": {
+        "name": "Echo",
+        "observer_slot": 3,
+        "team": "T",
+        "match_stats": {
+          "kills": 28,
+          "assists": 8,
+          "deaths": 23,
+          "mvps": 9,
+          "score": 81
+        },
+        "state": {
+          "health": 8,
+          "armor": 87,
+          "helmet": true,
+          "flashed": 0,
+          "burning": 0,
+          "money": 10750,
+          "round_kills": 3,
+          "round_killhs": 1,
+          "round_totaldmg": 284,
+          "equip_value": 5000
+        },
+        "weapons": {
+          "weapon_0": {
+            "name": "weapon_knife_t",
+            "type": "Knife",
+            "state": "holstered"
+          },
+          "weapon_1": {
+            "name": "weapon_glock",
+            "type": "Pistol",
+            "ammo_clip": 20,
+            "ammo_clip_max": 20,
+            "ammo_reserve": 120,
+            "state": "holstered"
+          },
+          "weapon_2": {
+            "name": "weapon_flashbang",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          },
+          "weapon_3": {
+            "name": "weapon_ak47",
+            "type": "Rifle",
+            "ammo_clip": 20,
+            "ammo_clip_max": 30,
+            "ammo_reserve": 77,
+            "state": "active"
+          },
+          "weapon_4": {
+            "name": "weapon_smokegrenade",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          },
+          "weapon_5": {
+            "name": "weapon_c4",
+            "type": "C4",
+            "state": "holstered"
+          },
+          "weapon_6": {
+            "name": "weapon_incgrenade",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          }
+        }
+      },
+      "70000000000000005": {
+        "name": "Foxtrot",
+        "observer_slot": 6,
+        "team": "CT",
+        "match_stats": {
+          "kills": 16,
+          "assists": 3,
+          "deaths": 22,
+          "mvps": 3,
+          "score": 42
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 5900,
+          "round_kills": 0,
+          "round_killhs": 0,
+          "round_totaldmg": 110,
+          "equip_value": 5700
+        },
+        "weapons": {}
+      }
+    },
+    "previously": {
+      "round": {
+        "phase": "live"
+      },
+      "allplayers": {
+        "70000000000000001": {
+          "match_stats": {
+            "deaths": 21
+          },
+          "state": {
+            "health": 100,
+            "armor": 100,
+            "helmet": true,
+            "money": 1900
+          },
+          "weapons": {
+            "weapon_0": {
+              "name": "weapon_knife_tactical",
+              "type": "Knife",
+              "state": "holstered"
+            },
+            "weapon_1": {
+              "name": "weapon_usp_silencer",
+              "type": "Pistol",
+              "ammo_clip": 12,
+              "ammo_clip_max": 12,
+              "ammo_reserve": 24,
+              "state": "holstered"
+            },
+            "weapon_2": {
+              "name": "weapon_awp",
+              "type": "SniperRifle",
+              "ammo_clip": 6,
+              "ammo_clip_max": 10,
+              "ammo_reserve": 30,
+              "state": "active"
+            },
+            "weapon_3": {
+              "name": "weapon_incgrenade",
+              "type": "Grenade",
+              "ammo_reserve": 1,
+              "state": "holstered"
+            }
+          }
+        },
+        "70000000000000003": {
+          "state": {
+            "money": 1650
+          }
+        },
+        "70000000000000004": {
+          "state": {
+            "money": 950
+          }
+        },
+        "70000000000000006": {
+          "state": {
+            "money": 2000
+          }
+        },
+        "70000000000000002": {
+          "match_stats": {
+            "kills": 26,
+            "mvps": 8,
+            "score": 77
+          },
+          "state": {
+            "health": 46,
+            "armor": 90,
+            "money": 7150,
+            "round_kills": 1,
+            "round_killhs": 0,
+            "round_totaldmg": 100,
+            "equip_value": 4400
+          },
+          "weapons": {
+            "weapon_3": {
+              "ammo_clip": 30
+            }
+          }
+        },
+        "70000000000000005": {
+          "match_stats": {
+            "deaths": 21
+          },
+          "state": {
+            "health": 100,
+            "armor": 100,
+            "helmet": true,
+            "money": 3800,
+            "round_totaldmg": 72
+          },
+          "weapons": {
+            "weapon_0": {
+              "name": "weapon_knife",
+              "type": "Knife",
+              "state": "holstered"
+            },
+            "weapon_1": {
+              "name": "weapon_hkp2000",
+              "type": "Pistol",
+              "ammo_clip": 13,
+              "ammo_clip_max": 13,
+              "ammo_reserve": 52,
+              "state": "holstered"
+            },
+            "weapon_2": {
+              "name": "weapon_aug",
+              "type": "Rifle",
+              "ammo_clip": 26,
+              "ammo_clip_max": 30,
+              "ammo_reserve": 90,
+              "state": "active"
+            },
+            "weapon_3": {
+              "name": "weapon_flashbang",
+              "type": "Grenade",
+              "ammo_reserve": 1,
+              "state": "holstered"
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "provider": {
+      "name": "Counter-Strike: Global Offensive",
+      "appid": 730,
+      "version": 13800,
+      "steamid": "70000000000000007",
+      "timestamp": 1629339470
+    },
+    "map": {
+      "mode": "scrimcomp2v2",
+      "name": "de_safehouse",
+      "phase": "live",
+      "round": 36,
+      "team_ct": {
+        "score": 19,
+        "name": "Three Guys One Glock",
+        "flag": "US",
+        "consecutive_round_losses": 0,
+        "timeouts_remaining": 1,
+        "matches_won_this_series": 2
+      },
+      "team_t": {
+        "score": 17,
+        "name": "Negevs Only",
+        "flag": "US",
+        "consecutive_round_losses": 2,
+        "timeouts_remaining": 0,
+        "matches_won_this_series": 0
+      }
+    },
+    "round": {
+      "phase": "over",
+      "win_team": "CT"
+    },
+    "allplayers": {
+      "70000000000000001": {
+        "name": "Alpha",
+        "observer_slot": 4,
+        "team": "T",
+        "match_stats": {
+          "kills": 30,
+          "assists": 4,
+          "deaths": 23,
+          "mvps": 9,
+          "score": 77
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 8400,
+          "round_kills": 0,
+          "round_killhs": 0,
+          "round_totaldmg": 33,
+          "equip_value": 3900
+        },
+        "weapons": {}
+      },
+      "70000000000000003": {
+        "name": "Bravo",
+        "observer_slot": 5,
+        "team": "T",
+        "match_stats": {
+          "kills": 27,
+          "assists": 4,
+          "deaths": 28,
+          "mvps": 5,
+          "score": 61
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 5350,
+          "round_kills": 0,
+          "round_killhs": 0,
+          "round_totaldmg": 0,
+          "equip_value": 6950
+        },
+        "weapons": {}
+      },
+      "70000000000000004": {
+        "name": "Charlie",
+        "observer_slot": 1,
+        "team": "CT",
+        "match_stats": {
+          "kills": 27,
+          "assists": 4,
+          "deaths": 25,
+          "mvps": 6,
+          "score": 74
+        },
+        "state": {
+          "health": 67,
+          "armor": 95,
+          "helmet": true,
+          "flashed": 0,
+          "burning": 0,
+          "money": 7200,
+          "round_kills": 1,
+          "round_killhs": 0,
+          "round_totaldmg": 100,
+          "equip_value": 6300
+        },
+        "weapons": {
+          "weapon_0": {
+            "name": "weapon_knife",
+            "type": "Knife",
+            "state": "holstered"
+          },
+          "weapon_1": {
+            "name": "weapon_usp_silencer",
+            "type": "Pistol",
+            "ammo_clip": 12,
+            "ammo_clip_max": 12,
+            "ammo_reserve": 24,
+            "state": "holstered"
+          },
+          "weapon_2": {
+            "name": "weapon_aug",
+            "type": "Rifle",
+            "ammo_clip": 17,
+            "ammo_clip_max": 30,
+            "ammo_reserve": 90,
+            "state": "active"
+          },
+          "weapon_3": {
+            "name": "weapon_smokegrenade",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          },
+          "weapon_4": {
+            "name": "weapon_hegrenade",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          }
+        }
+      },
+      "70000000000000006": {
+        "name": "Delta",
+        "observer_slot": 2,
+        "team": "CT",
+        "match_stats": {
+          "kills": 19,
+          "assists": 5,
+          "deaths": 25,
+          "mvps": 4,
+          "score": 51
+        },
+        "state": {
+          "health": 100,
+          "armor": 100,
+          "helmet": true,
+          "flashed": 0,
+          "burning": 0,
+          "money": 7800,
+          "round_kills": 2,
+          "round_killhs": 0,
+          "round_totaldmg": 112,
+          "equip_value": 6000
+        },
+        "weapons": {
+          "weapon_0": {
+            "name": "weapon_knife",
+            "type": "Knife",
+            "state": "holstered"
+          },
+          "weapon_1": {
+            "name": "weapon_hkp2000",
+            "type": "Pistol",
+            "ammo_clip": 13,
+            "ammo_clip_max": 13,
+            "ammo_reserve": 52,
+            "state": "holstered"
+          },
+          "weapon_2": {
+            "name": "weapon_aug",
+            "type": "Rifle",
+            "ammo_clip": 11,
+            "ammo_clip_max": 30,
+            "ammo_reserve": 90,
+            "state": "active"
+          },
+          "weapon_3": {
+            "name": "weapon_smokegrenade",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          },
+          "weapon_4": {
+            "name": "weapon_flashbang",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          },
+          "weapon_5": {
+            "name": "weapon_incgrenade",
+            "type": "Grenade",
+            "ammo_reserve": 1,
+            "state": "holstered"
+          }
+        }
+      },
+      "70000000000000002": {
+        "name": "Echo",
+        "observer_slot": 3,
+        "team": "CT",
+        "match_stats": {
+          "kills": 28,
+          "assists": 9,
+          "deaths": 24,
+          "mvps": 9,
+          "score": 82
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 8800,
+          "round_kills": 0,
+          "round_killhs": 0,
+          "round_totaldmg": 88,
+          "equip_value": 4400
+        },
+        "weapons": {}
+      },
+      "70000000000000005": {
+        "name": "Foxtrot",
+        "observer_slot": 6,
+        "team": "T",
+        "match_stats": {
+          "kills": 17,
+          "assists": 3,
+          "deaths": 23,
+          "mvps": 3,
+          "score": 44
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 8400,
+          "round_kills": 1,
+          "round_killhs": 0,
+          "round_totaldmg": 100,
+          "equip_value": 4200
+        },
+        "weapons": {}
+      }
+    },
+    "previously": {
+      "round": {
+        "phase": "live"
+      },
+      "allplayers": {
+        "70000000000000001": {
+          "state": {
+            "money": 6300
+          }
+        },
+        "70000000000000003": {
+          "state": {
+            "money": 3250
+          }
+        },
+        "70000000000000004": {
+          "state": {
+            "money": 4200
+          }
+        },
+        "70000000000000006": {
+          "match_stats": {
+            "kills": 18,
+            "mvps": 3,
+            "score": 49
+          },
+          "state": {
+            "money": 4500,
+            "round_kills": 1,
+            "round_totaldmg": 100
+          },
+          "weapons": {
+            "weapon_2": {
+              "ammo_clip": 18
+            }
+          }
+        },
+        "70000000000000002": {
+          "match_stats": {
+            "assists": 8,
+            "score": 81
+          },
+          "state": {
+            "money": 5800
+          }
+        },
+        "70000000000000005": {
+          "match_stats": {
+            "deaths": 22
+          },
+          "state": {
+            "health": 12,
+            "armor": 80,
+            "helmet": true,
+            "money": 6300
+          },
+          "weapons": {
+            "weapon_0": {
+              "name": "weapon_knife_t",
+              "type": "Knife",
+              "state": "holstered"
+            },
+            "weapon_1": {
+              "name": "weapon_glock",
+              "type": "Pistol",
+              "ammo_clip": 20,
+              "ammo_clip_max": 20,
+              "ammo_reserve": 120,
+              "state": "holstered"
+            },
+            "weapon_2": {
+              "name": "weapon_sg556",
+              "type": "Rifle",
+              "ammo_clip": 3,
+              "ammo_clip_max": 30,
+              "ammo_reserve": 90,
+              "state": "active"
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "provider": {
+      "name": "Counter-Strike: Global Offensive",
+      "appid": 730,
+      "version": 13800,
+      "steamid": "70000000000000007",
+      "timestamp": 1629339568
+    },
+    "map": {
+      "mode": "scrimcomp2v2",
+      "name": "de_safehouse",
+      "phase": "gameover",
+      "round": 37,
+      "team_ct": {
+        "score": 19,
+        "name": "Three Guys One Glock",
+        "flag": "US",
+        "consecutive_round_losses": 0,
+        "timeouts_remaining": 1,
+        "matches_won_this_series": 2
+      },
+      "team_t": {
+        "score": 17,
+        "name": "Negevs Only",
+        "flag": "US",
+        "consecutive_round_losses": 3,
+        "timeouts_remaining": 0,
+        "matches_won_this_series": 0
+      }
+    },
+    "round": {
+      "phase": "over",
+      "win_team": "CT",
+      "bomb": "defused"
+    },
+    "allplayers": {
+      "70000000000000001": {
+        "name": "Alpha",
+        "observer_slot": 4,
+        "team": "T",
+        "match_stats": {
+          "kills": 31,
+          "assists": 4,
+          "deaths": 24,
+          "mvps": 9,
+          "score": 79
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 5350,
+          "round_kills": 1,
+          "round_killhs": 0,
+          "round_totaldmg": 100,
+          "equip_value": 6650
+        },
+        "weapons": {}
+      },
+      "70000000000000003": {
+        "name": "Bravo",
+        "observer_slot": 5,
+        "team": "T",
+        "match_stats": {
+          "kills": 28,
+          "assists": 4,
+          "deaths": 29,
+          "mvps": 5,
+          "score": 65
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 5850,
+          "round_kills": 1,
+          "round_killhs": 1,
+          "round_totaldmg": 129,
+          "equip_value": 5100
+        },
+        "weapons": {}
+      },
+      "70000000000000004": {
+        "name": "Charlie",
+        "observer_slot": 1,
+        "team": "CT",
+        "match_stats": {
+          "kills": 27,
+          "assists": 4,
+          "deaths": 26,
+          "mvps": 6,
+          "score": 74
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 9650,
+          "round_kills": 0,
+          "round_killhs": 0,
+          "round_totaldmg": 0,
+          "equip_value": 6300
+        },
+        "weapons": {}
+      },
+      "70000000000000006": {
+        "name": "Delta",
+        "observer_slot": 2,
+        "team": "CT",
+        "match_stats": {
+          "kills": 19,
+          "assists": 5,
+          "deaths": 26,
+          "mvps": 4,
+          "score": 51
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 11050,
+          "round_kills": 0,
+          "round_killhs": 0,
+          "round_totaldmg": 0,
+          "equip_value": 6000
+        },
+        "weapons": {}
+      },
+      "70000000000000002": {
+        "name": "Echo",
+        "observer_slot": 3,
+        "team": "CT",
+        "match_stats": {
+          "kills": 31,
+          "assists": 9,
+          "deaths": 24,
+          "mvps": 10,
+          "score": 90
+        },
+        "state": {
+          "health": 42,
+          "armor": 100,
+          "helmet": true,
+          "flashed": 0,
+          "burning": 0,
+          "money": 8850,
+          "round_kills": 3,
+          "round_killhs": 1,
+          "round_totaldmg": 300,
+          "equip_value": 5000
+        },
+        "weapons": {
+          "weapon_0": {
+            "name": "weapon_knife",
+            "type": "Knife",
+            "state": "holstered"
+          },
+          "weapon_1": {
+            "name": "weapon_usp_silencer",
+            "type": "Pistol",
+            "ammo_clip": 12,
+            "ammo_clip_max": 12,
+            "ammo_reserve": 24,
+            "state": "holstered"
+          },
+          "weapon_2": {
+            "name": "weapon_m4a1_silencer",
+            "type": "Rifle",
+            "ammo_clip": 3,
+            "ammo_clip_max": 25,
+            "ammo_reserve": 50,
+            "state": "active"
+          }
+        }
+      },
+      "70000000000000005": {
+        "name": "Foxtrot",
+        "observer_slot": 6,
+        "team": "T",
+        "match_stats": {
+          "kills": 17,
+          "assists": 3,
+          "deaths": 24,
+          "mvps": 3,
+          "score": 44
+        },
+        "state": {
+          "health": 0,
+          "armor": 0,
+          "helmet": false,
+          "flashed": 0,
+          "burning": 0,
+          "money": 6900,
+          "round_kills": 0,
+          "round_killhs": 0,
+          "round_totaldmg": 29,
+          "equip_value": 5000
+        },
+        "weapons": {}
+      }
+    },
+    "previously": {
+      "round": {
+        "phase": "live",
+        "bomb": "planted"
+      },
+      "allplayers": {
+        "70000000000000001": {
+          "state": {
+            "money": 2050
+          }
+        },
+        "70000000000000003": {
+          "state": {
+            "money": 2550
+          }
+        },
+        "70000000000000004": {
+          "state": {
+            "money": 6400
+          }
+        },
+        "70000000000000006": {
+          "state": {
+            "money": 7800
+          }
+        },
+        "70000000000000002": {
+          "match_stats": {
+            "mvps": 9,
+            "score": 88
+          },
+          "state": {
+            "money": 5300
+          }
+        },
+        "70000000000000005": {
+          "state": {
+            "money": 3600
+          }
+        }
+      }
+    }
+  }
+]
