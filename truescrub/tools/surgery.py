@@ -12,7 +12,7 @@ from typing import Tuple
 from truescrub.db import execute
 from truescrub.db import execute_one
 from truescrub.envconfig import SEGMENT_MAX_BYTES
-from truescrub.statewriter.game_state_log import GameStateLog
+from truescrub.statewriter import GameStateLog
 
 logger = logging.getLogger(__name__)
 

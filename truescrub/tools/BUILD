@@ -7,6 +7,10 @@ py_binary(
         "teameval.py",
     ],
     legacy_create_init = False,
+    visibility = [
+        "//:__pkg__",
+        "//tests:__pkg__",
+    ],
     deps = [
         "//truescrub:db",
         "//truescrub:matchmaking",
@@ -26,7 +30,18 @@ py_binary(
     ],
 )
 
-
+py_binary(
+    name = "optuna_match",
+    srcs = ["optuna_match.py"],
+    legacy_create_init = False,
+    deps = [
+        "//truescrub:db",
+        "//truescrub:models",
+        "//truescrub/tools:genetic",
+        "//truescrub/tools:teameval",
+        requirement("optuna"),
+    ],
+)
 
 py_binary(
     name = "log_translator",
@@ -80,5 +95,28 @@ py_binary(
     deps = [
         "//truescrub:accolades",
         "//truescrub:highlights",
+    ],
+)
+
+py_binary(
+    name = "recover_log",
+    srcs = ["recover_log.py"],
+    legacy_create_init = False,
+    deps = [
+        "//truescrub:envconfig",
+        "//truescrub/proto:game_state_py_pb2",
+        "//truescrub/statewriter:segmented_log",
+    ],
+)
+
+py_binary(
+    name = "compact_log",
+    srcs = ["compact_log.py"],
+    legacy_create_init = False,
+    deps = [
+        "//truescrub:envconfig",
+        "//truescrub/proto:game_state_py_pb2",
+        "//truescrub/statewriter:segmented_log",
+        requirement("tqdm"),
     ],
 )

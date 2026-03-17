@@ -5,49 +5,47 @@ monotonically increasing counter, so achievements can never be lost."""
 from truescrub.db import execute_one
 
 
-# Each achievement: (id, name, stat_key, emoji, thresholds)
-# thresholds is a list of (count, tier_name) in ascending order.
 ACHIEVEMENTS = [
-    ('rounds_played', 'Rounds Played', 'rounds_played', '🎮', [
+    ('rounds_played', 'Rounds Played', 'rounds_played', [
         (10, 'Warm Body'),
         (100, 'Furniture'),
         (500, 'Veteran Scrub'),
     ]),
-    ('total_kills', 'Total Kills', 'total_kills', '🔫', [
+    ('total_kills', 'Total Kills', 'total_kills', [
         (50, 'First Blood'),
         (250, 'Serial Killer'),
         (1000, 'Chicken Slayer'),
     ]),
-    ('total_mvps', 'Total MVPs', 'total_mvps', '⭐', [
+    ('total_mvps', 'Total MVPs', 'total_mvps', [
         (10, 'Shiny Star'),
         (50, 'Star Collector'),
     ]),
-    ('total_headshots', 'Total Headshots', 'total_headshots', '🎯', [
+    ('total_headshots', 'Total Headshots', 'total_headshots', [
         (25, 'Lucky Shot'),
         (100, 'Actually Aiming'),
     ]),
 
-    ('distinct_teammates', 'Distinct Teammates', 'distinct_teammates', '🤝', [
+    ('distinct_teammates', 'Distinct Teammates', 'distinct_teammates', [
         (5, 'Socialite'),
         (15, 'Knows Everyone'),
     ]),
-    ('distinct_maps', 'Distinct Maps', 'distinct_maps', '🗺️', [
+    ('distinct_maps', 'Distinct Maps', 'distinct_maps', [
         (3, 'Tourist'),
         (5, 'World Traveler'),
     ]),
-    ('multi_kill_rounds', 'Rounds with 3+ Kills', 'multi_kill_rounds', '💀', [
+    ('multi_kill_rounds', 'Rounds with 3+ Kills', 'multi_kill_rounds', [
         (1, 'Hat Trick'),
         (10, 'Multi-Kill Machine'),
     ]),
-    ('survived_losses', 'Survived Lost Rounds', 'survived_losses', '🏃', [
+    ('survived_losses', 'Survived Lost Rounds', 'survived_losses', [
         (5, 'Last One Standing'),
         (25, 'Sole Survivor'),
     ]),
-    ('zero_damage_rounds', 'Rounds with 0 Damage', 'zero_damage_rounds', '👻', [
+    ('zero_damage_rounds', 'Rounds with 0 Damage', 'zero_damage_rounds', [
         (5, 'AFK Legend'),
         (25, 'Ghost'),
     ]),
-    ('seasons_played', 'Seasons Played', 'seasons_played', '📅', [
+    ('seasons_played', 'Seasons Played', 'seasons_played', [
         (2, 'Returning Customer'),
         (4, 'Lifer'),
     ]),
@@ -55,7 +53,6 @@ ACHIEVEMENTS = [
 
 
 def get_achievement_stats(skill_db, player_id):
-    """Run focused SQL queries and return all raw counters for achievements."""
     stats = {}
 
     # Query 1: Core stats from round_stats only
@@ -126,7 +123,6 @@ def compute_achievements(stats):
       {
         'id': str,
         'name': str,        # category name
-        'emoji': str,
         'tiers': [
           {'threshold': int, 'tier_name': str, 'earned': bool},
           ...
@@ -136,7 +132,7 @@ def compute_achievements(stats):
       }
     """
     results = []
-    for achievement_id, name, stat_key, emoji, thresholds in ACHIEVEMENTS:
+    for achievement_id, name, stat_key, thresholds in ACHIEVEMENTS:
         current = stats.get(stat_key, 0)
         highest_tier = None
         tiers = []
@@ -160,7 +156,6 @@ def compute_achievements(stats):
         results.append({
             'id': achievement_id,
             'name': name,
-            'emoji': emoji,
             'tiers': tiers,
             'current': current,
             'highest_tier': highest_tier,

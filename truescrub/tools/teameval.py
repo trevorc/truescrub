@@ -2,11 +2,9 @@ import argparse
 import itertools
 import math
 import operator
-import random
-from typing import List, Iterable, Set, Dict
+from typing import List, Iterable, Set, Dict, Any, Tuple
 
 import trueskill
-
 from truescrub.db import get_skill_db, get_season_players
 from truescrub.matchmaking import win_probability
 from truescrub.models import Player
@@ -27,90 +25,81 @@ def mmr_sum(team: List[trueskill.Rating]) -> float:
   return sum(skill.mu - 2 * skill.sigma for skill in team)
 
 
-def run_match(team_a, team_b):
-  if random.random() <= win_probability(trueskill.global_env(), team_a, team_b):
-    return team_a
-  return team_b
+def generate_bracket(teams_count: int) -> List[int]:
+  if teams_count < 2:
+    return [1]
+  slots = 2 ** math.ceil(math.log2(teams_count))
+  bracket = [1, 2]
+  while len(bracket) < slots:
+    next_bracket = []
+    for seed in bracket:
+      next_bracket.append(seed)
+      next_bracket.append(len(bracket) * 2 + 1 - seed)
+    bracket = next_bracket
+  return bracket
 
 
-TRIAL_COUNT = 3
+def build_bracket_tree(bracket: List[int], n: int) -> Any:
+  leaves: List[Any] = [seed - 1 if seed <= n else 'Bye' for seed in bracket]
+  while len(leaves) > 1:
+    next_leaves: List[Any] = []
+    for i in range(0, len(leaves), 2):
+      left = leaves[i]
+      right = leaves[i + 1]
+      if left == 'Bye' and right == 'Bye':
+        next_leaves.append('Bye')
+      elif left == 'Bye':
+        next_leaves.append(right)
+      elif right == 'Bye':
+        next_leaves.append(left)
+      else:
+        next_leaves.append((left, right))
+    leaves = next_leaves
+  return leaves[0]
 
 
-def tournament_simulator():
-  matches = 0
-  raw_quality = 0.0
-  quality = None
+def evaluate_bracket_tree(
+    tree: Any, teams: List[List[trueskill.Rating]]
+) -> Tuple[float, Dict[int, float]]:
+  if isinstance(tree, int):
+    return 0.0, {tree: 1.0}
+  if tree == 'Bye':
+    return 0.0, {}
 
-  while True:
-    team1, team2 = yield quality
-    raw_quality += math.log(trueskill.quality((team1, team2)))
-    matches += 1
-    quality = math.pow(math.exp(raw_quality), 1.0 / matches)
+  left, right = tree
+  left_sum, left_probs = evaluate_bracket_tree(left, teams)
+  right_sum, right_probs = evaluate_bracket_tree(right, teams)
 
+  total_quality = left_sum + right_sum
+  expected_match_quality = 0.0
+  winner_probs = {}
 
-def three_team_single_elimination(tournament, teams):
-  if len(teams) != 3:
-    raise ValueError('must supply 3 teams')
+  for tl, pl in left_probs.items():
+    for tr, pr in right_probs.items():
+      match_prob = pl * pr
+      p_tl_wins = win_probability(trueskill.global_env(), teams[tl], teams[tr])
+      winner_probs[tl] = winner_probs.get(tl, 0.0) + match_prob * p_tl_wins
+      winner_probs[tr] = winner_probs.get(tr, 0.0) + match_prob * (1.0 - p_tl_wins)
+      log_quality = math.log(trueskill.quality((teams[tl], teams[tr])))
+      expected_match_quality += match_prob * log_quality
 
-  quality = next(tournament)
-  for x in range(TRIAL_COUNT):
-    # Semifinals
-    tournament.send((teams[1], teams[2]))
-    sf_winner = run_match(teams[1], teams[2])
-
-    # Grand Finals
-    quality = tournament.send((teams[0], sf_winner))
-  return quality
-
-
-def four_team_single_elimination(tournament, teams):
-  if len(teams) != 4:
-    raise ValueError('must supply 4 teams')
-
-  quality = next(tournament)
-  for x in range(TRIAL_COUNT):
-    # Semifinals
-    tournament.send((teams[0], teams[3]))
-    sf1_winner = run_match(teams[0], teams[3])
-    tournament.send((teams[1], teams[2]))
-    sf2_winner = run_match(teams[1], teams[2])
-
-    # Grand Finals
-    quality = tournament.send((sf1_winner, sf2_winner))
-  return quality
+  return total_quality + expected_match_quality, winner_probs
 
 
-def five_team_single_elimination(tournament, teams):
-  if len(teams) != 5:
-    raise ValueError('must supply 5 teams')
-
-  quality = next(tournament)
-  for x in range(TRIAL_COUNT):
-    tournament.send((teams[3], teams[4]))
-    qf_winner = run_match(teams[3], teams[4])
-
-    # Semifinals
-    tournament.send((teams[0], qf_winner))
-    sf1_winner = run_match(teams[0], qf_winner)
-    tournament.send((teams[1], teams[2]))
-    sf2_winner = run_match(teams[1], teams[2])
-
-    # Grand Finals
-    quality = tournament.send((sf1_winner, sf2_winner))
-  return quality
+def general_expected_quality(teams: List[List[trueskill.Rating]]) -> float:
+  n = len(teams)
+  if n < 2:
+      raise ValueError('tournament needs at least 2 teams')
+  bracket = generate_bracket(n)
+  tree = build_bracket_tree(bracket, n)
+  total_qual, _ = evaluate_bracket_tree(tree, teams)
+  return math.exp(total_qual / (n - 1))
 
 
 def tournament_eval(teams: List[List[trueskill.Rating]]) -> float:
   """Sorts teams in place"""
   teams.sort(key=mmr_sum, reverse=True)
-  tournament = tournament_simulator()
-  if len(teams) == 3:
-    return three_team_single_elimination(tournament, teams)
-  if len(teams) == 4:
-    return four_team_single_elimination(tournament, teams)
-  if len(teams) == 5:
-    return five_team_single_elimination(tournament, teams)
-  raise ValueError(f'unsupported team count {len(teams)}')
+  return general_expected_quality(teams)
 
 
 def get_players_with_overrides(
@@ -182,8 +171,6 @@ def make_arg_parser():
   arg_parser = argparse.ArgumentParser()
   arg_parser.add_argument('-s', '--season', type=int, default=4,
                           help='get ratings from season')
-  arg_parser.add_argument('-e', '--seed', type=int, default=1337,
-                          help='set random seed')
   arg_parser.add_argument('-m', '--method', choices='cs', default='s',
                           help='c = evaluate pairwise combos, '
                                's = simulate tournament')

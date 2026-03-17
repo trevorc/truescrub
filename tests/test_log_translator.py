@@ -124,7 +124,7 @@ def verify_file_roundtrip(input_path: pathlib.Path, is_db: bool):
       riegeli_to_db(input_path, db_path)
       db_to_riegeli(db_path, roundtrip_riegeli_path)
 
-      from truescrub.statewriter.game_state_log import GameStateLog
+      from truescrub.statewriter import GameStateLog
       orig_log = GameStateLog(input_path)
       roundtrip_log = GameStateLog(roundtrip_riegeli_path)
 

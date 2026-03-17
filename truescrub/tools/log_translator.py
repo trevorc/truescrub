@@ -11,7 +11,7 @@ from truescrub.proto.game_state_pb2 import GameStateEntry
 
 from truescrub.db import get_game_state_count, get_raw_game_states, \
   initialize_game_db
-from truescrub.statewriter.game_state_log import GameStateLog
+from truescrub.statewriter import GameStateLog
 from truescrub.statewriter.state_parsing import parse_game_state, \
   InvalidGameStateException
 from truescrub.statewriter.state_serialization import serialize_game_state

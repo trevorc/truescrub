@@ -4,9 +4,10 @@ import re
 import struct
 import sys
 from google.protobuf import text_format
-from truescrub.proto.game_state_pb2 import GameStateEntry
 
-from truescrub.statewriter.game_state_log import GameStateLog
+from truescrub.proto.game_state_pb2 import GameStateEntry
+from truescrub.statewriter.segmented_log import list_segments
+from truescrub.statewriter import GameStateLog
 
 
 def make_arg_parser():
@@ -70,7 +71,6 @@ def run_repair(opts):
   if opts.input_log.is_file():
     inputs = [opts.input_log]
   else:
-    from truescrub.statewriter.game_state_log import list_segments
     inputs = [seg.path for seg in list_segments(opts.input_log)]
 
   for input_file in inputs:

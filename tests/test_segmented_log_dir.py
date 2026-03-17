@@ -3,8 +3,9 @@ import datetime
 from truescrub.proto.game_state_pb2 import GameStateEntry
 
 import pytest
-from truescrub.statewriter.game_state_log import (
-  GameStateLog, Segment, segment_name)
+from truescrub.statewriter import GameStateLog
+from truescrub.statewriter.segmented_log import (
+  Segment, segment_name)
 
 
 def make_test_entry(game_state_id: int) -> GameStateEntry:

@@ -20,7 +20,7 @@ from truescrub.db import (
   initialize_skill_db, initialize_game_db, execute_one, insert_game_state,
 )
 from truescrub.proto.game_state_pb2 import GameStateEntry
-from truescrub.statewriter.game_state_log import GameStateLog
+from truescrub.statewriter import GameStateLog
 from truescrub.statewriter.state_parsing import parse_game_state
 from truescrub.updater.recalculate import compute_rounds_and_players, recalculate_ratings, load_seasons
 from truescrub.updater.state_loader import RiegeliStateLoader, entry_to_row

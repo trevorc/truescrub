@@ -8,7 +8,8 @@ from truescrub.proto.game_state_pb2 import GameStateEntry
 from truescrub import db
 from truescrub.envconfig import DATA_DIR
 from truescrub.queue_consumer import QueueConsumer
-from truescrub.statewriter.game_state_log import GameStateLog, \
+from truescrub.statewriter.game_state_log import GameStateLog
+from truescrub.statewriter.segmented_log import SegmentedLog, \
   NoSuchRecordException
 from truescrub.statewriter.state_parsing import parse_game_state
 
@@ -35,7 +36,7 @@ class GameStateWriter(QueueConsumer):
 
 
 class RiegeliGameStateWriter(QueueConsumer):
-  def __init__(self, log: GameStateLog, updater: QueueConsumer):
+  def __init__(self, log: SegmentedLog, updater: QueueConsumer):
     super().__init__()
     self.log = log
     self.updater = updater

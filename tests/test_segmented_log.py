@@ -7,8 +7,8 @@ from truescrub.proto.game_state_pb2 import GameStateEntry
 from unittest import mock
 
 from truescrub.statewriter import GameStateLog
-from truescrub.statewriter.game_state_log import NoSuchRecordException
-from truescrub.statewriter.game_state_log import Segment
+from truescrub.statewriter.segmented_log import NoSuchRecordException
+from truescrub.statewriter.segmented_log import Segment
 
 SAMPLE_GAME_STATE_ENTRY = text_format.Parse('''
 game_state_id: 1
