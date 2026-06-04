@@ -1,4 +1,5 @@
 load("@rules_python//python:pip.bzl", "compile_pip_requirements")
+load("@rules_python//python/zipapp:py_zipapp_binary.bzl", "py_zipapp_binary")
 
 compile_pip_requirements(
     name = "requirements",
@@ -7,15 +8,13 @@ compile_pip_requirements(
     requirements_txt = "requirements_lock.txt",
 )
 
-filegroup(
+py_zipapp_binary(
     name = "truescrub_zip",
-    srcs = ["//truescrub"],
-    output_group = "python_zip_file",
+    binary = "//truescrub",
     visibility = ["//:__pkg__"],
 )
 
-filegroup(
+py_zipapp_binary(
     name = "surgery_zip",
-    srcs = ["//truescrub/tools:surgery"],
-    output_group = "python_zip_file",
+    binary = "//truescrub/tools:surgery",
 )
