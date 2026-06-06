@@ -1,5 +1,4 @@
-load("@pip_requirements//:requirements.bzl", "requirement")
-load("@rules_python//python:defs.bzl", "py_binary", "py_library")
+load("@aspect_rules_py//py:defs.bzl", "py_binary", "py_library")
 
 package(
     default_visibility = [
@@ -26,7 +25,7 @@ py_library(
     name = "models",
     srcs = ["models.py"],
     deps = [
-        requirement("trueskill"),
+        "@pypi//trueskill",
     ],
 )
 
@@ -35,7 +34,7 @@ py_library(
     srcs = ["matchmaking.py"],
     deps = [
         ":models",
-        requirement("trueskill"),
+        "@pypi//trueskill",
     ],
 )
 
@@ -45,7 +44,7 @@ py_library(
     deps = [
         ":envconfig",
         ":models",
-        requirement("trueskill"),
+        "@pypi//trueskill",
     ],
 )
 
@@ -68,7 +67,6 @@ py_binary(
     name = "accolades",
     srcs = ["accolades.py"],
     data = ["accolades.ini"],
-    legacy_create_init = False,
     visibility = [
         "//tests:__pkg__",
         "//truescrub/tools:__pkg__",
@@ -82,12 +80,8 @@ py_binary(
 py_library(
     name = "achievements",
     srcs = ["achievements.py"],
-    visibility = [
-        "//tests:__pkg__",
-    ],
-    deps = [
-        ":db",
-    ],
+    visibility = ["//tests:__pkg__"],
+    deps = [":db"],
 )
 
 py_library(
@@ -172,8 +166,8 @@ py_library(
         ":highlights",
         ":matchmaking",
         ":models",
-        requirement("Flask"),
-        requirement("waitress"),
+        "@pypi//flask",
+        "@pypi//waitress",
     ],
 )
 
@@ -196,8 +190,10 @@ py_library(
 py_binary(
     name = "truescrub",
     srcs = ["__main__.py"],
-    legacy_create_init = False,
     main = "__main__.py",
-    visibility = ["//:__pkg__"],
+    visibility = [
+        "//:__pkg__",
+        "//container:__pkg__",
+    ],
     deps = [":application"],
 )

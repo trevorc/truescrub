@@ -4,6 +4,5 @@ directories:
 targets:
   //truescrub:all
   //tests:all
-  //scripts:all
 
-workspace_type: python
+bazel_binary: /home/linuxbrew/.linuxbrew/bin/bazel

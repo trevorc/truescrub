@@ -67,7 +67,7 @@ def parse_accolades(resource_string: str) -> Tuple[
 
 # Load the accolades configuration
 ACCOLADES, CONDITIONS = parse_accolades(
-  files(__name__).joinpath('accolades.ini').read_bytes().decode('UTF-8'))
+  files(__package__).joinpath('accolades.ini').read_bytes().decode('UTF-8'))
 
 
 def compute_expected_rating(rating_details: Dict) -> float:

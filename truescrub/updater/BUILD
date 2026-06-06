@@ -1,4 +1,4 @@
-load("@pip_requirements//:requirements.bzl", "requirement")
+load("@aspect_rules_py//py:defs.bzl", "py_binary", "py_library")
 
 py_library(
     name = "state_parser",
@@ -73,11 +73,9 @@ py_library(
 py_binary(
     name = "updater_main",
     srcs = ["__main__.py"],
-    legacy_create_init = False,
     main = "__main__.py",
     deps = [
         ":evaluator",
         ":updater",
     ],
 )
-

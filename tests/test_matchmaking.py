@@ -1,5 +1,4 @@
 import statistics
-import itertools
 
 import pytest
 from trueskill import Gaussian
@@ -103,6 +102,45 @@ def test_win_probability():
 
   prob = mm.win_probability(env, team1, team2)
   assert prob < 0.5
+
+
+def test_quality_uncertainty_penalty():
+  import trueskill
+  team1_high = [Gaussian(1000, 250)]
+  team2_high = [Gaussian(1000, 250)]
+  quality_high = trueskill.quality((team1_high, team2_high))
+
+  team1_low = [Gaussian(1000, 10)]
+  team2_low = [Gaussian(1000, 10)]
+  quality_low = trueskill.quality((team1_low, team2_low))
+
+  assert quality_high < quality_low
+
+
+def test_quality_peak_symmetry():
+  import trueskill
+  import math
+  t1 = [Gaussian(1000, 200)]
+
+  q_800 = trueskill.quality((t1, [Gaussian(800, 200)]))
+  q_1000 = trueskill.quality((t1, [Gaussian(1000, 200)]))
+  q_1200 = trueskill.quality((t1, [Gaussian(1200, 200)]))
+
+  assert q_1000 > q_800
+  assert q_1000 > q_1200
+  assert math.isclose(q_800, q_1200, rel_tol=1e-5)
+
+
+def test_win_probability_symmetry():
+  import math
+  t1 = [Gaussian(1200, 200)]
+  t2 = [Gaussian(1000, 200)]
+  env = mm.trueskill.global_env()
+
+  p_t1_wins = mm.win_probability(env, t1, t2)
+  p_t2_wins = mm.win_probability(env, t2, t1)
+
+  assert math.isclose(p_t1_wins, 1.0 - p_t2_wins, rel_tol=1e-5)
 
 
 def test_suggest_teams():
@@ -226,7 +264,7 @@ def test_compute_matches():
     team1_ids = frozenset(p.player_id for p in match.team1)
     team2_ids = frozenset(p.player_id for p in match.team2)
     signature = (team1_ids, team2_ids) if team1_ids < team2_ids else (
-    team2_ids, team1_ids)
+      team2_ids, team1_ids)
 
     # This match signature should not appear multiple times in adjacent positions
     if match_signatures and match_signatures[-1] == signature:

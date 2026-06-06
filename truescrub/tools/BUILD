@@ -1,12 +1,11 @@
-load("@pip_requirements//:requirements.bzl", "requirement")
-load("@rules_python//python:defs.bzl", "py_binary")
+load("@aspect_rules_py//py:defs.bzl", "py_binary")
 
 py_binary(
     name = "teameval",
     srcs = [
         "teameval.py",
     ],
-    legacy_create_init = False,
+
     visibility = [
         "//:__pkg__",
         "//tests:__pkg__",
@@ -21,32 +20,32 @@ py_binary(
 py_binary(
     name = "genetic",
     srcs = ["genetic.py"],
-    legacy_create_init = False,
+
     deps = [
         "//truescrub:db",
         "//truescrub:models",
         "//truescrub/tools:teameval",
-        requirement("deap"),
+        "@pypi//deap",
     ],
 )
 
 py_binary(
     name = "optuna_match",
     srcs = ["optuna_match.py"],
-    legacy_create_init = False,
+
     deps = [
         "//truescrub:db",
         "//truescrub:models",
         "//truescrub/tools:genetic",
         "//truescrub/tools:teameval",
-        requirement("optuna"),
+        "@pypi//optuna",
     ],
 )
 
 py_binary(
     name = "log_translator",
     srcs = ["log_translator.py"],
-    legacy_create_init = False,
+
     visibility = [
         "//:__pkg__",
         "//tests:__pkg__",
@@ -57,24 +56,24 @@ py_binary(
         "//truescrub/statewriter",
         "//truescrub/statewriter:state_parsing",
         "//truescrub/statewriter:state_serialization",
-        requirement("tqdm"),
+        "@pypi//tqdm",
     ],
 )
 
 py_binary(
     name = "logquery",
     srcs = ["logquery.py"],
-    legacy_create_init = False,
+
     deps = [
         "//truescrub/statewriter",
-        requirement("tqdm"),
+        "@pypi//tqdm",
     ],
 )
 
 py_binary(
     name = "surgery",
     srcs = ["surgery.py"],
-    legacy_create_init = False,
+
     main = "surgery.py",
     visibility = [
         "//:__pkg__",
@@ -91,7 +90,7 @@ py_binary(
 py_binary(
     name = "printaccolades",
     srcs = ["printaccolades.py"],
-    legacy_create_init = False,
+
     deps = [
         "//truescrub:accolades",
         "//truescrub:highlights",
@@ -101,7 +100,7 @@ py_binary(
 py_binary(
     name = "recover_log",
     srcs = ["recover_log.py"],
-    legacy_create_init = False,
+
     deps = [
         "//truescrub:envconfig",
         "//truescrub/proto:game_state_py_pb2",
@@ -112,11 +111,12 @@ py_binary(
 py_binary(
     name = "compact_log",
     srcs = ["compact_log.py"],
-    legacy_create_init = False,
+
     deps = [
         "//truescrub:envconfig",
         "//truescrub/proto:game_state_py_pb2",
         "//truescrub/statewriter:segmented_log",
-        requirement("tqdm"),
+        "@pypi//tqdm",
     ],
 )
+

@@ -1,16 +1,47 @@
-bazel_dep(name = "bazel_skylib", version = "1.9.0")
-bazel_dep(name = "protobuf", version = "35.0", repo_name = "com_google_protobuf")
-bazel_dep(name = "rules_pkg", version = "1.2.0")
-bazel_dep(name = "rules_python", version = "2.0.2")
-bazel_dep(name = "riegeli", version = "0.0.0-20250822-9f2744d")
+bazel_dep(name = "aspect_rules_py", version = "2.0.0-alpha.1")
+bazel_dep(name = "bazel_lib", version = "3.3.1")
+bazel_dep(name = "highwayhash", version = "0.0.0-20240305-5ad3bf8.bcr.1")
 bazel_dep(name = "llvm", version = "0.8.5")
+bazel_dep(name = "platforms", version = "1.1.0")
+bazel_dep(name = "protobuf", version = "35.0", repo_name = "com_google_protobuf")
+bazel_dep(name = "riegeli", version = "0.0.0-20250822-9f2744d")
+bazel_dep(name = "rules_oci", version = "2.3.0")
+bazel_dep(name = "rules_python", version = "2.0.2")
+bazel_dep(name = "tar.bzl", version = "0.10.5")
 
 register_toolchains("@llvm//toolchain:all")
 
-pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
-pip.parse(
-    hub_name = "pip_requirements",
+interpreters = use_extension("@aspect_rules_py//py:extensions.bzl", "python_interpreters")
+interpreters.toolchain(
+    is_default = True,
     python_version = "3.12",
-    requirements_lock = "//:requirements_lock.txt",
 )
-use_repo(pip, "pip_requirements")
+use_repo(interpreters, "python_interpreters")
+
+register_toolchains("@python_interpreters//:all")
+
+uv = use_extension("@aspect_rules_py//uv:extensions.bzl", "uv")
+uv.declare_hub(hub_name = "pypi")
+uv.project(
+    hub_name = "pypi",
+    lock = "//:uv.lock",
+    pyproject = "//:pyproject.toml",
+)
+use_repo(uv, "pypi")
+
+oci = use_extension("@rules_oci//oci:extensions.bzl", "oci")
+oci.pull(
+    name = "distroless_cc",
+    digest = "sha256:aa0b7af67fa8211751ea6e00baa8373ba56cc1417ffc986ec9619bd0e1556b56",
+    image = "gcr.io/distroless/cc-debian12",
+    platforms = [
+        "linux/amd64",
+        "linux/arm64/v8",
+    ],
+)
+use_repo(
+    oci,
+    "distroless_cc",
+    "distroless_cc_linux_amd64",
+    "distroless_cc_linux_arm64_v8",
+)

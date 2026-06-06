@@ -1,4 +1,4 @@
-load("@rules_python//python:defs.bzl", "py_library")
+load("@aspect_rules_py//py:defs.bzl", "py_library")
 
 package(default_visibility = [
     "//tests:__pkg__",

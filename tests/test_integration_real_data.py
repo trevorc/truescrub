@@ -48,6 +48,7 @@ def integration_env(monkeypatch):
   # wrapper whose close() is a no‑op.
   class _NonClosingProxy:
     """Delegates everything to the real connection but ignores close()."""
+
     def __init__(self, conn):
       self._conn = conn
 
@@ -60,13 +61,15 @@ def integration_env(monkeypatch):
   skill_proxy = _NonClosingProxy(skill_db)
 
   monkeypatch.setattr('truescrub.db.get_game_db', lambda: game_db)
-  monkeypatch.setattr('truescrub.db.get_skill_db', lambda name=None: skill_proxy)
+  monkeypatch.setattr('truescrub.db.get_skill_db',
+                      lambda name=None: skill_proxy)
 
   # Build a real (but synchronous) GameStateWriter.
   # The updater is handled explicitly after posting, so we use a stub that
   # just records the messages the writer sends.
   class _MessageSink:
     """Lightweight sink that collects messages instead of enqueueing them."""
+
     def __init__(self):
       self.messages = []
 
@@ -216,6 +219,46 @@ class TestRealDataPipeline:
     assert data['rounds_played'] >= 1
     assert 'player_ratings' in data
     assert len(data['player_ratings']) >= 1
+
+  def test_highlights_returns_accolades(
+      self, integration_env, real_game_states):
+    client, game_db, skill_db, writer, sink = integration_env
+    _post_game_states(client, real_game_states)
+    _drain_writer(writer)
+    _run_updater(skill_db, sink)
+
+    # Determine the date of the first game state (UTC) for the
+    # highlights endpoint.
+    ts = real_game_states[0]['provider']['timestamp']
+    dt = datetime.datetime.fromtimestamp(ts, tz=datetime.timezone.utc)
+    date_str = dt.strftime('%Y-%m-%dT%H:%M:%S+00:00')
+
+    resp = client.get(f'/api/highlights/{date_str}?accolades=1')
+    assert resp.status_code == 200
+    data = resp.get_json()
+
+    # We expect the accolades dictionary to be populated if the real game data
+    # triggers extreme events (like "Biggest Upset" or "Most MMR Gained").
+    assert 'accolades' in data
+
+    # The real data fixture should have enough volatility to produce at least
+    # one valid accolade. If OpenSkill changes the scaling, this test will catch 
+    # if it stops producing accolades altogether.
+    accolades = data['accolades']
+    assert len(accolades) >= 1
+
+    # Ensure standard accolades fields are present in the response
+    first_accolade = accolades[0]
+    assert 'accolade' in first_accolade
+    assert 'player_id' in first_accolade
+    assert 'details' in first_accolade
+
+    # Check for specific accolades that we know this fixture should generate
+    accolade_names = {acc['accolade'] for acc in accolades}
+    assert 'Grand Slamma Jamma' in accolade_names
+    assert 'Bench Warmer' in accolade_names
+    assert 'Cannon Fodder' in accolade_names
+    assert 'Wallflower' in accolade_names
 
   def test_skill_groups_page_renders(
       self, integration_env, real_game_states):

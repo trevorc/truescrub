@@ -1,1 +1,5 @@
-common --@rules_python//python/config_settings:python_version=3.12
+build --@aspect_rules_py//uv/private/constraints/dep_group:dep_group=truescrub
+build --@aspect_rules_py//uv/private/constraints/platform:platform_libc=glibc
+build --@aspect_rules_py//uv/private/constraints/platform:platform_version=2.28
+build --@aspect_rules_py//py/private/interpreter:python_version=3.12
+build --@rules_python//python/config_settings:python_version=3.12

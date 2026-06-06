@@ -99,6 +99,63 @@ class TestComputePlayerSkills:
     _, history = compute_player_skills(rounds, TEAMS)
     assert all(h.round_id == 42 for h in history)
 
+  def test_upset_yields_larger_delta(self):
+    # Expected: Favorite (100) beats Underdog (300)
+    expected_rounds = [_round_row(1, winner=1, loser=2)]
+    # Upset: Underdog (300) beats Favorite (100)
+    upset_rounds = [_round_row(1, winner=2, loser=1)]
+    
+    prior = {
+      100: trueskill.Rating(mu=1500, sigma=100),
+      200: trueskill.Rating(mu=1500, sigma=100),
+      300: trueskill.Rating(mu=500, sigma=100),
+      400: trueskill.Rating(mu=500, sigma=100),
+    }
+    
+    expected_ratings, _ = compute_player_skills(expected_rounds, TEAMS, current_ratings=prior)
+    expected_delta = expected_ratings[100].mu - prior[100].mu
+    
+    upset_ratings, _ = compute_player_skills(upset_rounds, TEAMS, current_ratings=prior)
+    upset_delta = upset_ratings[300].mu - prior[300].mu
+    
+    assert upset_delta > expected_delta
+
+  def test_uncertainty_volatility_scaling(self):
+    # Team 1 beats Team 2
+    prior = {
+      100: trueskill.Rating(mu=1000, sigma=10), # Veteran
+      200: trueskill.Rating(mu=1000, sigma=250), # Newbie
+      300: trueskill.Rating(mu=1000, sigma=100),
+      400: trueskill.Rating(mu=1000, sigma=100),
+    }
+    rounds = [_round_row(1, winner=1, loser=2)]
+    ratings, _ = compute_player_skills(rounds, TEAMS, current_ratings=prior)
+    
+    veteran_delta = ratings[100].mu - prior[100].mu
+    newbie_delta = ratings[200].mu - prior[200].mu
+    
+    assert newbie_delta > veteran_delta
+
+  def test_recalculate_adapter_asymmetric_teams(self):
+    # Mock a 2v3 match
+    asym_teams = {
+      1: frozenset({101, 102}),
+      2: frozenset({201, 202, 203}),
+    }
+    prior = {
+      101: trueskill.Rating(mu=1000, sigma=100),
+      102: trueskill.Rating(mu=1000, sigma=100),
+      201: trueskill.Rating(mu=1000, sigma=100),
+      202: trueskill.Rating(mu=1000, sigma=100),
+      203: trueskill.Rating(mu=2000, sigma=1), # Distinctly unique
+    }
+    rounds = [_round_row(1, winner=1, loser=2)]
+    ratings, _ = compute_player_skills(rounds, asym_teams, current_ratings=prior)
+    
+    assert len(ratings) == 5
+    # ID 203 should lose a tiny fraction of points because sigma is 1, but its mu should remain ~2000
+    assert ratings[203].mu > 1900
+
 
 # ---------------------------------------------------------------------------
 # compute_assists
