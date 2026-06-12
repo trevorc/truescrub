@@ -9,9 +9,15 @@ import uuid
 from concurrent.futures import Future
 from typing import Dict, List, Callable, Tuple
 
+import grpc
 import flask
-import truescrub
 import waitress.server
+from grpc_health.v1 import health
+from grpc_health.v1 import health_pb2
+from grpc_health.v1 import health_pb2_grpc
+from grpc_reflection.v1alpha import reflection
+
+import truescrub
 from truescrub import db
 from truescrub.api import app
 from truescrub.envconfig import LOG_LEVEL
@@ -48,7 +54,9 @@ arg_parser.add_argument('-s', '--serve-htdocs', action='store_true',
 arg_parser.add_argument('-b', '--game-state-backend',
                         choices=GAME_STATE_BACKENDS, default='sqlite',
                         help='Store game states using this provider.')
-
+arg_parser.add_argument('-P', '--grpc-port', metavar='PORT', type=int,
+                        default=9090,
+                        help='Listen for gRPC connections on this TCP port.')
 
 
 class Service(metaclass=abc.ABCMeta):
@@ -97,6 +105,33 @@ class WaitressService(Service):
     if self.server is not None:
       logger.debug('closing server')
       self.server.close()
+
+
+def create_grpc_server(host, port):
+  server = grpc.server(concurrent.futures.ThreadPoolExecutor(max_workers=10))
+  health_servicer = health.HealthServicer()
+  health_pb2_grpc.add_HealthServicer_to_server(health_servicer, server)
+  health_servicer.set('', health_pb2.HealthCheckResponse.SERVING)
+  reflection.enable_server_reflection(
+    (health.SERVICE_NAME, reflection.SERVICE_NAME), server)
+  server.add_insecure_port(f'{host}:{port}')
+  return server
+
+
+class GrpcService(Service):
+  def __init__(self, host, port):
+    self.server = create_grpc_server(host, port)
+    logger.info('gRPC listening on %s:%s', host, port)
+
+  def __call__(self):
+    logger.info('running %s', self)
+    self.server.start()
+    self.server.wait_for_termination()
+
+  def stop(self):
+    if self.server is not None:
+      logger.debug('closing gRPC server')
+      self.server.stop(grace=5.0).wait()
 
 
 def wait_on_futures(futures: Dict[Future, Service]):
@@ -155,7 +190,7 @@ def main(args: List[str]):
   state_loader_provider, state_writer_provider = \
     GAME_STATE_BACKENDS[args.game_state_backend]
 
-  executor = concurrent.futures.ThreadPoolExecutor(max_workers=3)
+  executor = concurrent.futures.ThreadPoolExecutor(max_workers=4)
   futures = {}
   updater = Updater(state_loader_provider)
   state_writer = state_writer_provider(updater)
@@ -177,12 +212,14 @@ def main(args: List[str]):
       QueueConsumerService(updater) as updater_service, \
       WaitressService(app, host=args.addr, port=args.port) \
           as waitress_service, \
-      QueueConsumerService(state_writer) as state_writer_service:
+      QueueConsumerService(state_writer) as state_writer_service, \
+      GrpcService(host=args.addr, port=args.grpc_port) as grpc_service:
 
     app.state_writer = state_writer
     futures[executor.submit(updater_service)] = updater_service
     futures[executor.submit(state_writer_service)] = state_writer_service
     futures[executor.submit(waitress_service)] = waitress_service
+    futures[executor.submit(grpc_service)] = grpc_service
 
     for future in concurrent.futures.as_completed(futures):
       if future.exception() is not None:

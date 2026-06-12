@@ -46,6 +46,7 @@ oci_image(
     env = {
         "TRUESCRUB_DATA_DIR": "/data",
         "PYTHONPATH": "/app.runfiles/_main",
+        "LD_LIBRARY_PATH": "/app.runfiles/aspect_rules_py++python_interpreters+python_3_12_x86_64_unknown_linux_gnu/lib:/app.runfiles/_main/_solib_k8/_U_A_Arules_Upython++python+python_U3_U12_Ux86_U64-unknown-linux-gnu_S_S_Clibpython___Ulib",
     },
     exposed_ports = ["9000/tcp"],
     tars = [
@@ -63,6 +64,7 @@ oci_image(
     env = {
         "TRUESCRUB_DATA_DIR": "/data",
         "PYTHONPATH": "/app.runfiles/_main",
+        "LD_LIBRARY_PATH": "/app.runfiles/aspect_rules_py++python_interpreters+python_3_12_aarch64_unknown_linux_gnu/lib:/app.runfiles/_main/_solib_k8/_U_A_Arules_Upython++python+python_U3_U12_Uaarch64-unknown-linux-gnu_S_S_Clibpython___Ulib",
     },
     exposed_ports = ["9000/tcp"],
     tars = [

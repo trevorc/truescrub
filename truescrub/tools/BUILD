@@ -5,7 +5,6 @@ py_binary(
     srcs = [
         "teameval.py",
     ],
-
     visibility = [
         "//:__pkg__",
         "//tests:__pkg__",
@@ -20,7 +19,6 @@ py_binary(
 py_binary(
     name = "genetic",
     srcs = ["genetic.py"],
-
     deps = [
         "//truescrub:db",
         "//truescrub:models",
@@ -32,7 +30,6 @@ py_binary(
 py_binary(
     name = "optuna_match",
     srcs = ["optuna_match.py"],
-
     deps = [
         "//truescrub:db",
         "//truescrub:models",
@@ -45,7 +42,6 @@ py_binary(
 py_binary(
     name = "log_translator",
     srcs = ["log_translator.py"],
-
     visibility = [
         "//:__pkg__",
         "//tests:__pkg__",
@@ -63,7 +59,6 @@ py_binary(
 py_binary(
     name = "logquery",
     srcs = ["logquery.py"],
-
     deps = [
         "//truescrub/statewriter",
         "@pypi//tqdm",
@@ -73,7 +68,6 @@ py_binary(
 py_binary(
     name = "surgery",
     srcs = ["surgery.py"],
-
     main = "surgery.py",
     visibility = [
         "//:__pkg__",
@@ -90,7 +84,6 @@ py_binary(
 py_binary(
     name = "printaccolades",
     srcs = ["printaccolades.py"],
-
     deps = [
         "//truescrub:accolades",
         "//truescrub:highlights",
@@ -100,7 +93,6 @@ py_binary(
 py_binary(
     name = "recover_log",
     srcs = ["recover_log.py"],
-
     deps = [
         "//truescrub:envconfig",
         "//truescrub/proto:game_state_py_pb2",
@@ -111,7 +103,6 @@ py_binary(
 py_binary(
     name = "compact_log",
     srcs = ["compact_log.py"],
-
     deps = [
         "//truescrub:envconfig",
         "//truescrub/proto:game_state_py_pb2",
@@ -119,4 +110,3 @@ py_binary(
         "@pypi//tqdm",
     ],
 )
-

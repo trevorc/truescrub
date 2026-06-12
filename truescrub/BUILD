@@ -63,7 +63,7 @@ py_library(
     ],
 )
 
-py_binary(
+py_library(
     name = "accolades",
     srcs = ["accolades.py"],
     data = ["accolades.ini"],
@@ -184,6 +184,9 @@ py_library(
         "//truescrub/proto:game_state_py_pb2",
         "//truescrub/statewriter",
         "//truescrub/updater",
+        "@grpc//src/python/grpcio/grpc:grpcio",
+        "@grpc//src/python/grpcio_health_checking/grpc_health/v1:grpc_health",
+        "@grpc//src/python/grpcio_reflection/grpc_reflection/v1alpha:grpc_reflection",
     ],
 )
 

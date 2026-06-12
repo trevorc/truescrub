@@ -1,0 +1,32 @@
+--- a/py/private/py_image_layer.bzl
++++ b/py/private/py_image_layer.bzl
+@@ -403,6 +403,13 @@
+         plan = ctx.attr._layer_tier[PyLayerTierInfo]
+         label_str = normalize_label(str(target.label))
+         fp_group = plan.whole_groups.get(label_str, None)
++        if fp_group == None and target.label.workspace_name:
++            # Allow workspace-level fallback. `normalize_label` appends `:...`
++            fp_group = plan.whole_groups.get("@" + target.label.workspace_name + "//...:...", None)
++            if fp_group == None:
++                # Also try the apparent repo name (strip trailing + or ~ from bzlmod)
++                apparent_name = target.label.workspace_name.rstrip("+~")
++                fp_group = plan.whole_groups.get("@" + apparent_name + "//...:...", None)
+         if fp_group != None:
+             own_fp.append(struct(
+                 label = label_str,
+@@ -443,10 +450,14 @@
+                 # IS a separate interpreter tar to route them to; otherwise the
+                 # interpreter belongs in the default layer.
+                 if interpreter_layer != None and tc_info.interpreter_files != None:
+                     for f in tc_info.interpreter_files.to_list():
+                         interp_paths[f.path] = True
++                        interp_paths[f.basename] = True
+ 
+         runfiles_files = target[DefaultInfo].default_runfiles.files.to_list()
+-        filtered = [f for f in runfiles_files if f.path not in skip_paths and f.path not in interp_paths]
++        filtered = []
++        for f in runfiles_files:
++            if f.path not in skip_paths and f.path not in interp_paths and not (f.path.find("_solib_") != -1 and f.basename in interp_paths):
++                filtered.append(f)
+         if filtered:
+             own_source.append(depset(direct = filtered))
