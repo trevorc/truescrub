@@ -1,7 +1,12 @@
-load("@aspect_rules_py//py:defs.bzl", "py_image_layer")
+load("@aspect_rules_py//py:defs.bzl", "py_image_layer", "py_layer_tier")
 load("@bazel_lib//lib:transitions.bzl", "platform_transition_filegroup")
 load("@rules_oci//oci:defs.bzl", "oci_image", "oci_image_index", "oci_load", "oci_push")
 load("@tar.bzl//:tar.bzl", "tar")
+
+py_layer_tier(
+    name = "tier",
+    interpreter_group = "interpreter",
+)
 
 tar(
     name = "data_dir",
@@ -11,6 +16,7 @@ tar(
 py_image_layer(
     name = "layer",
     binary = "//truescrub",
+    layer_tier = ":tier",
 )
 
 platform_transition_filegroup(
@@ -28,7 +34,7 @@ platform_transition_filegroup(
 ENTRYPOINT = [
     "/app.runfiles/_main/truescrub/._truescrub.venv/bin/python3",
     "/app.runfiles/_main/truescrub/__main__.py",
-    "--addr=::",
+    "--addr=0.0.0.0",
     "--port=9000",
     "-s",
 ]

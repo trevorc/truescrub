@@ -1,0 +1,24 @@
+--- a/py/private/py_venv/py_venv_exec.bzl
++++ b/py/private/py_venv/py_venv_exec.bzl
+@@ -7,6 +7,7 @@
+ 
+ load("@bazel_lib//lib:expand_make_vars.bzl", "expand_locations", "expand_variables")
+ load("@bazel_lib//lib:paths.bzl", "BASH_RLOCATION_FUNCTION", "to_rlocation_path")
++load("//py/private/toolchain:types.bzl", "PY_TOOLCHAIN")
+ load("@rules_python//python:defs.bzl", "PyInfo")
+ load("//py/private:py_semantics.bzl", _py_semantics = "semantics")
+ load(":types.bzl", "VirtualenvInfo")
+@@ -226,11 +227,13 @@
+     implementation = _py_venv_exec_impl,
+     attrs = _attrs,
+     executable = True,
++    toolchains = [PY_TOOLCHAIN],
+ )
+ 
+ py_venv_exec_test = rule(
+     doc = "Test variant of `py_venv_exec`. Most users should use the [py_test macro](#py_test) instead of loading this directly.",
+     implementation = _py_venv_exec_impl,
+     attrs = _attrs | _test_attrs,
+     test = True,
++    toolchains = [PY_TOOLCHAIN],
+ )

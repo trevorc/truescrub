@@ -9,6 +9,12 @@ bazel_dep(name = "rules_oci", version = "2.3.0")
 bazel_dep(name = "rules_python", version = "2.0.2")
 bazel_dep(name = "tar.bzl", version = "0.10.5")
 
+single_version_override(
+    module_name = "aspect_rules_py",
+    patch_strip = 1,
+    patches = ["//patches:aspect_rules_py_interpreter_layer.patch"],
+)
+
 register_toolchains("@llvm//toolchain:all")
 
 interpreters = use_extension("@aspect_rules_py//py:extensions.bzl", "python_interpreters")

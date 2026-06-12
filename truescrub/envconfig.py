@@ -8,5 +8,6 @@ TRUESCRUB_BRAND = os.environ.get('TRUESCRUB_BRAND', 'TrueScrub™')
 SQLITE_TIMEOUT = float(os.environ.get('SQLITE_TIMEOUT', '30'))
 SEASONS_TOML = pathlib.Path(
   os.environ.get('TRUESCRUB_SEASONS_TOML', DATA_DIR / 'seasons.toml'))
+SEASONS = os.environ.get('TRUESCRUB_SEASONS')
 SEGMENT_MAX_BYTES = int(
   os.environ.get('TRUESCRUB_SEGMENT_MAX_BYTES', str(16 * 1024 * 1024)))
