@@ -1,0 +1,3 @@
+[[advanced.headers]]
+source = "/index.html"
+headers = { "Cache-Control" = "no-cache, no-store, must-revalidate" }
