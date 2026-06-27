@@ -16,12 +16,15 @@ from grpc_health.v1 import health
 from grpc_health.v1 import health_pb2
 from grpc_health.v1 import health_pb2_grpc
 from grpc_reflection.v1alpha import reflection
+import sonora.wsgi
 
 import truescrub
 from truescrub import db
 from truescrub.api import app
 from truescrub.envconfig import LOG_LEVEL
+from proto import highlights_service_pb2_grpc
 from truescrub.queue_consumer import QueueConsumer
+from truescrub.rpc import HighlightsServiceServicer
 from truescrub.statewriter.state_writer import GameStateWriter, \
   RiegeliGameStateWriter
 from truescrub.updater import Updater
@@ -207,6 +210,11 @@ def main(args: List[str]):
     return
   if args.serve_htdocs:
     app.add_url_rule('/htdocs/<path:filename>', 'serve_htdocs', serve_htdocs)
+
+  app.wsgi_app = sonora.wsgi.grpcWSGI(app.wsgi_app)
+  highlights_service_pb2_grpc.add_HighlightsServiceServicer_to_server(
+      HighlightsServiceServicer(), app.wsgi_app
+  )
 
   with Watchdog(futures, interval=8.0), \
       QueueConsumerService(updater) as updater_service, \

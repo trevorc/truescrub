@@ -6,7 +6,6 @@ the HTTP interface end-to-end.
 """
 import datetime
 import json
-import sqlite3
 
 import pytest
 
@@ -98,10 +97,10 @@ class TestParseTimezone:
     with pytest.raises(ValueError):
       parse_timezone('invalid')
 
-  def test_partial_offset_rejected(self):
-    """The regex only matches :00, not :30."""
-    with pytest.raises(ValueError):
-      parse_timezone('+05:30')
+  def test_partial_offset_accepted(self):
+    """strptime %z handles partial offsets correctly."""
+    tz = parse_timezone('+05:30')
+    assert tz.utcoffset(None) == datetime.timedelta(hours=5, minutes=30)
 
 
 # ---------------------------------------------------------------------------

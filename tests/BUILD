@@ -79,6 +79,7 @@ py_test(
     srcs = ["test_highlights.py"],
     deps = [
         ":db_test_utils",
+        "//proto:highlights_service_py_pb2_grpc",
         "//truescrub:db",
         "//truescrub:highlights",
         "//truescrub:models",
@@ -177,10 +178,12 @@ py_test(
     ],
     deps = [
         ":db_test_utils",
+        "//proto:highlights_service_py_pb2_grpc",
         "//truescrub:api",
         "//truescrub:db",
         "//truescrub:highlights",
         "//truescrub:models",
+        "//truescrub:rpc",
         "//truescrub/statewriter",
         "//truescrub/updater",
         "//truescrub/updater:recalculate",
@@ -221,15 +224,39 @@ py_test(
     ],
 )
 
+py_test(
+    name = "test_highlights_service",
+    srcs = ["test_highlights_service.py"],
+    deps = [
+        ":db_test_utils",
+        "//proto:highlights_service_py_pb2_grpc",
+        "//truescrub:rpc",
+        "@pypi//grpcio",
+        "@pypi//pytest",
+    ],
+)
+
+py_test(
+    name = "test_match_days",
+    srcs = ["test_match_days.py"],
+    deps = [
+        ":db_test_utils",
+        "//truescrub:db",
+        "@pypi//pytest",
+    ],
+)
+
 test_suite(
     name = "tests",
     tests = [
         "test_accolades",
         "test_api",
         "test_highlights",
+        "test_highlights_service",
         "test_integration",
         "test_integration_real_data",
         "test_log_translator",
+        "test_match_days",
         "test_matchmaking",
         "test_models",
         "test_recalculate",
@@ -240,5 +267,16 @@ test_suite(
         "test_state_parser",
         "test_state_serialization",
         "test_teameval",
+    ],
+)
+
+py_binary(
+    name = "test_grpc_web",
+    srcs = ["test_grpc_web.py"],
+    deps = [
+        "//proto:highlights_service_py_pb2_grpc",
+        "@pypi//grpcio",
+        "@pypi//requests",
+        "@pypi//sonora",
     ],
 )

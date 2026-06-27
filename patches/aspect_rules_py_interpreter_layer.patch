@@ -1,18 +1,19 @@
 --- a/py/private/py_venv/py_venv_exec.bzl
 +++ b/py/private/py_venv/py_venv_exec.bzl
-@@ -7,6 +7,7 @@
- 
- load("@bazel_lib//lib:expand_make_vars.bzl", "expand_locations", "expand_variables")
- load("@bazel_lib//lib:paths.bzl", "BASH_RLOCATION_FUNCTION", "to_rlocation_path")
-+load("//py/private/toolchain:types.bzl", "PY_TOOLCHAIN")
+@@ -10,6 +10,7 @@
+ load("@hermetic_launcher//launcher:lib.bzl", "launcher")
  load("@rules_python//python:defs.bzl", "PyInfo")
  load("//py/private:py_semantics.bzl", _py_semantics = "semantics")
++load("//py/private/toolchain:types.bzl", "PY_TOOLCHAIN")
  load(":types.bzl", "VirtualenvInfo")
-@@ -226,11 +227,13 @@
+ 
+ # Identifiers the launcher always sets to the analysing rule's contextual
+@@ -237,13 +238,13 @@
      implementation = _py_venv_exec_impl,
      attrs = _attrs,
      executable = True,
-+    toolchains = [PY_TOOLCHAIN],
+-    toolchains = [launcher.finalizer_toolchain_type, launcher.template_toolchain_type],
++    toolchains = [launcher.finalizer_toolchain_type, launcher.template_toolchain_type, PY_TOOLCHAIN],
  )
  
  py_venv_exec_test = rule(
@@ -20,5 +21,6 @@
      implementation = _py_venv_exec_impl,
      attrs = _attrs | _test_attrs,
      test = True,
-+    toolchains = [PY_TOOLCHAIN],
+-    toolchains = [launcher.finalizer_toolchain_type, launcher.template_toolchain_type],
++    toolchains = [launcher.finalizer_toolchain_type, launcher.template_toolchain_type, PY_TOOLCHAIN],
  )

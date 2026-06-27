@@ -4,14 +4,13 @@ from typing import Dict
 
 import pytest
 
+from proto import highlights_service_pb2
 from tests.db_test_utils import TestDBManager, create_game_state_for_round
+from truescrub.accolades import get_accolades
 from truescrub.highlights import (
   get_highlights, get_round_range_for_day, get_player_ratings_between_rounds,
-  get_most_played_maps_between_rounds, get_skill_changes_between_rounds,
-  make_player_rating
+  get_most_played_maps_between_rounds, get_skill_changes_between_rounds
 )
-from truescrub.accolades import get_accolades
-from truescrub.models import Player, skill_group_name
 
 
 def create_test_db(
@@ -118,45 +117,6 @@ def test_db():
   return create_test_db(day, 10, map_distribution)
 
 
-def test_make_player_rating():
-  player = Player(
-    player_id=12345,
-    steam_name="TestPlayer",
-    skill_mean=1200,
-    skill_stdev=125,
-    impact_rating=1.5
-  )
-
-  rating_details = {
-    'average_kills': 2.5,
-    'average_deaths': 1.2,
-    'average_damage': 150,
-    'average_assists': 1.0,
-    'total_kills': 25,
-    'total_deaths': 12,
-    'total_damage': 1500,
-    'total_assists': 10,
-    'kdr': 2.08
-  }
-
-  rounds_played = 10
-  mvps = 3
-
-  result = make_player_rating(player, rating_details, rounds_played, mvps)
-
-  assert result == {
-    'player_id': 12345,
-    'steam_name': 'TestPlayer',
-    'impact_rating': 1.5,
-    'previous_skill': {
-      'mmr': 950,  # 1200 - 2*125
-      'skill_group': skill_group_name(player.skill_group_index),
-    },
-    'rating_details': rating_details,
-    'rounds_played': rounds_played,
-    'mvps': mvps,
-  }
-
 
 def test_get_round_range_for_day(test_db):
   day = datetime.datetime(2022, 1, 15)
@@ -184,25 +144,25 @@ def test_get_player_ratings_between_rounds(test_db):
 
   assert len(result) == 3  # Three players
 
-  player_ids = {player['player_id'] for player in result}
+  player_ids = {player.player_id for player in result}
   assert {1, 2, 3}.issubset(player_ids)
 
   for player_rating in result:
-    assert 'rating_details' in player_rating
-    assert 'previous_skill' in player_rating
-    assert 'rounds_played' in player_rating
-    assert 'mvps' in player_rating
+    assert isinstance(player_rating, highlights_service_pb2.PlayerRating)
+    assert player_rating.HasField('rating_details')
+    assert player_rating.HasField('previous_skill')
+    assert player_rating.rounds_played > 0
 
-    rating_details = player_rating['rating_details']
-    assert 'average_kills' in rating_details
-    assert 'average_deaths' in rating_details
-    assert 'average_damage' in rating_details
-    assert 'average_assists' in rating_details
-    assert 'total_kills' in rating_details
-    assert 'total_deaths' in rating_details
-    assert 'total_damage' in rating_details
-    assert 'total_assists' in rating_details
-    assert 'kdr' in rating_details
+    rd = player_rating.rating_details
+    assert rd.average_kills >= 0
+    assert rd.average_deaths >= 0
+    assert rd.average_damage >= 0
+    assert rd.average_assists >= 0
+    assert rd.total_kills >= 0
+    assert rd.total_deaths >= 0
+    assert rd.total_damage >= 0
+    assert rd.total_assists >= 0
+    assert rd.kdr >= 0
 
 
 def test_get_skill_changes_between_rounds(test_db):
@@ -210,12 +170,10 @@ def test_get_skill_changes_between_rounds(test_db):
 
   result = get_skill_changes_between_rounds(test_db, round_range)
 
-  previous, next_skill = next(skill_change
-                              for skill_change in result
-                              if skill_change[0].player_id == 1)
+  skill_change = next(change for change in result if change.player_id == 1)
 
-  assert previous.skill_group_index != next_skill.skill_group_index
-  assert next_skill.mmr > previous.mmr
+  assert skill_change.previous_skill.skill_group != skill_change.next_skill.skill_group
+  assert skill_change.next_skill.mmr > skill_change.previous_skill.mmr
 
 
 def test_get_highlights(test_db):
@@ -223,36 +181,32 @@ def test_get_highlights(test_db):
 
   result = get_highlights(test_db, day)
 
-  assert set(result.keys()) == {
-    'time_window', 'rounds_played', 'most_played_maps',
-    'player_ratings', 'season_skill_group_changes'
-  }
+  assert isinstance(result, highlights_service_pb2.GetDailyHighlightsResponse)
 
   # Check time window
-  assert result['time_window'] == [
+  assert result.time_window == [
     day.isoformat(),
     (day + datetime.timedelta(days=1)).isoformat()
   ]
 
   # Check rounds played
-  assert result['rounds_played'] == 10
+  assert result.rounds_played == 10
 
   # Check maps
-  assert result['most_played_maps'] == {
+  assert dict(result.most_played_maps) == {
     'de_dust2': 5, 'de_mirage': 3, 'de_nuke': 2}
 
-  assert len(result['player_ratings']) == 3
+  assert len(result.player_ratings) == 3
 
-  skill_changes = result['season_skill_group_changes']
+  skill_changes = result.season_skill_group_changes
   assert len(skill_changes) >= 1
 
-  player1 = next(change for change in skill_changes if change['player_id'] == 1)
+  player1 = next(change for change in skill_changes if change.player_id == 1)
 
-  assert 'previous_skill' in player1
-  assert 'next_skill' in player1
-  assert (player1['previous_skill']['skill_group'] !=
-          player1['next_skill']['skill_group'])
-  assert player1['next_skill']['mmr'] > player1['previous_skill']['mmr']
+  assert player1.HasField('previous_skill')
+  assert player1.HasField('next_skill')
+  assert player1.previous_skill.skill_group != player1.next_skill.skill_group
+  assert player1.next_skill.mmr > player1.previous_skill.mmr
 
 
 def test_get_accolades_in_highlights(test_db):
@@ -263,17 +217,16 @@ def test_get_accolades_in_highlights(test_db):
 
   assert len(accolades) == 3
 
-  accolades_by_player = {acc['player_id']: acc for acc in accolades}
+  accolades_by_player = {acc.player_id: acc for acc in accolades}
   assert set(accolades_by_player.keys()) == {1, 2, 3}
 
   for accolade_data in accolades:
-    assert isinstance(accolade_data, dict)
-    assert 'accolade' in accolade_data
-    assert isinstance(accolade_data['accolade'], str)
-    assert len(accolade_data['accolade']) > 0
-    assert 'player_id' in accolade_data
-    assert 'player_name' in accolade_data
-    assert 'details' in accolade_data
+    assert isinstance(accolade_data, highlights_service_pb2.Accolade)
+    assert isinstance(accolade_data.accolade, str)
+    assert len(accolade_data.accolade) > 0
+    assert accolade_data.player_id > 0
+    assert isinstance(accolade_data.player_name, str)
+    assert len(accolade_data.details) > 0
 
 
 if __name__ == '__main__':

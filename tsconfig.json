@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "declaration": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "paths": {
+      "proto/*": ["./proto/*"],
+      "client/*": ["./client/*"],
+      "../google/type/*": [
+        "./node_modules/@buf/googleapis_googleapis.bufbuild_es/google/type/*"
+      ]
+    },
+    "jsx": "react-jsx",
+    "sourceMap": false,
+    "strict": true,
+    "target": "ESNext"
+  },
+  "include": ["**/*.ts", "**/*.tsx"]
+}

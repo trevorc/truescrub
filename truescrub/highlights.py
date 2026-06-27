@@ -1,13 +1,43 @@
 import datetime
 import operator
+import itertools
+from typing import List, Tuple, Dict, NamedTuple, Optional
 
+from proto import highlights_service_pb2
 from truescrub.accolades import get_accolades
 from truescrub.db import execute_one, execute, COEFFICIENTS_DICT
 from truescrub.models import Player, SKILL_STDEV, SKILL_MEAN, skill_group_name
 
 
-def get_highlights(skill_db, day: datetime.datetime,
-                   include_accolades: bool = False) -> dict:
+class PlayerRatingRow(NamedTuple):
+  player_id: int
+  steam_name: str
+  impact_rating: float
+  average_kills: float
+  average_deaths: float
+  average_damage: float
+  average_kas: float
+  average_assists: float
+  rounds_played: int
+  total_mvps: Optional[float]
+  average_headshots: float
+  skill_mean: Optional[float]
+  skill_stdev: Optional[float]
+
+
+class SkillChangeRow(NamedTuple):
+  player_id: int
+  steam_name: str
+  earlier_skill_mean: Optional[float]
+  earlier_skill_stdev: Optional[float]
+  later_skill_mean: float
+  later_skill_stdev: float
+
+
+def get_highlights(
+    skill_db, day: datetime.datetime,
+    include_accolades: bool = False
+) -> highlights_service_pb2.GetDailyHighlightsResponse:
   round_range, rounds_played = get_round_range_for_day(skill_db, day)
 
   if rounds_played == 0:
@@ -16,42 +46,30 @@ def get_highlights(skill_db, day: datetime.datetime,
   player_ratings = get_player_ratings_between_rounds(skill_db, round_range)
   most_played_maps = get_most_played_maps_between_rounds(
     skill_db, round_range)
-  skill_group_changes = [
-    {
-      'player_id': previous_skill.player_id,
-      'steam_name': previous_skill.steam_name,
-      'previous_skill': {
-        'mmr': previous_skill.mmr,
-        'skill_group': skill_group_name(previous_skill.skill_group_index),
-      },
-      'next_skill': {
-        'mmr': next_skill.mmr,
-        'skill_group': skill_group_name(next_skill.skill_group_index),
-      },
-    }
-    for (previous_skill, next_skill)
-    in get_skill_changes_between_rounds(skill_db, round_range)
-  ]
+  skill_group_changes = get_skill_changes_between_rounds(skill_db, round_range)
   time_window = [day.isoformat(),
                  (day + datetime.timedelta(days=1)).isoformat()]
 
-  result = {
-    'time_window': time_window,
-    'rounds_played': rounds_played,
-    'most_played_maps': most_played_maps,
-    'player_ratings': player_ratings,
-    'season_skill_group_changes': skill_group_changes,
-  }
+  result = highlights_service_pb2.GetDailyHighlightsResponse(
+    time_window=time_window,
+    rounds_played=rounds_played,
+    player_ratings=player_ratings,
+    season_skill_group_changes=skill_group_changes,
+  )
+  for k, v in most_played_maps.items():
+    result.most_played_maps[k] = v
 
   if include_accolades:
-    result['accolades'] = get_accolades(player_ratings)
+    result.accolades.extend(get_accolades(player_ratings))
 
   return result
 
 
 def get_most_played_maps_between_rounds(
-    skill_db, round_range: (int, int)) -> {str: int}:
-  return dict(execute(skill_db, '''
+    skill_db, round_range: Tuple[int, int]) -> Dict[str, int]:
+  return dict(execute(
+    skill_db,
+    '''
     SELECT map_name
          , COUNT(*) AS round_count
     FROM rounds
@@ -62,24 +80,12 @@ def get_most_played_maps_between_rounds(
     ''', round_range))
 
 
-def make_player_rating(player, rating_details, rounds_played, mvps):
-  return {
-    'player_id': player.player_id,
-    'steam_name': player.steam_name,
-    'impact_rating': player.impact_rating,
-    'previous_skill': {
-      'mmr': player.mmr,
-      'skill_group': skill_group_name(player.skill_group_index),
-    },
-    'rating_details': rating_details,
-    'rounds_played': rounds_played,
-    'mvps': mvps,
-  }
-
-
-def get_player_ratings_between_rounds(skill_db, round_range: (int, int)) \
-    -> (dict, dict):
-  rating_details = execute(skill_db, '''
+def get_player_ratings_between_rounds(
+    skill_db, round_range: Tuple[int, int]
+) -> List[highlights_service_pb2.PlayerRating]:
+  rating_details = execute(
+    skill_db,
+    '''
     WITH components AS (
             SELECT rc.player_id
                  , AVG(rc.kill_rating) AS average_kills
@@ -135,46 +141,60 @@ def get_player_ratings_between_rounds(skill_db, round_range: (int, int)) \
     ON   players.player_id = ir.player_id
     LEFT JOIN starting_skills s
     ON   players.player_id = s.player_id
-    ''', {**COEFFICIENTS_DICT, 'first_round': round_range[0], 'last_round': round_range[1]})
+    ''', {
+      **COEFFICIENTS_DICT,
+      'first_round': round_range[0],
+      'last_round': round_range[1]},
+  )
 
-  player_ratings = [
-    make_player_rating(
-      Player(player_id, steam_name,
-             skill_mean, skill_stdev, impact_rating), {
-        'average_kills': average_kills,
-        'average_deaths': average_deaths,
-        'average_damage': average_damage,
-        'average_assists': average_assists,
-        'total_kills': int(average_kills * rounds_played),
-        'total_deaths': int(average_deaths * rounds_played),
-        'total_damage': int(average_damage * rounds_played),
-        'total_assists': int(average_assists * rounds_played),
-        'kdr': (average_kills * rounds_played) /
-               max(1.0, average_deaths * rounds_played),
-        'average_headshots': average_headshots,
-        'total_headshots': int(average_headshots * rounds_played),
-      }, rounds_played, int(mvps or 0))
-    for player_id, steam_name, impact_rating,
-    average_kills, average_deaths, average_damage, average_kas,
-    average_assists, rounds_played, mvps, average_headshots,
-    skill_mean, skill_stdev
-    in rating_details
-  ]
-  player_ratings.sort(key=operator.itemgetter('impact_rating'),
-                      reverse=True)
+  player_ratings = []
+  for row in itertools.starmap(PlayerRatingRow, rating_details):
+    player = Player(row.player_id, row.steam_name, row.skill_mean, row.skill_stdev,
+                    row.impact_rating)
+
+    player_ratings.append(highlights_service_pb2.PlayerRating(
+      player_id=row.player_id,
+      steam_name=row.steam_name,
+      impact_rating=row.impact_rating,
+      previous_skill=highlights_service_pb2.SkillInfo(
+        mmr=player.mmr,
+        skill_group=skill_group_name(player.skill_group_index),
+      ),
+      rating_details=highlights_service_pb2.RatingDetails(
+        average_kills=row.average_kills,
+        average_deaths=row.average_deaths,
+        average_damage=row.average_damage,
+        average_assists=row.average_assists,
+        total_kills=int(row.average_kills * row.rounds_played),
+        total_deaths=int(row.average_deaths * row.rounds_played),
+        total_damage=int(row.average_damage * row.rounds_played),
+        total_assists=int(row.average_assists * row.rounds_played),
+        kdr=(row.average_kills * row.rounds_played) /
+            max(1.0, row.average_deaths * row.rounds_played),
+        average_headshots=row.average_headshots,
+        total_headshots=int(row.average_headshots * row.rounds_played),
+      ),
+      rounds_played=row.rounds_played,
+      mvps=int(row.total_mvps or 0),
+    ))
+
+  player_ratings.sort(key=operator.attrgetter('impact_rating'), reverse=True)
 
   return player_ratings
 
 
-def get_skill_changes_between_rounds(skill_db, round_range: (int, int)) \
-    -> [(Player, Player)]:
-  skill_change_rows = execute(skill_db, '''
+def get_skill_changes_between_rounds(
+    skill_db, round_range: Tuple[int, int]) \
+    -> List[highlights_service_pb2.SkillGroupChange]:
+  skill_change_rows = execute(
+    skill_db,
+    '''
     SELECT players.player_id
          , players.steam_name
-         , earlier_ssh.skill_mean  AS earlier_skill_mean
+         , earlier_ssh.skill_mean AS earlier_skill_mean
          , earlier_ssh.skill_stdev AS earlier_skill_stdev
-         , later_ssh.skill_mean    AS later_skill_mean
-         , later_ssh.skill_stdev   AS later_skill_stdev
+         , later_ssh.skill_mean AS later_skill_mean
+         , later_ssh.skill_stdev AS later_skill_stdev
     FROM players
     JOIN season_skill_history later_ssh
     ON players.player_id = later_ssh.player_id
@@ -201,35 +221,52 @@ def get_skill_changes_between_rounds(skill_db, round_range: (int, int)) \
 
   skill_changes = [
     (
-      Player(player_id, steam_name,
-             SKILL_MEAN if earlier_mean is None else earlier_mean,
-             SKILL_STDEV if earlier_stdev is None else earlier_stdev,
+      Player(row.player_id, row.steam_name,
+             SKILL_MEAN if row.earlier_skill_mean is None else row.earlier_skill_mean,
+             SKILL_STDEV if row.earlier_skill_stdev is None else row.earlier_skill_stdev,
              0.0),
-      Player(player_id, steam_name, later_mean, later_stdev, 0.0),
+      Player(row.player_id, row.steam_name, row.later_skill_mean, row.later_skill_stdev, 0.0),
     )
-    for player_id, steam_name, earlier_mean, earlier_stdev,
-    later_mean, later_stdev
-    in skill_change_rows
+    for row in itertools.starmap(SkillChangeRow, skill_change_rows)
   ]
-  skill_changes.sort(key=lambda change: -change[1].mmr)
 
-  return [
-    (previous_skill, next_skill)
+  # Filter to only players whose skill group actually changed
+  filtered_changes = [
+    highlights_service_pb2.SkillGroupChange(
+      player_id=previous_skill.player_id,
+      steam_name=previous_skill.steam_name,
+      previous_skill=highlights_service_pb2.SkillInfo(
+        mmr=previous_skill.mmr,
+        skill_group=skill_group_name(previous_skill.skill_group_index),
+      ),
+      next_skill=highlights_service_pb2.SkillInfo(
+        mmr=next_skill.mmr,
+        skill_group=skill_group_name(next_skill.skill_group_index),
+      ),
+    )
     for previous_skill, next_skill in skill_changes
     if previous_skill.skill_group_index != next_skill.skill_group_index
   ]
 
+  # Sort only the filtered results
+  filtered_changes.sort(key=lambda change: -change.next_skill.mmr)
+
+  return filtered_changes
+
 
 def get_round_range_for_day(skill_db, day: datetime.datetime) \
-    -> ((int, int), int):
+    -> Tuple[Tuple[int, int], int]:
   next_day = day + datetime.timedelta(days=1)
 
-  first_round, last_round, round_count = execute_one(skill_db, '''
+  first_round, last_round, round_count = execute_one(
+    skill_db,
+    '''
     SELECT MIN(round_id)
          , MAX(round_id)
          , COUNT(*)
     FROM rounds
     WHERE created_at BETWEEN ? AND ?
-    ''', (day, next_day))
+    ''',
+    (day, next_day))
 
   return (first_round, last_round), round_count

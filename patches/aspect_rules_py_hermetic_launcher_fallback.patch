@@ -1,0 +1,46 @@
+--- a/py/private/py_venv/py_venv_exec.bzl
++++ b/py/private/py_venv/py_venv_exec.bzl
+@@ -81,22 +81,25 @@
+     # The launcher runtime resolves transformed-arg positions through
+     # the Bazel runfiles manifest, then `execve`s the venv python.
+     executable_launcher = ctx.actions.declare_file(ctx.attr.name)
+-    embedded_args, transformed_args = launcher.args_from_entrypoint(vinfo.bin_python)
+-    for flag in flags:
+-        embedded_args, transformed_args = launcher.append_embedded_arg(
+-            arg = flag,
+-            embedded_args = embedded_args,
+-            transformed_args = transformed_args,
+-        )
+-    embedded_args, transformed_args = launcher.append_runfile(
+-        file = main,
+-        embedded_args = embedded_args,
+-        transformed_args = transformed_args,
+-    )
+-    launcher.compile_stub(
+-        ctx = ctx,
+-        embedded_args = embedded_args,
+-        transformed_args = transformed_args,
+-        output_file = executable_launcher,
++    content = """#!/usr/bin/env bash
++set -euo pipefail
++if [[ -z "${{RUNFILES_DIR:-}}" ]]; then
++  export RUNFILES_DIR="${{0}}.runfiles"
++fi
++if [[ -f "${{RUNFILES_MANIFEST_FILE:-}}" ]]; then
++  PYTHON=$(grep -m1 "^{python_rlocation} " "${{RUNFILES_MANIFEST_FILE}}" | cut -d' ' -f2-)
++else
++  PYTHON="${{RUNFILES_DIR}}/{python_rlocation}"
++fi
++exec "${{PYTHON}}" {flags} "${{RUNFILES_DIR}}/{main_rlocation}" "$@"
++""".format(
++        python_rlocation = launcher.to_rlocation_path(vinfo.bin_python),
++        flags = " ".join(flags),
++        main_rlocation = launcher.to_rlocation_path(main),
++    )
++    ctx.actions.write(
++        output = executable_launcher,
++        content = content,
++        is_executable = True,
+     )
+ 
+     # Merge runfiles, supporting `py_venv_exec(main)` not being in the `py_venv` runfiles.

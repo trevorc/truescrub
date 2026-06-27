@@ -1,13 +1,20 @@
-bazel_dep(name = "aspect_rules_py", version = "2.0.0-alpha.1")
+bazel_dep(name = "aspect_rules_esbuild", version = "0.26.0")
+bazel_dep(name = "aspect_rules_js", version = "3.2.2")
+bazel_dep(name = "aspect_rules_py", version = "2.0.0-alpha.3")
+bazel_dep(name = "aspect_rules_ts", version = "3.8.11")
 bazel_dep(name = "bazel_lib", version = "3.3.1")
-bazel_dep(name = "grpc", version = "1.81.0")
+bazel_dep(name = "bazel_skylib", version = "1.9.0")
+bazel_dep(name = "googleapis", version = "0.0.0-20260623-b6f9ff05")
+bazel_dep(name = "rules_proto_grpc_python", version = "5.8.0")
+bazel_dep(name = "grpc", version = "1.81.1")
 bazel_dep(name = "highwayhash", version = "0.0.0-20240305-5ad3bf8.bcr.1")
-bazel_dep(name = "llvm", version = "0.8.5")
+bazel_dep(name = "llvm", version = "0.8.11")
 bazel_dep(name = "platforms", version = "1.1.0")
-bazel_dep(name = "protobuf", version = "35.0", repo_name = "com_google_protobuf")
+bazel_dep(name = "protobuf", version = "35.1")
 bazel_dep(name = "riegeli", version = "0.0.0-20250822-9f2744d")
 bazel_dep(name = "rules_oci", version = "2.3.0")
-bazel_dep(name = "rules_python", version = "2.0.2")
+bazel_dep(name = "rules_pkg", version = "1.2.0")
+bazel_dep(name = "rules_python", version = "2.0.3")
 bazel_dep(name = "tar.bzl", version = "0.10.5")
 
 single_version_override(
@@ -16,10 +23,22 @@ single_version_override(
     patches = [
         "//patches:aspect_rules_py_interpreter_layer.patch",
         "//patches:aspect_rules_py_workspace_grouping.patch",
+        "//patches:aspect_rules_py_hermetic_launcher_fallback.patch",
     ],
 )
 
+single_version_override(
+    module_name = "envoy_api",
+    patch_strip = 1,
+    patches = [
+        "//patches:envoy_api_bzlmod.patch",
+    ],
+    version = "0.0.0-20251216-6ef568c",
+)
+
 register_toolchains("@llvm//toolchain:all")
+
+register_toolchains("//proto:gen_es_toolchain_toolchain")
 
 interpreters = use_extension("@aspect_rules_py//py:extensions.bzl", "python_interpreters")
 interpreters.toolchain(
@@ -42,11 +61,20 @@ use_repo(uv, "pypi")
 oci = use_extension("@rules_oci//oci:extensions.bzl", "oci")
 oci.pull(
     name = "distroless_cc",
-    digest = "sha256:aa0b7af67fa8211751ea6e00baa8373ba56cc1417ffc986ec9619bd0e1556b56",
+    digest = "sha256:d703b626ba455c4e6c6fbe5f36e6f427c85d51445598d564652a2f334179f96e",
     image = "gcr.io/distroless/cc-debian12",
     platforms = [
         "linux/amd64",
         "linux/arm64/v8",
+    ],
+)
+oci.pull(
+    name = "sws_base",
+    digest = "sha256:6acea6260b14e08dda986361e42640082fbfaab8d88c327de532bb13a3b22994",
+    image = "docker.io/joseluisq/static-web-server",
+    platforms = [
+        "linux/amd64",
+        "linux/arm64",
     ],
 )
 use_repo(
@@ -54,4 +82,32 @@ use_repo(
     "distroless_cc",
     "distroless_cc_linux_amd64",
     "distroless_cc_linux_arm64_v8",
+    "sws_base",
+    "sws_base_linux_amd64",
+    "sws_base_linux_arm64",
 )
+
+################
+## Typescript ##
+################
+
+npm = use_extension(
+    "@aspect_rules_js//npm:extensions.bzl",
+    "npm",
+    dev_dependency = True,
+)
+npm.npm_translate_lock(
+    name = "npm",
+    data = ["//:package.json"],
+    npmrc = "//:.npmrc",
+    pnpm_lock = "//:pnpm-lock.yaml",
+)
+use_repo(npm, "npm")
+
+rules_ts_ext = use_extension(
+    "@aspect_rules_ts//ts:extensions.bzl",
+    "ext",
+    dev_dependency = True,
+)
+rules_ts_ext.deps()
+use_repo(rules_ts_ext, "npm_typescript")

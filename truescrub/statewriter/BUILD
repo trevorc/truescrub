@@ -9,9 +9,7 @@ package(default_visibility = [
 py_library(
     name = "state_serialization",
     srcs = ["state_serialization.py"],
-    deps = [
-        "//truescrub/proto:game_state_py_pb2",
-    ],
+    deps = ["//truescrub/proto:game_state_py_pb2"],
 )
 
 py_library(
@@ -19,16 +17,14 @@ py_library(
     srcs = ["state_parsing.py"],
     deps = [
         "//truescrub/proto:game_state_py_pb2",
-        "@com_google_protobuf//:protobuf_python",
+        "@protobuf//:protobuf_python",
     ],
 )
 
 py_library(
     name = "segmented_log",
     srcs = ["segmented_log.py"],
-    deps = [
-        "@riegeli//python/riegeli",
-    ],
+    deps = ["@riegeli//python/riegeli"],
 )
 
 py_library(

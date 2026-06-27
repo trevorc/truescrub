@@ -1,4 +1,5 @@
 load("@aspect_rules_py//py:defs.bzl", "py_binary", "py_library")
+load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
 
 package(
     default_visibility = [
@@ -60,6 +61,7 @@ py_library(
         ":accolades",
         ":db",
         ":models",
+        "//proto:highlights_service_py_pb2_grpc",
     ],
 )
 
@@ -74,7 +76,14 @@ py_library(
     deps = [
         ":db",
         ":models",
+        "//proto:highlights_service_py_pb2_grpc",
     ],
+)
+
+copy_file(
+    name = "copy_api_bundle",
+    src = "//client/entrypoints:truescrub_api_bundle",
+    out = "htdocs/client.js",
 )
 
 py_library(
@@ -158,6 +167,7 @@ py_library(
         "templates/matchmaking.html",
         "templates/profile.html",
         "templates/skill_groups.html",
+        ":copy_api_bundle",
     ],
     deps = [
         ":accolades",
@@ -172,6 +182,17 @@ py_library(
 )
 
 py_library(
+    name = "rpc",
+    srcs = ["rpc.py"],
+    deps = [
+        ":api",
+        ":db",
+        "//proto:highlights_service_py_pb2_grpc",
+        "@pypi//grpcio",
+    ],
+)
+
+py_library(
     name = "application",
     srcs = [
         "__init__.py",
@@ -181,12 +202,15 @@ py_library(
         ":api",
         ":db",
         ":queue_consumer",
+        ":rpc",
+        "//proto:highlights_service_py_pb2_grpc",
         "//truescrub/proto:game_state_py_pb2",
         "//truescrub/statewriter",
         "//truescrub/updater",
-        "@grpc//src/python/grpcio/grpc:grpcio",
-        "@grpc//src/python/grpcio_health_checking/grpc_health/v1:grpc_health",
-        "@grpc//src/python/grpcio_reflection/grpc_reflection/v1alpha:grpc_reflection",
+        "@pypi//grpcio",
+        "@pypi//grpcio_health_checking",
+        "@pypi//grpcio_reflection",
+        "@pypi//sonora",
     ],
 )
 

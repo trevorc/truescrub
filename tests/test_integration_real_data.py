@@ -9,12 +9,15 @@ import datetime
 import json
 import pathlib
 import sqlite3
+from unittest.mock import MagicMock
 
 import pytest
 
+from proto import highlights_service_pb2
 from truescrub import db, seasoncfg
 from truescrub.api import app
 from truescrub.envconfig import SHARED_KEY
+from truescrub.rpc import HighlightsServiceServicer
 from truescrub.statewriter.state_writer import GameStateWriter
 from truescrub.updater.recalculate import (
   compute_rounds_and_players, recalculate_ratings, load_seasons,
@@ -57,6 +60,13 @@ def integration_env(monkeypatch):
 
     def __getattr__(self, name):
       return getattr(self._conn, name)
+
+    def __enter__(self):
+      self._conn.__enter__()
+      return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+      return self._conn.__exit__(exc_type, exc_val, exc_tb)
 
   skill_proxy = _NonClosingProxy(skill_db)
 
@@ -210,15 +220,20 @@ class TestRealDataPipeline:
     # highlights endpoint.
     ts = real_game_states[0]['provider']['timestamp']
     dt = datetime.datetime.fromtimestamp(ts, tz=datetime.timezone.utc)
-    date_str = dt.strftime('%Y-%m-%dT%H:%M:%S+00:00')
 
-    resp = client.get(f'/api/highlights/{date_str}')
-    assert resp.status_code == 200
-    data = resp.get_json()
-    assert 'rounds_played' in data
-    assert data['rounds_played'] >= 1
-    assert 'player_ratings' in data
-    assert len(data['player_ratings']) >= 1
+    servicer = HighlightsServiceServicer()
+    req = highlights_service_pb2.GetDailyHighlightsRequest(
+      date=highlights_service_pb2.Date(year=dt.year, month=dt.month,
+                                       day=dt.day),
+      timezone="+00:00",
+      include_accolades=False
+    )
+    context = MagicMock()
+    resp = servicer.GetDailyHighlights(req, context)
+
+    assert not context.abort.called
+    assert resp.rounds_played >= 1
+    assert len(resp.player_ratings) >= 1
 
   def test_highlights_returns_accolades(
       self, integration_env, real_game_states):
@@ -231,30 +246,25 @@ class TestRealDataPipeline:
     # highlights endpoint.
     ts = real_game_states[0]['provider']['timestamp']
     dt = datetime.datetime.fromtimestamp(ts, tz=datetime.timezone.utc)
-    date_str = dt.strftime('%Y-%m-%dT%H:%M:%S+00:00')
 
-    resp = client.get(f'/api/highlights/{date_str}?accolades=1')
-    assert resp.status_code == 200
-    data = resp.get_json()
+    servicer = HighlightsServiceServicer()
+    req = highlights_service_pb2.GetDailyHighlightsRequest(
+      date=highlights_service_pb2.Date(
+        year=dt.year, month=dt.month, day=dt.day),
+      timezone="+00:00",
+      include_accolades=True
+    )
+    context = MagicMock()
+    resp = servicer.GetDailyHighlights(req, context)
 
-    # We expect the accolades dictionary to be populated if the real game data
-    # triggers extreme events (like "Biggest Upset" or "Most MMR Gained").
-    assert 'accolades' in data
+    assert not context.abort.called
+    assert len(resp.accolades) >= 1
 
-    # The real data fixture should have enough volatility to produce at least
-    # one valid accolade. If OpenSkill changes the scaling, this test will catch 
-    # if it stops producing accolades altogether.
-    accolades = data['accolades']
-    assert len(accolades) >= 1
+    first_accolade = resp.accolades[0]
+    assert first_accolade.accolade != ""
+    assert first_accolade.player_id > 0
 
-    # Ensure standard accolades fields are present in the response
-    first_accolade = accolades[0]
-    assert 'accolade' in first_accolade
-    assert 'player_id' in first_accolade
-    assert 'details' in first_accolade
-
-    # Check for specific accolades that we know this fixture should generate
-    accolade_names = {acc['accolade'] for acc in accolades}
+    accolade_names = {acc.accolade for acc in resp.accolades}
     assert 'Grand Slamma Jamma' in accolade_names
     assert 'Bench Warmer' in accolade_names
     assert 'Cannon Fodder' in accolade_names

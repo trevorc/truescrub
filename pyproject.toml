@@ -13,10 +13,18 @@ dependencies = [
     "deap==1.4.4",
     "optuna==4.9.0",
     "tqdm==4.68.1",
+    "sonora>=0.2.3",
+    "requests>=2.31.0",
+    "grpcio==1.81.1",
+    "grpcio-reflection==1.81.1",
+    "grpcio-health-checking==1.81.1",
 ]
 
 [tool.uv]
 environments = [
     "sys_platform == 'linux' and platform_machine == 'x86_64'",
     "sys_platform == 'linux' and platform_machine == 'aarch64'"
+]
+override-dependencies = [
+    "protobuf==7.35.1"
 ]

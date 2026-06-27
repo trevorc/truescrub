@@ -4,7 +4,7 @@ import logging
 import datetime
 import operator
 import itertools
-from typing import FrozenSet, Iterator, Optional, Tuple, List, Dict
+from typing import FrozenSet, Iterator, Optional, Tuple, List, Dict, Set
 
 import trueskill
 
@@ -14,6 +14,8 @@ from truescrub.models import SKILL_MEAN, SKILL_STDEV
 
 
 def adapt_datetime(dt):
+    if dt.tzinfo is not None:
+        dt = dt.astimezone(datetime.timezone.utc).replace(tzinfo=None)
     return dt.isoformat(sep=" ")
 
 def adapt_date(d):
@@ -508,7 +510,7 @@ def get_player_profile(skill_db, player_id: int):
     return player, overall_record
 
 
-def get_players_in_last_round(skill_db) -> {int}:
+def get_players_in_last_round(skill_db) -> Set[int]:
     player_ids = execute(skill_db, '''
     SELECT m.player_id
     FROM rounds r
@@ -530,17 +532,17 @@ def get_players_in_last_round(skill_db) -> {int}:
     return {row[0] for row in player_ids}
 
 
-def get_match_days(skill_db, tz: datetime.timezone) -> [str]:
+def get_match_days(skill_db, tz: datetime.timezone) -> List[datetime.date]:
     tz_offset = adapt_timezone(tz)
     days = execute(skill_db, '''
     SELECT DISTINCT date(created_at, ?) AS match_day
     FROM rounds
     ORDER BY match_day DESC
     ''', (tz_offset,))
-    return [day for day, in days]
+    return [datetime.date.fromisoformat(day) for day, in days]
 
 
-def get_all_rounds(skill_db, round_range: (int, int)) -> [RoundRow]:
+def get_all_rounds(skill_db, round_range: Tuple[int, int]) -> List[RoundRow]:
     if round_range is not None:
         where_clause = 'WHERE round_id BETWEEN ? AND ?'
         params = round_range
@@ -560,7 +562,7 @@ def get_all_rounds(skill_db, round_range: (int, int)) -> [RoundRow]:
     ]
 
 
-def get_all_teams(skill_db) -> {int: FrozenSet[int]}:
+def get_all_teams(skill_db) -> Dict[int, FrozenSet[int]]:
     memberships = execute(skill_db, '''
     SELECT team_id, player_id
     FROM team_membership
@@ -673,11 +675,12 @@ def make_skill_history(player_id: int, skill_history):
 
 
 def adapt_timezone(tz: datetime.timezone) -> str:
-    utcoffset = tz.utcoffset(None)
-    signum = '+' if utcoffset.days == 0 else '-'
-    hours = utcoffset.seconds // 3600
-    minutes = utcoffset.seconds % 3600 // 60
-    return f'{signum}{hours:02}:{minutes:02}'
+    offset = int(tz.utcoffset(None).total_seconds())
+    sign = '+' if offset >= 0 else '-'
+    offset = abs(offset)
+    hours = offset // 3600
+    minutes = (offset % 3600) // 60
+    return f'{sign}{hours:02d}:{minutes:02d}'
 
 
 def get_impact_ratings_by_day(

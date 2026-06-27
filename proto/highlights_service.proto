@@ -1,0 +1,80 @@
+syntax = "proto3";
+
+package truescrub.rpc.highlights;
+
+message Date {
+  int32 year = 1;
+  int32 month = 2;
+  int32 day = 3;
+}
+
+message ListMatchDaysRequest {
+  string timezone = 1;
+}
+
+message ListMatchDaysResponse {
+  repeated Date match_days = 1;
+}
+
+message GetDailyHighlightsRequest {
+  Date date = 1;
+  string timezone = 2;
+  bool include_accolades = 3;
+}
+
+message SkillInfo {
+  double mmr = 1;
+  string skill_group = 2;
+}
+
+message RatingDetails {
+  double average_kills = 1;
+  double average_deaths = 2;
+  double average_damage = 3;
+  double average_assists = 4;
+  int32 total_kills = 5;
+  int32 total_deaths = 6;
+  int32 total_damage = 7;
+  int32 total_assists = 8;
+  double kdr = 9;
+  double average_headshots = 10;
+  int32 total_headshots = 11;
+}
+
+message PlayerRating {
+  int64 player_id = 1;
+  string steam_name = 2;
+  double impact_rating = 3;
+  SkillInfo previous_skill = 4;
+  RatingDetails rating_details = 5;
+  int32 rounds_played = 6;
+  int32 mvps = 7;
+}
+
+message SkillGroupChange {
+  int64 player_id = 1;
+  string steam_name = 2;
+  SkillInfo previous_skill = 3;
+  SkillInfo next_skill = 4;
+}
+
+message Accolade {
+  string accolade = 1;
+  int64 player_id = 2;
+  string player_name = 3;
+  repeated string details = 4;
+}
+
+message GetDailyHighlightsResponse {
+  repeated string time_window = 1;
+  int32 rounds_played = 2;
+  map<string, int32> most_played_maps = 3;
+  repeated PlayerRating player_ratings = 4;
+  repeated SkillGroupChange season_skill_group_changes = 5;
+  repeated Accolade accolades = 6;
+}
+
+service HighlightsService {
+  rpc ListMatchDays(ListMatchDaysRequest) returns (ListMatchDaysResponse);
+  rpc GetDailyHighlights(GetDailyHighlightsRequest) returns (GetDailyHighlightsResponse);
+}

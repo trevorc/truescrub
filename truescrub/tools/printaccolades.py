@@ -1,6 +1,9 @@
 import argparse
 import datetime
+import json
 import sys
+
+from google.protobuf.json_format import MessageToDict
 
 from truescrub.accolades import get_accolades
 from truescrub.db import get_skill_db
@@ -29,16 +32,17 @@ def main():
   try:
     with get_skill_db() as skill_db:
       highlights = get_highlights(skill_db, date)
-      accolades = get_accolades(highlights['player_ratings'])
+      accolades = get_accolades(highlights.player_ratings)
 
       if args.json:
-        json.dump(accolades, sys.stdout, indent=2)
+        accolades_dict = [MessageToDict(a) for a in accolades]
+        json.dump(accolades_dict, sys.stdout, indent=2)
         print()
       else:
         for accolade in accolades:
-          print(f"\n{accolade['accolade']}: {accolade['player_name']}")
-        for detail in accolade['details']:
-          print(f"  * {detail}")
+          print(f"\n{accolade.accolade}: {accolade.player_name}")
+          for detail in accolade.details:
+            print(f"  * {detail}")
 
   except StopIteration:
     print(f"No rounds found for {args.date}", file=sys.stderr)

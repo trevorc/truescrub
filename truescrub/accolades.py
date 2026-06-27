@@ -2,8 +2,9 @@ import collections
 import configparser
 import numbers
 from importlib.resources import files
-from typing import Dict, List, Tuple, Iterator, OrderedDict
+from typing import Dict, List, Tuple, Iterator, OrderedDict, Sequence
 
+from proto import highlights_service_pb2
 from truescrub.db import KILL_COEFF, DEATH_COEFF, DAMAGE_COEFF, INTERCEPT
 
 
@@ -70,22 +71,24 @@ ACCOLADES, CONDITIONS = parse_accolades(
   files(__package__).joinpath('accolades.ini').read_bytes().decode('UTF-8'))
 
 
-def compute_expected_rating(rating_details: Dict) -> float:
+def compute_expected_rating(
+    rating_details: highlights_service_pb2.RatingDetails) -> float:
   return (
-      KILL_COEFF * rating_details['average_kills'] +
-      DEATH_COEFF * rating_details['average_deaths'] +
-      DAMAGE_COEFF * rating_details['average_damage'] +
+      KILL_COEFF * rating_details.average_kills +
+      DEATH_COEFF * rating_details.average_deaths +
+      DAMAGE_COEFF * rating_details.average_damage +
       INTERCEPT
   )
 
 
-def evaluate_conditions(player_ratings: List[Dict]) -> Dict[
-  int, Dict[str, bool]]:
+def evaluate_conditions(
+    player_ratings: Sequence[highlights_service_pb2.PlayerRating]
+) -> Dict[int, Dict[str, bool]]:
   """
   Determine which conditions each player meets, based on their performance.
 
   Args:
-      player_ratings: List of player rating dictionaries from highlights.get_highlights()
+      player_ratings: List of PlayerRating messages from highlights.get_highlights()
 
   Returns:
       Dictionary mapping player_id to a dictionary of satisfied conditions
@@ -96,7 +99,7 @@ def evaluate_conditions(player_ratings: List[Dict]) -> Dict[
 
   # First pass: collect all stats and calculate derived metrics
   for player in player_ratings:
-    player_id = player['player_id']
+    player_id = player.player_id
     stats = derive_player_stats(player)
     player_stats[player_id] = stats
 
@@ -127,36 +130,30 @@ def evaluate_conditions(player_ratings: List[Dict]) -> Dict[
   return player_conditions
 
 
-def derive_player_stats(player):
-  player_id = player['player_id']
-  expected_rating = compute_expected_rating(player['rating_details'])
-  rd = player['rating_details']
-  total_kills = rd.get('total_kills', 0)
-  total_headshots = rd.get('total_headshots', 0)
+def derive_player_stats(player: highlights_service_pb2.PlayerRating):
+  player_id = player.player_id
+  expected_rating = compute_expected_rating(player.rating_details)
+  rd = player.rating_details
+  total_kills = rd.total_kills
+  total_headshots = rd.total_headshots
   headshot_pct = (100.0 * total_headshots / max(1, total_kills))
-  stats = dict(player_id=player_id, rating=player['impact_rating'],
-               mvps=player['mvps'], expected_rating=expected_rating,
-               kills=rd['average_kills'],
-               deaths=rd['average_deaths'],
-               damage=rd['average_damage'],
-               assists=rd.get('average_assists', 0),
-               impact=player['impact_rating'],
-               kdr=rd.get('kdr', 0),
-               headshots=rd.get('average_headshots', 0),
-               headshot_pct=headshot_pct)
+  stats = dict(player_id=player_id, rating=player.impact_rating,
+               mvps=player.mvps, expected_rating=expected_rating,
+               kills=rd.average_kills, deaths=rd.average_deaths,
+               damage=rd.average_damage, assists=rd.average_assists,
+               impact=player.impact_rating, kdr=rd.kdr,
+               headshots=rd.average_headshots, headshot_pct=headshot_pct)
   stats['overratedness'], stats['underratedness'] = \
-    compute_rating_surprise(expected_rating, player['impact_rating'])
+    compute_rating_surprise(expected_rating, player.impact_rating)
 
   return stats
 
 
 def compute_rating_surprise(expected_rating, actual_rating):
   if actual_rating > expected_rating:
-    # Player is underrated (better than expected)
     excess_rating = (actual_rating - expected_rating)
     return 0, 100 * excess_rating / max(0.001, expected_rating)
   else:
-    # Player is overrated (worse than expected)
     excess_rating = (expected_rating - actual_rating)
     return 100 * excess_rating / max(0.001, expected_rating), 0
 
@@ -175,6 +172,10 @@ def compute_accolades(triggered_conditions: Dict[int, Dict[str, bool]]) -> \
   """
   consumed_attributes = set()
   assigned_players = set()
+  player_conditions = {
+    player_id: frozenset(conditions.items())
+    for player_id, conditions in triggered_conditions.items()
+  }
 
   for accolade_name, accolade_spec in ACCOLADES.items():
     accolade_conditions = set(accolade_spec.items())
@@ -182,11 +183,11 @@ def compute_accolades(triggered_conditions: Dict[int, Dict[str, bool]]) -> \
     if len(accolade_conditions & consumed_attributes) > 0:
       continue
 
-    for player_id, player_conditions in triggered_conditions.items():
+    for player_id, player_condition_set in player_conditions.items():
       if player_id in assigned_players:
         continue
 
-      if accolade_conditions.issubset(set(player_conditions.items())):
+      if accolade_conditions.issubset(player_condition_set):
         consumed_attributes |= accolade_conditions
         assigned_players.add(player_id)
         yield accolade_name, player_id
@@ -194,21 +195,22 @@ def compute_accolades(triggered_conditions: Dict[int, Dict[str, bool]]) -> \
 
 def format_accolades(
     accolades: Iterator[Tuple[str, int]],
-    player_ratings: List[Dict]) -> Iterator[Dict]:
+    player_ratings: Sequence[highlights_service_pb2.PlayerRating]
+) -> Iterator[highlights_service_pb2.Accolade]:
   """
   Format accolades for display with detailed information.
 
   Args:
       accolades: List of (accolade_name, player_id) pairs
-      player_ratings: List of player rating dictionaries
+      player_ratings: List of PlayerRating messages
 
   Returns:
-      Iterator of formatted accolade dictionaries
+      Iterator of formatted Accolade messages
   """
 
-  player_map = {p['player_id']: p for p in player_ratings}
+  player_map = {p.player_id: p for p in player_ratings}
   player_stats = {
-    player['player_id']: derive_player_stats(player)
+    player.player_id: derive_player_stats(player)
     for player in player_ratings
   }
 
@@ -223,28 +225,30 @@ def format_accolades(
       if condition_key in CONDITIONS
     ]
 
-    yield {
-      'accolade': accolade_name,
-      'player_id': player_id,
-      'player_name': player['steam_name'],
-      'details': details
-    }
+    yield highlights_service_pb2.Accolade(
+      accolade=accolade_name,
+      player_id=player_id,
+      player_name=player.steam_name,
+      details=details
+    )
 
 
-def get_accolades(player_ratings: List[Dict]) -> List[dict]:
+def get_accolades(
+    player_ratings: Sequence[highlights_service_pb2.PlayerRating]) -> List[
+  highlights_service_pb2.Accolade]:
   """
   Generate accolades based on player ratings from highlights.get_highlights().
 
   Args:
-      player_ratings: List of player rating dictionaries from the highlights module
+      player_ratings: List of PlayerRating messages from the highlights module
 
   Returns:
-      List of accolade dictionaries with formatting for display
+      List of Accolade messages
   """
-  
+
   if not player_ratings:
     return []
-    
+
   triggered_conditions = evaluate_conditions(player_ratings)
   awarded_accolades = compute_accolades(triggered_conditions)
   return list(format_accolades(awarded_accolades, player_ratings))
