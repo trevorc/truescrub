@@ -19,16 +19,32 @@ py_image_layer(
     layer_tier = ":tier",
 )
 
+platform(
+    name = "linux_amd64",
+    constraint_values = [
+        "@platforms//os:linux",
+        "@platforms//cpu:x86_64",
+    ],
+)
+
 platform_transition_filegroup(
     name = "layer_amd64",
     srcs = [":layer"],
-    target_platform = "//platforms:linux_amd64",
+    target_platform = ":linux_amd64",
+)
+
+platform(
+    name = "linux_arm64",
+    constraint_values = [
+        "@platforms//os:linux",
+        "@platforms//cpu:aarch64",
+    ],
 )
 
 platform_transition_filegroup(
     name = "layer_arm64",
     srcs = [":layer"],
-    target_platform = "//platforms:linux_arm64",
+    target_platform = ":linux_arm64",
 )
 
 ENTRYPOINT = [
