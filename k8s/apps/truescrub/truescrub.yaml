@@ -1,0 +1,99 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: truescrub
+  labels:
+    app: truescrub
+spec:
+  type: ClusterIP
+  selector:
+    app: truescrub
+  ports:
+    - name: http
+      port: 9000
+    - name: grpc
+      port: 9900
+      appProtocol: kubernetes.io/h2c
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: truescrub
+  labels:
+    app: truescrub
+spec:
+  serviceName: truescrub
+  replicas: 1
+  selector:
+    matchLabels:
+      app: truescrub
+  template:
+    metadata:
+      labels:
+        app: truescrub
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: truescrub
+          image: git.emun.us/trevor/truescrub:latest
+          args: ["-a", "0.0.0.0"]
+          ports:
+            - name: http
+              containerPort: 9000
+            - name: grpc
+              containerPort: 9900
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          env:
+            - name: TRUESCRUB_LOG_LEVEL
+              value: DEBUG
+            - name: TRUESCRUB_SEASONS
+              value: '{"season_starts":["2019-01-01","2019-07-26","2019-11-27","2020-05-28","2020-11-19","2021-04-19"]}'
+            - name: TRUESCRUB_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: truescrub
+                  key: shared-key
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: tmp
+              mountPath: /tmp
+          readinessProbe:
+            grpc:
+              port: 9900
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            grpc:
+              port: 9900
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+      volumes:
+        - name: tmp
+          emptyDir:
+            sizeLimit: 1Gi
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 16Gi
