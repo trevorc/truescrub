@@ -13,7 +13,6 @@ dependencies = [
     "deap==1.4.4",
     "optuna==4.9.0",
     "tqdm==4.68.1",
-    "sonora>=0.2.3",
     "requests>=2.31.0",
     "grpcio==1.81.1",
     "grpcio-reflection==1.81.1",

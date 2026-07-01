@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TrueScrub</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Outfit', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              100: '#e0f2fe',
+              500: '#0ea5e9',
+              600: '#0284c7',
+              900: '#0c4a6e',
+            },
+            dark: {
+              bg: '#0f172a', /* slate-900 */
+              card: '#1e293b', /* slate-800 */
+              border: '#334155', /* slate-700 */
+            }
+          },
+          animation: {
+            'fade-in': 'fadeIn 0.5s ease-out',
+            'slide-up': 'slideUp 0.5s ease-out',
+          },
+          keyframes: {
+            fadeIn: {
+              '0%': {opacity: '0'},
+              '100%': {opacity: '1'},
+            },
+            slideUp: {
+              '0%': {transform: 'translateY(20px)', opacity: '0'},
+              '100%': {transform: 'translateY(0)', opacity: '1'},
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .glass-panel {
+        @apply bg-dark-card/60 backdrop-blur-md border border-white/10 shadow-xl;
+      }
+
+      .heading-gradient {
+        @apply bg-clip-text text-transparent bg-gradient-to-r from-brand-500 to-purple-500 font-bold tracking-tight;
+      }
+
+      .interactive-card {
+        @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:border-brand-500/50 cursor-pointer;
+      }
+
+      .btn-primary {
+        @apply px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white font-medium rounded-lg transition-colors duration-200 shadow-lg shadow-brand-500/20 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-dark-card;
+      }
+
+      .btn-secondary {
+        @apply px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 font-medium rounded-lg transition-colors duration-200 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 focus:ring-offset-dark-card;
+      }
+    }
+
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+
+    @keyframes chickenBounce {
+      0% { transform: translateY(0) rotate(-5deg); }
+      100% { transform: translateY(-12px) rotate(5deg); }
+    }
+    .animate-chickenBounce {
+      animation: chickenBounce 0.6s ease-in-out infinite alternate;
+    }
+
+    body {
+      @apply bg-dark-bg text-slate-300 antialiased min-h-screen flex flex-col;
+      background-image: radial-gradient(circle at top right, rgba(14, 165, 233, 0.1) 0%, transparent 40%),
+      radial-gradient(circle at bottom left, rgba(168, 85, 247, 0.05) 0%, transparent 40%);
+      background-attachment: fixed;
+    }
+  </style>
+</head>
+<body class="dark pt-6 pb-12 px-4 sm:px-6 lg:px-8">
+
+<div id="react-root"></div>
+
+<script src="/htdocs/{{JS_BUNDLE}}"></script>
+</body>
+</html>

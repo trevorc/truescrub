@@ -82,13 +82,13 @@ def compute_expected_rating(
 
 
 def evaluate_conditions(
-    player_ratings: Sequence[highlights_service_pb2.PlayerRating]
+    player_ratings: Sequence[highlights_service_pb2.DailyHighlight]
 ) -> Dict[int, Dict[str, bool]]:
   """
   Determine which conditions each player meets, based on their performance.
 
   Args:
-      player_ratings: List of PlayerRating messages from highlights.get_highlights()
+      player_ratings: List of DailyHighlight messages from highlights.get_highlights()
 
   Returns:
       Dictionary mapping player_id to a dictionary of satisfied conditions
@@ -99,7 +99,7 @@ def evaluate_conditions(
 
   # First pass: collect all stats and calculate derived metrics
   for player in player_ratings:
-    player_id = player.player_id
+    player_id = player.player.player_id
     stats = derive_player_stats(player)
     player_stats[player_id] = stats
 
@@ -130,8 +130,8 @@ def evaluate_conditions(
   return player_conditions
 
 
-def derive_player_stats(player: highlights_service_pb2.PlayerRating):
-  player_id = player.player_id
+def derive_player_stats(player: highlights_service_pb2.DailyHighlight):
+  player_id = player.player.player_id
   expected_rating = compute_expected_rating(player.rating_details)
   rd = player.rating_details
   total_kills = rd.total_kills
@@ -195,8 +195,8 @@ def compute_accolades(triggered_conditions: Dict[int, Dict[str, bool]]) -> \
 
 def format_accolades(
     accolades: Iterator[Tuple[str, int]],
-    player_ratings: Sequence[highlights_service_pb2.PlayerRating]
-) -> Iterator[highlights_service_pb2.Accolade]:
+    player_ratings: Sequence[highlights_service_pb2.DailyHighlight]
+) -> Iterator[Tuple[int, highlights_service_pb2.Accolade]]:
   """
   Format accolades for display with detailed information.
 
@@ -205,17 +205,15 @@ def format_accolades(
       player_ratings: List of PlayerRating messages
 
   Returns:
-      Iterator of formatted Accolade messages
+      Dictionary mapping player_id to their Accolade
   """
 
-  player_map = {p.player_id: p for p in player_ratings}
   player_stats = {
-    player.player_id: derive_player_stats(player)
+    player.player.player_id: derive_player_stats(player)
     for player in player_ratings
   }
 
   for accolade_name, player_id in accolades:
-    player = player_map[player_id]
     stats = player_stats[player_id]
     accolade_spec = ACCOLADES[accolade_name]
 
@@ -225,30 +223,28 @@ def format_accolades(
       if condition_key in CONDITIONS
     ]
 
-    yield highlights_service_pb2.Accolade(
-      accolade=accolade_name,
-      player_id=player_id,
-      player_name=player.steam_name,
+    yield player_id, highlights_service_pb2.Accolade(
+      name=accolade_name,
       details=details
     )
 
 
 def get_accolades(
-    player_ratings: Sequence[highlights_service_pb2.PlayerRating]) -> List[
-  highlights_service_pb2.Accolade]:
+    player_ratings: Sequence[highlights_service_pb2.DailyHighlight]
+) -> Dict[int, highlights_service_pb2.Accolade]:
   """
   Generate accolades based on player ratings from highlights.get_highlights().
 
   Args:
-      player_ratings: List of PlayerRating messages from the highlights module
+      player_ratings: List of DailyHighlight messages from the highlights module
 
   Returns:
-      List of Accolade messages
+      Dict mapping player_id to their Accolade
   """
 
   if not player_ratings:
-    return []
+    return {}
 
   triggered_conditions = evaluate_conditions(player_ratings)
   awarded_accolades = compute_accolades(triggered_conditions)
-  return list(format_accolades(awarded_accolades, player_ratings))
+  return dict(format_accolades(awarded_accolades, player_ratings))

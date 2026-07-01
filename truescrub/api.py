@@ -1,25 +1,22 @@
 #!/usr/bin/env python3
-import re
-import json
-import math
-import time
-import logging
 import datetime
+import json
+import logging
+import math
 import operator
-import itertools
-from typing import List, Optional
+import re
+import time
+from typing import Dict
 
 import flask
 from flask import g, request, render_template
 
-from truescrub import db
 from truescrub import achievements
-from truescrub.highlights import get_highlights
-from truescrub.matchmaking import (
-  skill_group_ranges, compute_matches,
-  estimated_skill_range, MAX_PLAYERS_PER_TEAM)
-from truescrub.models import Match, Player, skill_groups, skill_group_name
+from truescrub import db
 from truescrub.envconfig import TRUESCRUB_BRAND, SHARED_KEY
+from truescrub.matchmaking import (
+  skill_group_ranges, estimated_skill_range)
+from truescrub.models import Player, skill_groups, skill_group_name
 
 app = flask.Flask('truescrub')
 app.config['PROPAGATE_EXCEPTIONS'] = True
@@ -59,12 +56,7 @@ def db_close(exc):
     g.conn.close()
 
 
-@app.route('/', methods={'GET'})
-def index():
-  seasons = len(db.get_season_range(g.conn))
-  season_path = '/season/{}'.format(seasons) if seasons > 1 else ''
-  return render_template('index.html', brand=TRUESCRUB_BRAND,
-                         season_path=season_path)
+
 
 
 @app.route('/api/game_state', methods={'POST'})
@@ -93,9 +85,7 @@ def parse_timezone(tz: str) -> datetime.timezone:
   return datetime.timezone(offset=offset)
 
 
-@app.route('/accolades', methods={'GET'})
-def accolades():
-  return render_template('accolades.html', brand=TRUESCRUB_BRAND)
+
 
 
 def make_thin_player_viewmodel(player: Player) -> dict:
@@ -105,34 +95,6 @@ def make_thin_player_viewmodel(player: Player) -> dict:
     'skill_group': skill_group_name(player.skill_group_index),
     'mmr': player.mmr,
   }
-
-
-def make_match_viewmodel(match: Match) -> dict:
-  return {
-    'team1': [make_thin_player_viewmodel(player)
-              for player in match.team1],
-    'team2': [make_thin_player_viewmodel(player)
-              for player in match.team2],
-    'quality': match.quality,
-    'team1_win_probability': match.team1_win_probability,
-    'team2_win_probability': match.team2_win_probability,
-  }
-
-
-@app.route('/api/matchmaking/latest', methods={'GET'})
-def latest_matchmaking_api():
-  try:
-    limit = int(request.args.get('limit', 1))
-  except ValueError:
-    return flask.make_response('Invalid limit\n', 400)
-  seasons = db.get_season_range(g.conn)
-  if len(seasons) == 0:
-    return flask.make_response('No seasons found\n', 404)
-  selected_players = db.get_players_in_last_round(g.conn)
-  players, matches = compute_matchmaking(seasons[-1], selected_players)
-
-  results = list(itertools.islice(map(make_match_viewmodel, matches), limit))
-  return flask.jsonify(results)
 
 
 @app.route('/api/leaderboard/season/<int:season>', methods={'GET'})
@@ -168,7 +130,8 @@ def make_player_viewmodel(player: Player):
   }
 
 
-def make_skill_history_viewmodel(history: {str: Player}) -> {str: {str: float}}:
+def make_skill_history_viewmodel(
+    history: Dict[str, Player]) -> Dict[str, Dict[str, float]]:
   return {
     skill_date: {
       'skill_mean': player.skill.mu,
@@ -321,61 +284,3 @@ def profile(player_id):
                          season_ratings=season_ratings,
                          skill_groups=SKILL_GROUPS_VIEWMODEL,
                          achievements=player_achievements)
-
-
-@app.route('/matchmaking', methods={'GET'})
-def default_matchmaking():
-  return matchmaking(None)
-
-
-@app.route('/matchmaking/latest', methods={'GET'})
-def latest_matchmaking():
-  seasons = db.get_season_range(g.conn)
-  if len(seasons) == 0:
-    return flask.make_response('No seasons found', 404)
-  players = db.get_players_in_last_round(g.conn)
-  return matchmaking0(seasons, players, season_id=seasons[-1], latest=True)
-
-
-@app.route('/matchmaking/season/<int:season_id>', methods={'GET'})
-def matchmaking(season_id):
-  seasons = db.get_season_range(g.conn)
-  selected_players = {
-    int(player_id) for player_id in request.args.getlist('player')
-  }
-  return matchmaking0(seasons, selected_players, season_id)
-
-
-def compute_matchmaking(season_id, selected_players) \
-    -> ([Player], Optional[List[Match]]):
-  max_players = MAX_PLAYERS_PER_TEAM * 2
-  if len(selected_players) > max_players:
-    raise ValueError('Cannot compute matches for more than '
-                     '{} players'.format(max_players))
-  players = db.get_all_players(g.conn) \
-    if season_id is None \
-    else db.get_season_players(g.conn, season_id)
-  players.sort(key=operator.attrgetter('mmr'), reverse=True)
-
-  if len(selected_players) > 0:
-    matches = itertools.islice(compute_matches([
-      player for player in players if player.player_id in selected_players
-    ]), MAX_MATCHES)
-  else:
-    matches = None
-
-  return players, matches
-
-
-def matchmaking0(seasons: [int], selected_players: {int}, season_id: int = None,
-                 latest: bool = False):
-  try:
-    players, matches = compute_matchmaking(season_id, selected_players)
-  except ValueError as e:
-    return flask.make_response(e.args[0], 403)
-
-  return render_template('matchmaking.html',
-                         brand=TRUESCRUB_BRAND,
-                         seasons=seasons, selected_season=season_id,
-                         selected_players=selected_players,
-                         players=players, teams=matches, latest=latest)

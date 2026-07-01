@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package truescrub.rpc.season;
+
+message GetAvailableSeasonsRequest {}
+
+message GetAvailableSeasonsResponse {
+  repeated int32 available_seasons = 1;
+}
+
+service SeasonService {
+  rpc GetAvailableSeasons(GetAvailableSeasonsRequest) returns (GetAvailableSeasonsResponse);
+}

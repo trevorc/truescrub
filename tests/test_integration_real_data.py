@@ -13,12 +13,16 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from google.protobuf.field_mask_pb2 import FieldMask
+from proto import common_pb2
 from proto import highlights_service_pb2
 from truescrub import db, seasoncfg
 from truescrub.api import app
 from truescrub.envconfig import SHARED_KEY
+from truescrub.interceptors import grpc_db_conn
 from truescrub.rpc import HighlightsServiceServicer
 from truescrub.statewriter.state_writer import GameStateWriter
+from tests.db_test_utils import set_context_var
 from truescrub.updater.recalculate import (
   compute_rounds_and_players, recalculate_ratings, load_seasons,
 )
@@ -216,24 +220,21 @@ class TestRealDataPipeline:
     _drain_writer(writer)
     _run_updater(skill_db, sink)
 
-    # Determine the date of the first game state (UTC) for the
-    # highlights endpoint.
     ts = real_game_states[0]['provider']['timestamp']
     dt = datetime.datetime.fromtimestamp(ts, tz=datetime.timezone.utc)
 
     servicer = HighlightsServiceServicer()
     req = highlights_service_pb2.GetDailyHighlightsRequest(
-      date=highlights_service_pb2.Date(year=dt.year, month=dt.month,
-                                       day=dt.day),
-      timezone="+00:00",
-      include_accolades=False
+      date=common_pb2.Date(year=dt.year, month=dt.month, day=dt.day),
+      timezone="+00:00"
     )
     context = MagicMock()
-    resp = servicer.GetDailyHighlights(req, context)
+    with set_context_var(grpc_db_conn, skill_db):
+        resp = servicer.GetDailyHighlights(req, context)
 
     assert not context.abort.called
     assert resp.rounds_played >= 1
-    assert len(resp.player_ratings) >= 1
+    assert len(resp.players) >= 1
 
   def test_highlights_returns_accolades(
       self, integration_env, real_game_states):
@@ -242,29 +243,33 @@ class TestRealDataPipeline:
     _drain_writer(writer)
     _run_updater(skill_db, sink)
 
-    # Determine the date of the first game state (UTC) for the
-    # highlights endpoint.
     ts = real_game_states[0]['provider']['timestamp']
     dt = datetime.datetime.fromtimestamp(ts, tz=datetime.timezone.utc)
 
     servicer = HighlightsServiceServicer()
     req = highlights_service_pb2.GetDailyHighlightsRequest(
-      date=highlights_service_pb2.Date(
+      date=common_pb2.Date(
         year=dt.year, month=dt.month, day=dt.day),
       timezone="+00:00",
-      include_accolades=True
+      read_mask=FieldMask(paths=['players.accolades'])
     )
     context = MagicMock()
-    resp = servicer.GetDailyHighlights(req, context)
+    
+    with set_context_var(grpc_db_conn, skill_db):
+        resp = servicer.GetDailyHighlights(req, context)
 
     assert not context.abort.called
-    assert len(resp.accolades) >= 1
 
-    first_accolade = resp.accolades[0]
-    assert first_accolade.accolade != ""
-    assert first_accolade.player_id > 0
+    all_accolades = []
+    for player in resp.players:
+      all_accolades.extend(player.accolades)
 
-    accolade_names = {acc.accolade for acc in resp.accolades}
+    assert len(all_accolades) >= 1
+
+    first_accolade = all_accolades[0]
+    assert first_accolade.name != ""
+
+    accolade_names = {acc.name for acc in all_accolades}
     assert 'Grand Slamma Jamma' in accolade_names
     assert 'Bench Warmer' in accolade_names
     assert 'Cannon Fodder' in accolade_names

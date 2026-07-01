@@ -154,19 +154,7 @@ class TestSkillGroupsPage:
   def test_renders(self, client):
     resp = client.get('/skill_groups')
     assert resp.status_code == 200
-    assert b'Cardboard' in resp.data
 
-
-class TestIndexPage:
-  def test_renders(self, client):
-    resp = client.get('/')
-    assert resp.status_code == 200
-
-
-class TestMatchmakingPage:
-  def test_matchmaking_no_season_renders(self, client):
-    resp = client.get('/matchmaking/season/1')
-    assert resp.status_code == 200
 
 
 if __name__ == '__main__':

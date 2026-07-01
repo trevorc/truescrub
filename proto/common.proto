@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package truescrub.rpc.common;
+
+message Date {
+  int32 year = 1;
+  int32 month = 2;
+  int32 day = 3;
+}
+
+message SkillInfo {
+  double mmr = 1;
+  string skill_group = 2;
+}
+
+message Player {
+  int64 player_id = 1;
+  string steam_name = 2;
+  SkillInfo skill = 3; 
+}

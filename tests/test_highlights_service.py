@@ -4,9 +4,11 @@ from unittest.mock import MagicMock
 import pytest
 
 import grpc
+from proto import common_pb2
 from proto import highlights_service_pb2
-from tests.db_test_utils import TestDBManager, create_game_state_for_round
+from tests.db_test_utils import TestDBManager, create_game_state_for_round, set_context_var
 from truescrub.rpc import HighlightsServiceServicer
+from truescrub.interceptors import grpc_db_conn
 
 
 @pytest.fixture
@@ -66,10 +68,8 @@ def populated_db():
 
 @pytest.fixture
 def servicer(populated_db, monkeypatch):
-  """Create a HighlightsServiceServicer with a pre-populated database."""
-  monkeypatch.setattr('truescrub.db.get_skill_db',
-                      lambda name=None: populated_db)
-  return HighlightsServiceServicer()
+  with set_context_var(grpc_db_conn, populated_db):
+      yield HighlightsServiceServicer()
 
 
 def test_list_match_days_utc(servicer):

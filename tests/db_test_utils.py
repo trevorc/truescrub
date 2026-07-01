@@ -2,6 +2,7 @@
 Utility module for creating and populating in-memory test databases.
 This module uses the existing updater logic to transform game states into skill database content.
 """
+import contextlib
 import datetime
 import json
 import pathlib
@@ -22,6 +23,14 @@ from truescrub.updater.recalculate import (
 from truescrub.updater.state_loader import StateLoader
 from truescrub.updater.state_parser import parse_game_states
 
+
+@contextlib.contextmanager
+def set_context_var(context_var, value):
+    token = context_var.set(value)
+    try:
+        yield
+    finally:
+        context_var.reset(token)
 
 class MockGameState:
   """

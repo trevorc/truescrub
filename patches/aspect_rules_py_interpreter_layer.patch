@@ -5,10 +5,10 @@
  load("@rules_python//python:defs.bzl", "PyInfo")
  load("//py/private:py_semantics.bzl", _py_semantics = "semantics")
 +load("//py/private/toolchain:types.bzl", "PY_TOOLCHAIN")
- load(":types.bzl", "VirtualenvInfo")
+ load(":types.bzl", "VirtualenvInfo", "venv_root")
  
  # Identifiers the launcher always sets to the analysing rule's contextual
-@@ -237,13 +238,13 @@
+@@ -246,13 +247,13 @@
      implementation = _py_venv_exec_impl,
      attrs = _attrs,
      executable = True,

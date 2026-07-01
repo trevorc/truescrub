@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package truescrub.rpc.matchmaking;
+
+import "proto/common.proto";
+
+message RoundSelection {}
+
+message PlayerSelection {
+  repeated int64 player_ids = 1;
+}
+
+message ComputeMatchmakingRequest {
+  optional int32 season_id = 1;
+
+  oneof selection {
+    RoundSelection round_selection = 2;
+    PlayerSelection player_selection = 3;
+  }
+}
+
+message Match {
+  repeated truescrub.rpc.common.Player team1 = 1;
+  repeated truescrub.rpc.common.Player team2 = 2;
+  double quality = 3;
+  double team1_win_probability = 4;
+  double team2_win_probability = 5;
+}
+
+message ComputeMatchmakingResponse {
+  repeated truescrub.rpc.common.Player available_players = 1;
+  repeated Match proposed_matches = 2;
+}
+
+service MatchmakingService {
+  rpc ComputeMatchmaking(ComputeMatchmakingRequest) returns (ComputeMatchmakingResponse);
+}

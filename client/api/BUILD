@@ -8,9 +8,9 @@ ts_project(
     tsconfig = "//:tsconfig",
     visibility = ["//client:__subpackages__"],
     deps = [
-        "//:node_modules/@bufbuild/protobuf",
         "//:node_modules/@connectrpc/connect",
         "//:node_modules/@connectrpc/connect-web",
-        "//proto:highlights_service_js",
+        "//:node_modules/@tanstack/react-query",
+        "//:node_modules/@types/react",
     ],
 )

@@ -3,6 +3,10 @@ import operator
 import itertools
 from typing import List, Tuple, Dict, NamedTuple, Optional
 
+from google.protobuf.field_mask_pb2 import FieldMask
+from google.protobuf.timestamp_pb2 import Timestamp
+
+from proto import common_pb2
 from proto import highlights_service_pb2
 from truescrub.accolades import get_accolades
 from truescrub.db import execute_one, execute, COEFFICIENTS_DICT
@@ -21,8 +25,20 @@ class PlayerRatingRow(NamedTuple):
   rounds_played: int
   total_mvps: Optional[float]
   average_headshots: float
-  skill_mean: Optional[float]
-  skill_stdev: Optional[float]
+  starting_skill_mean: Optional[float]
+  starting_skill_stdev: Optional[float]
+  current_skill_mean: float
+  current_skill_stdev: float
+
+  def to_message(self):
+    return common_pb2.Player(
+      player_id=self.player_id,
+      steam_name=self.steam_name,
+      skill=common_pb2.SkillInfo(
+        mmr=self.mmr,
+        skill_group=skill_group_name(self.skill_group_index),
+      )
+    )
 
 
 class SkillChangeRow(NamedTuple):
@@ -36,31 +52,49 @@ class SkillChangeRow(NamedTuple):
 
 def get_highlights(
     skill_db, day: datetime.datetime,
-    include_accolades: bool = False
+    read_mask: Optional[FieldMask] = None
 ) -> highlights_service_pb2.GetDailyHighlightsResponse:
   round_range, rounds_played = get_round_range_for_day(skill_db, day)
 
   if rounds_played == 0:
     raise StopIteration
 
+  include_accolades = True
+  if read_mask is not None and read_mask.paths:
+    include_accolades = "players.accolades" in read_mask.paths or "players" in read_mask.paths
+
   player_ratings = get_player_ratings_between_rounds(skill_db, round_range)
   most_played_maps = get_most_played_maps_between_rounds(
     skill_db, round_range)
-  skill_group_changes = get_skill_changes_between_rounds(skill_db, round_range)
-  time_window = [day.isoformat(),
-                 (day + datetime.timedelta(days=1)).isoformat()]
-
-  result = highlights_service_pb2.GetDailyHighlightsResponse(
-    time_window=time_window,
-    rounds_played=rounds_played,
-    player_ratings=player_ratings,
-    season_skill_group_changes=skill_group_changes,
-  )
-  for k, v in most_played_maps.items():
-    result.most_played_maps[k] = v
 
   if include_accolades:
-    result.accolades.extend(get_accolades(player_ratings))
+    accolades_dict = get_accolades(player_ratings)
+    for p in player_ratings:
+      if p.player.player_id in accolades_dict:
+        p.accolades.append(accolades_dict[p.player.player_id])
+
+  start_ts = Timestamp()
+  start_ts.FromDatetime(day)
+
+  end_ts = Timestamp()
+  end_ts.FromDatetime(day + datetime.timedelta(days=1))
+
+  time_window = highlights_service_pb2.TimeWindow(
+    start_inclusive=start_ts,
+    end_exclusive=end_ts
+  )
+
+  result = highlights_service_pb2.GetDailyHighlightsResponse(
+    time_windows=[time_window],
+    rounds_played=rounds_played,
+    players=player_ratings,
+  )
+
+  skill_group_changes = get_skill_changes_between_rounds(skill_db, round_range)
+  result.season_skill_group_changes.extend(skill_group_changes)
+
+  for k, v in most_played_maps.items():
+    result.most_played_maps[k] = v
 
   return result
 
@@ -82,7 +116,7 @@ def get_most_played_maps_between_rounds(
 
 def get_player_ratings_between_rounds(
     skill_db, round_range: Tuple[int, int]
-) -> List[highlights_service_pb2.PlayerRating]:
+) -> List[highlights_service_pb2.DailyHighlight]:
   rating_details = execute(
     skill_db,
     '''
@@ -136,6 +170,8 @@ def get_player_ratings_between_rounds(
          , ir.average_headshots
          , s.skill_mean
          , s.skill_stdev
+         , players.skill_mean
+         , players.skill_stdev
     FROM players
     JOIN impact_ratings ir
     ON   players.player_id = ir.player_id
@@ -149,16 +185,26 @@ def get_player_ratings_between_rounds(
 
   player_ratings = []
   for row in itertools.starmap(PlayerRatingRow, rating_details):
-    player = Player(row.player_id, row.steam_name, row.skill_mean, row.skill_stdev,
-                    row.impact_rating)
+    current_player = Player(row.player_id, row.steam_name, row.current_skill_mean, row.current_skill_stdev,
+                            row.impact_rating)
+    starting_player = Player(row.player_id, row.steam_name,
+                             row.starting_skill_mean,
+                             row.starting_skill_stdev,
+                             0.0)
 
-    player_ratings.append(highlights_service_pb2.PlayerRating(
-      player_id=row.player_id,
-      steam_name=row.steam_name,
+    player_ratings.append(highlights_service_pb2.DailyHighlight(
+      player=common_pb2.Player(
+        player_id=row.player_id,
+        steam_name=row.steam_name,
+        skill=common_pb2.SkillInfo(
+          mmr=current_player.mmr,
+          skill_group=skill_group_name(current_player.skill_group_index),
+        ),
+      ),
       impact_rating=row.impact_rating,
-      previous_skill=highlights_service_pb2.SkillInfo(
-        mmr=player.mmr,
-        skill_group=skill_group_name(player.skill_group_index),
+      starting_skill=common_pb2.SkillInfo(
+        mmr=starting_player.mmr,
+        skill_group=skill_group_name(starting_player.skill_group_index),
       ),
       rating_details=highlights_service_pb2.RatingDetails(
         average_kills=row.average_kills,
@@ -181,6 +227,9 @@ def get_player_ratings_between_rounds(
   player_ratings.sort(key=operator.attrgetter('impact_rating'), reverse=True)
 
   return player_ratings
+
+
+
 
 
 def get_skill_changes_between_rounds(
@@ -235,11 +284,11 @@ def get_skill_changes_between_rounds(
     highlights_service_pb2.SkillGroupChange(
       player_id=previous_skill.player_id,
       steam_name=previous_skill.steam_name,
-      previous_skill=highlights_service_pb2.SkillInfo(
+      previous_skill=common_pb2.SkillInfo(
         mmr=previous_skill.mmr,
         skill_group=skill_group_name(previous_skill.skill_group_index),
       ),
-      next_skill=highlights_service_pb2.SkillInfo(
+      next_skill=common_pb2.SkillInfo(
         mmr=next_skill.mmr,
         skill_group=skill_group_name(next_skill.skill_group_index),
       ),

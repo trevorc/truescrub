@@ -1,9 +1,16 @@
-import {createClient} from "@connectrpc/connect";
+import {Transport} from "@connectrpc/connect";
 import {createGrpcWebTransport} from "@connectrpc/connect-web";
-import {HighlightsService} from "proto/highlights_service_pb.js";
+import {QueryClient} from "@tanstack/react-query";
 
-const transport = createGrpcWebTransport({
+export const transport: Transport = createGrpcWebTransport({
   baseUrl: window.location.origin,
 });
 
-export const client = createClient(HighlightsService, transport);
+export const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 3,
+      refetchOnWindowFocus: false,
+    },
+  },
+});

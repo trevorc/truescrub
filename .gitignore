@@ -3,3 +3,7 @@
 /venv
 /data
 /bazel-*
+
+k8s/overlays/dev/charts
+k8s/overlays/dev/tls.crt
+k8s/overlays/dev/tls.key

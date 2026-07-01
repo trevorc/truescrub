@@ -52,7 +52,6 @@ ENTRYPOINT = [
     "/app.runfiles/_main/truescrub/__main__.py",
     "--addr=0.0.0.0",
     "--port=9000",
-    "-s",
 ]
 
 oci_image(

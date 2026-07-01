@@ -103,6 +103,17 @@ class Player:
   def __repr__(self):
     return f'<Player "{self.steam_name}">'
 
+  def to_message(self):
+    from proto import common_pb2
+    return common_pb2.Player(
+      player_id=self.player_id,
+      steam_name=self.steam_name,
+      skill=common_pb2.SkillInfo(
+        mmr=float(self.mmr),
+        skill_group=skill_group_name(self.skill_group_index),
+      ),
+    )
+
 
 @dataclass(slots=True)
 class SkillHistory:

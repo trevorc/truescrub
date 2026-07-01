@@ -261,7 +261,7 @@ def insert_round_stats(skill_db, round_stats_by_game_state_id: Dict[int, Dict]):
     ])
 
 
-def get_all_players(skill_db) -> [Player]:
+def get_all_players(skill_db) -> List[Player]:
     player_rows = execute(skill_db, '''
     SELECT player_id
          , steam_name
@@ -760,7 +760,7 @@ def get_season_skill_history(skill_db, season: int, player_id: int,
     return make_skill_history(player_id, skill_history)
 
 
-def get_season_range(skill_db) -> [int]:
+def get_season_range(skill_db) -> List[int]:
     [season_count] = execute_one(skill_db, 'SELECT COUNT(*) FROM seasons')
     return list(range(1, season_count + 1))
 

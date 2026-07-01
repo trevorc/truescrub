@@ -4,6 +4,7 @@ from typing import Dict
 
 import pytest
 
+from proto import common_pb2
 from proto import highlights_service_pb2
 from tests.db_test_utils import TestDBManager, create_game_state_for_round
 from truescrub.accolades import get_accolades
@@ -117,7 +118,6 @@ def test_db():
   return create_test_db(day, 10, map_distribution)
 
 
-
 def test_get_round_range_for_day(test_db):
   day = datetime.datetime(2022, 1, 15)
 
@@ -144,13 +144,13 @@ def test_get_player_ratings_between_rounds(test_db):
 
   assert len(result) == 3  # Three players
 
-  player_ids = {player.player_id for player in result}
+  player_ids = {player.player.player_id for player in result}
   assert {1, 2, 3}.issubset(player_ids)
 
   for player_rating in result:
-    assert isinstance(player_rating, highlights_service_pb2.PlayerRating)
+    assert isinstance(player_rating, highlights_service_pb2.DailyHighlight)
     assert player_rating.HasField('rating_details')
-    assert player_rating.HasField('previous_skill')
+    assert player_rating.HasField('starting_skill')
     assert player_rating.rounds_played > 0
 
     rd = player_rating.rating_details
@@ -184,10 +184,9 @@ def test_get_highlights(test_db):
   assert isinstance(result, highlights_service_pb2.GetDailyHighlightsResponse)
 
   # Check time window
-  assert result.time_window == [
-    day.isoformat(),
-    (day + datetime.timedelta(days=1)).isoformat()
-  ]
+  assert len(result.time_windows) == 1
+  assert result.time_windows[0].start_inclusive.ToDatetime() == day
+  assert result.time_windows[0].end_exclusive.ToDatetime() == day + datetime.timedelta(days=1)
 
   # Check rounds played
   assert result.rounds_played == 10
@@ -196,36 +195,39 @@ def test_get_highlights(test_db):
   assert dict(result.most_played_maps) == {
     'de_dust2': 5, 'de_mirage': 3, 'de_nuke': 2}
 
-  assert len(result.player_ratings) == 3
+  assert len(result.players) == 3
+
+  player1 = next(p for p in result.players if p.player.player_id == 1)
+
+  assert player1.HasField('starting_skill')
+  assert player1.player.HasField('skill')
+  assert player1.starting_skill.mmr != player1.player.skill.mmr
+  assert player1.player.skill.mmr > player1.starting_skill.mmr
 
   skill_changes = result.season_skill_group_changes
   assert len(skill_changes) >= 1
 
-  player1 = next(change for change in skill_changes if change.player_id == 1)
+  player1_change = next(change for change in skill_changes if change.player_id == 1)
 
-  assert player1.HasField('previous_skill')
-  assert player1.HasField('next_skill')
-  assert player1.previous_skill.skill_group != player1.next_skill.skill_group
-  assert player1.next_skill.mmr > player1.previous_skill.mmr
+  assert player1_change.HasField('previous_skill')
+  assert player1_change.HasField('next_skill')
+  assert player1_change.previous_skill.skill_group != player1_change.next_skill.skill_group
+  assert player1_change.next_skill.mmr > player1_change.previous_skill.mmr
 
 
 def test_get_accolades_in_highlights(test_db):
   day = datetime.datetime(2022, 1, 15)
   round_range, rounds_played = get_round_range_for_day(test_db, day)
   player_ratings = get_player_ratings_between_rounds(test_db, round_range)
-  accolades = list(get_accolades(player_ratings))
+  accolades_dict = get_accolades(player_ratings)
 
-  assert len(accolades) == 3
+  assert len(accolades_dict) == 3
+  assert set(accolades_dict.keys()) == {1, 2, 3}
 
-  accolades_by_player = {acc.player_id: acc for acc in accolades}
-  assert set(accolades_by_player.keys()) == {1, 2, 3}
-
-  for accolade_data in accolades:
+  for accolade_data in accolades_dict.values():
     assert isinstance(accolade_data, highlights_service_pb2.Accolade)
-    assert isinstance(accolade_data.accolade, str)
-    assert len(accolade_data.accolade) > 0
-    assert accolade_data.player_id > 0
-    assert isinstance(accolade_data.player_name, str)
+    assert isinstance(accolade_data.name, str)
+    assert len(accolade_data.name) > 0
     assert len(accolade_data.details) > 0
 
 

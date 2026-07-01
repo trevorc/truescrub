@@ -79,6 +79,7 @@ py_test(
     srcs = ["test_highlights.py"],
     deps = [
         ":db_test_utils",
+        "//proto:common_py_pb2",
         "//proto:highlights_service_py_pb2_grpc",
         "//truescrub:db",
         "//truescrub:highlights",
@@ -179,6 +180,7 @@ py_test(
     deps = [
         ":db_test_utils",
         "//proto:highlights_service_py_pb2_grpc",
+        "//proto:season_service_py_pb2_grpc",
         "//truescrub:api",
         "//truescrub:db",
         "//truescrub:highlights",
@@ -229,7 +231,23 @@ py_test(
     srcs = ["test_highlights_service.py"],
     deps = [
         ":db_test_utils",
+        "//proto:common_py_pb2",
         "//proto:highlights_service_py_pb2_grpc",
+        "//proto:season_service_py_pb2_grpc",
+        "//truescrub:rpc",
+        "@pypi//grpcio",
+        "@pypi//pytest",
+    ],
+)
+
+py_test(
+    name = "test_matchmaking_service",
+    srcs = ["test_matchmaking_service.py"],
+    deps = [
+        ":db_test_utils",
+        "//proto:common_py_pb2",
+        "//proto:matchmaking_service_py_pb2_grpc",
+        "//proto:season_service_py_pb2_grpc",
         "//truescrub:rpc",
         "@pypi//grpcio",
         "@pypi//pytest",
@@ -258,6 +276,7 @@ test_suite(
         "test_log_translator",
         "test_match_days",
         "test_matchmaking",
+        "test_matchmaking_service",
         "test_models",
         "test_recalculate",
         "test_riegeli_loader",
@@ -274,9 +293,22 @@ py_binary(
     name = "test_grpc_web",
     srcs = ["test_grpc_web.py"],
     deps = [
+        "//proto:common_py_pb2",
         "//proto:highlights_service_py_pb2_grpc",
         "@pypi//grpcio",
         "@pypi//requests",
         "@pypi//sonora",
+    ],
+)
+
+py_test(
+    name = "test_season_service",
+    srcs = ["test_season_service.py"],
+    deps = [
+        ":db_test_utils",
+        "//proto:season_service_py_pb2_grpc",
+        "//truescrub:rpc",
+        "@pypi//pytest",
+        "@rules_python//python/runfiles",
     ],
 )

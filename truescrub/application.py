@@ -16,15 +16,17 @@ from grpc_health.v1 import health
 from grpc_health.v1 import health_pb2
 from grpc_health.v1 import health_pb2_grpc
 from grpc_reflection.v1alpha import reflection
-import sonora.wsgi
 
 import truescrub
 from truescrub import db
 from truescrub.api import app
 from truescrub.envconfig import LOG_LEVEL
 from proto import highlights_service_pb2_grpc
+from proto import matchmaking_service_pb2_grpc
+from proto import season_service_pb2_grpc
 from truescrub.queue_consumer import QueueConsumer
-from truescrub.rpc import HighlightsServiceServicer
+from truescrub.rpc import HighlightsServiceServicer, MatchmakingServiceServicer, \
+  SeasonServiceServicer
 from truescrub.statewriter.state_writer import GameStateWriter, \
   RiegeliGameStateWriter
 from truescrub.updater import Updater
@@ -52,13 +54,11 @@ arg_parser.add_argument('-p', '--port', metavar='PORT', type=int,
                         default=9000, help='Listen on this TCP port.')
 arg_parser.add_argument('-c', '--recalculate', action='store_true',
                         help='Recalculate rankings.')
-arg_parser.add_argument('-s', '--serve-htdocs', action='store_true',
-                        help='Serve static files.')
 arg_parser.add_argument('-b', '--game-state-backend',
                         choices=GAME_STATE_BACKENDS, default='sqlite',
                         help='Store game states using this provider.')
 arg_parser.add_argument('-P', '--grpc-port', metavar='PORT', type=int,
-                        default=9090,
+                        default=9900,
                         help='Listen for gRPC connections on this TCP port.')
 
 
@@ -111,7 +111,11 @@ class WaitressService(Service):
 
 
 def create_grpc_server(host, port):
-  server = grpc.server(concurrent.futures.ThreadPoolExecutor(max_workers=10))
+  from truescrub.interceptors import TimerInterceptor, DatabaseInterceptor
+  server = grpc.server(
+    concurrent.futures.ThreadPoolExecutor(max_workers=10),
+    interceptors=[TimerInterceptor(), DatabaseInterceptor()]
+  )
   health_servicer = health.HealthServicer()
   health_pb2_grpc.add_HealthServicer_to_server(health_servicer, server)
   health_servicer.set('', health_pb2.HealthCheckResponse.SERVING)
@@ -176,16 +180,7 @@ class Watchdog:
 START_ID = uuid.uuid4().hex
 
 
-def serve_htdocs(filename):
-  resource = importlib.resources.files(truescrub.__name__) / 'htdocs' / filename
-  if not resource.is_file():
-    return flask.abort(404)
-  return flask.send_file(
-    resource.open('rb'),
-    download_name=filename,
-    max_age=3600 * 24,
-    etag=f'{START_ID}:{filename}',
-  )
+
 
 
 def main(args: List[str]):
@@ -208,13 +203,6 @@ def main(args: List[str]):
     updater.stop()
     updater.run()
     return
-  if args.serve_htdocs:
-    app.add_url_rule('/htdocs/<path:filename>', 'serve_htdocs', serve_htdocs)
-
-  app.wsgi_app = sonora.wsgi.grpcWSGI(app.wsgi_app)
-  highlights_service_pb2_grpc.add_HighlightsServiceServicer_to_server(
-      HighlightsServiceServicer(), app.wsgi_app
-  )
 
   with Watchdog(futures, interval=8.0), \
       QueueConsumerService(updater) as updater_service, \
@@ -222,6 +210,16 @@ def main(args: List[str]):
           as waitress_service, \
       QueueConsumerService(state_writer) as state_writer_service, \
       GrpcService(host=args.addr, port=args.grpc_port) as grpc_service:
+
+    highlights_service_pb2_grpc.add_HighlightsServiceServicer_to_server(
+      HighlightsServiceServicer(), grpc_service.server
+    )
+    matchmaking_service_pb2_grpc.add_MatchmakingServiceServicer_to_server(
+      MatchmakingServiceServicer(), grpc_service.server
+    )
+    season_service_pb2_grpc.add_SeasonServiceServicer_to_server(
+      SeasonServiceServicer(), grpc_service.server
+    )
 
     app.state_writer = state_writer
     futures[executor.submit(updater_service)] = updater_service
