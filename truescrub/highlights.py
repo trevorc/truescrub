@@ -30,16 +30,6 @@ class PlayerRatingRow(NamedTuple):
   current_skill_mean: float
   current_skill_stdev: float
 
-  def to_message(self):
-    return common_pb2.Player(
-      player_id=self.player_id,
-      steam_name=self.steam_name,
-      skill=common_pb2.SkillInfo(
-        mmr=self.mmr,
-        skill_group=skill_group_name(self.skill_group_index),
-      )
-    )
-
 
 class SkillChangeRow(NamedTuple):
   player_id: int

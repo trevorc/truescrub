@@ -4,9 +4,12 @@ import pathlib
 import sqlite3
 
 import pytest
+
 from tests.db_test_utils import TestDBManager, create_game_state_for_round
 from truescrub import seasoncfg
 from truescrub.db import get_raw_game_states
+from truescrub.statewriter import GameStateLog
+from truescrub.statewriter.state_parsing import parse_game_state
 from truescrub.tools.log_translator import db_to_riegeli, riegeli_to_db
 
 SEASONS_TOML = pathlib.Path('tests/sample_seasons.toml')
@@ -75,8 +78,6 @@ def test_roundtrip(sqlite_db_path, tmp_path):
 
     assert len(orig_states) == len(roundtrip_states)
 
-    from truescrub.statewriter.state_parsing import parse_game_state
-
     def normalize_proto(proto):
       # The deserialization/serialization roundtrip injects some defaults into weapons and round.
       # We clear them here to ensure the core data is losslessly preserved.
@@ -124,7 +125,6 @@ def verify_file_roundtrip(input_path: pathlib.Path, is_db: bool):
       riegeli_to_db(input_path, db_path)
       db_to_riegeli(db_path, roundtrip_riegeli_path)
 
-      from truescrub.statewriter import GameStateLog
       orig_log = GameStateLog(input_path)
       roundtrip_log = GameStateLog(roundtrip_riegeli_path)
 

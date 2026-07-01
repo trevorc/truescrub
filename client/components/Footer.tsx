@@ -11,6 +11,17 @@ const QUIPS = [
   "Bawk bawk. That's chicken for 'git gud'.",
   "The chicken remembers every teamkill.",
   "Even the chickens have better crosshair placement.",
+  "The chicken has 400 hours and a better K/D than you.",
+  "Chickens don't peek mid. Be more like chickens.",
+  "The chicken would have held that angle.",
+  "TrueScrub: where the MMR is made up and the chickens don't matter.",
+  "Your spray pattern looks like a chicken drew it.",
+  "Chickens don't bait. Take notes.",
+  "That flash was so bad, even the chickens looked away in time.",
+  "The chicken is currently reviewing your demo. Verdict: yikes.",
+  "A moment of silence for every chicken caught in a molotov.",
+  "The chicken just solo'd B site. Where were you?",
+  "The chicken doesn't know what a defuse kit is. The chicken is just here for the vibes.",
 ];
 
 export function Footer() {

@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package truescrub.rpc.leaderboard;
+
+import "proto/common.proto";
+
+message GetLeaderboardRequest {
+  optional int32 season_id = 1;
+}
+
+message GetLeaderboardResponse {
+  repeated truescrub.rpc.common.Player leaderboard = 1;
+}
+
+service LeaderboardService {
+  rpc GetLeaderboard(GetLeaderboardRequest) returns (GetLeaderboardResponse);
+}

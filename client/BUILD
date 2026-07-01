@@ -27,6 +27,7 @@ ts_project(
         "//client/components:navbar",
         "//client/pages:accolades_page",
         "//client/pages:home_page",
+        "//client/pages:leaderboard_page",
         "//client/pages:matchmaking_page",
         "//proto:highlights_service_js",
         "//proto:matchmaking_service_js",

@@ -179,10 +179,8 @@ def print_eval(
         args.append(shlex.quote(override_arg))
     for team_no, team in enumerate(teams):
         args.append(','.join(str(player.player_id) for player in team))
-        print('    Team {}: {}'.format(
-            team_no + 1,
-            ', '.join(player.steam_name for player in team),
-            ))
+        names = ', '.join(player.steam_name for player in team)
+        print(f'    Team {team_no + 1}: {names}')
 
     print(' '.join(args))
     print()

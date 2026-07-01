@@ -3,11 +3,11 @@ import pathlib
 import re
 import struct
 import sys
-from google.protobuf import text_format
 
+from google.protobuf import text_format
 from truescrub.proto.game_state_pb2 import GameStateEntry
-from truescrub.statewriter.segmented_log import list_segments
 from truescrub.statewriter import GameStateLog
+from truescrub.statewriter.segmented_log import list_segments
 
 
 def make_arg_parser():
@@ -48,7 +48,8 @@ def run_recovery(opts):
       if opts.verbose:
         print(f"Recovering from {input_file}", file=sys.stderr)
 
-      with riegeli.RecordReader(open(input_file, 'rb'), recovery=recovery_callback) as reader:
+      with riegeli.RecordReader(open(input_file, 'rb'),
+                                recovery=recovery_callback) as reader:
         while True:
           try:
             record = reader.read_message(GameStateEntry)
@@ -116,8 +117,6 @@ def run_repair(opts):
 
       # Always continue scanning
       return True
-
-      print(f"Scanning {input_file} from offset {current_offset}...", file=sys.stderr)
 
     # Open file and seek to current_offset
     f = open(input_file, 'rb')

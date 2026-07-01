@@ -12,6 +12,8 @@ spec:
         - method:
             service: "truescrub.rpc.highlights.HighlightsService"
         - method:
+            service: "truescrub.rpc.leaderboard.LeaderboardService"
+        - method:
             service: "truescrub.rpc.matchmaking.MatchmakingService"
         - method:
             service: "truescrub.rpc.season.SeasonService"

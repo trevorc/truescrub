@@ -25,6 +25,7 @@ py_library(
     name = "models",
     srcs = ["models.py"],
     deps = [
+        "//proto:common_py_pb2",
         "@pypi//trueskill",
     ],
 )
@@ -97,7 +98,6 @@ py_library(
     ],
     data = [
         "templates/layout.html",
-        "templates/leaderboard.html",
         "templates/macros.html",
         "templates/profile.html",
         "templates/skill_groups.html",
@@ -123,6 +123,7 @@ py_library(
         ":interceptors",
         "//proto:common_py_pb2",
         "//proto:highlights_service_py_pb2_grpc",
+        "//proto:leaderboard_service_py_pb2_grpc",
         "//proto:matchmaking_service_py_pb2_grpc",
         "//proto:season_service_py_pb2_grpc",
         "@pypi//grpcio",
@@ -142,6 +143,7 @@ py_library(
         ":queue_consumer",
         ":rpc",
         "//proto:highlights_service_py_pb2_grpc",
+        "//proto:leaderboard_service_py_pb2_grpc",
         "//proto:matchmaking_service_py_pb2_grpc",
         "//proto:season_service_py_pb2_grpc",
         "//truescrub/proto:game_state_py_pb2",

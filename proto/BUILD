@@ -50,6 +50,17 @@ python_grpc_library(
     protos = [":season_service_proto"],
 )
 
+proto_library(
+    name = "leaderboard_service_proto",
+    srcs = ["leaderboard_service.proto"],
+    deps = [":common_proto"],
+)
+
+python_grpc_library(
+    name = "leaderboard_service_py_pb2_grpc",
+    protos = [":leaderboard_service_proto"],
+)
+
 ts_proto_library(
     name = "common_js",
     copy_files = False,
@@ -90,4 +101,16 @@ ts_proto_library(
     },
     node_modules = "//:node_modules",
     proto = ":season_service_proto",
+)
+
+ts_proto_library(
+    name = "leaderboard_service_js",
+    copy_files = False,
+    gen_connect_query = True,
+    gen_connect_query_service_mapping = {
+        "leaderboard_service.proto": ["LeaderboardService"],
+    },
+    node_modules = "//:node_modules",
+    proto = ":leaderboard_service_proto",
+    deps = [":common_js"],
 )

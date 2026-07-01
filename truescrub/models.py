@@ -1,10 +1,12 @@
-import json
 import bisect
 import datetime
+import json
 from dataclasses import dataclass, field
 from typing import Optional
 
 import trueskill
+
+from proto import common_pb2
 
 __all__ = ['SKILL_MEAN', 'SKILL_STDEV', 'SKILL_GROUP_NAMES', 'Match', 'Player',
            'SkillHistory', 'RoundRow', 'GameStateRow',
@@ -104,15 +106,19 @@ class Player:
     return f'<Player "{self.steam_name}">'
 
   def to_message(self):
-    from proto import common_pb2
-    return common_pb2.Player(
+    msg = common_pb2.Player(
       player_id=self.player_id,
       steam_name=self.steam_name,
       skill=common_pb2.SkillInfo(
         mmr=float(self.mmr),
         skill_group=skill_group_name(self.skill_group_index),
+        mu=self.skill.mu,
+        sigma=self.skill.sigma,
       ),
     )
+    if self.impact_rating is not None:
+      msg.impact_rating = self.impact_rating
+    return msg
 
 
 @dataclass(slots=True)

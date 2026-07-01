@@ -11,10 +11,13 @@ message Date {
 message SkillInfo {
   double mmr = 1;
   string skill_group = 2;
+  double mu = 3;
+  double sigma = 4;
 }
 
 message Player {
   int64 player_id = 1;
   string steam_name = 2;
   SkillInfo skill = 3; 
+  optional double impact_rating = 4;
 }

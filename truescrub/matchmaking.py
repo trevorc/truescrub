@@ -18,8 +18,7 @@ CONFIDENCE_LEVEL = 0.95
 
 def confidence_interval_z(confidence_level: float) -> float:
     if confidence_level >= 1.0 or confidence_level <= 0.0:
-        raise ValueError('confidence_interval {} is out of range (0, 1)'.format(
-                confidence_level))
+        raise ValueError(f'confidence_interval {confidence_level} is out of range (0, 1)')
     alpha = 1 - confidence_level
     return -trueskill.global_env().ppf(alpha / 2.0)
 

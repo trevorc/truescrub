@@ -7,25 +7,14 @@ import {
 } from "proto/highlights_service-HighlightsService_connectquery.js";
 import {Accolade} from "proto/highlights_service_pb.js";
 import {AccoladeCard} from "client/components/AccoladeCard.js";
-
-import chicken1 from "./chickens/chicken_ui.png";
-import chicken2 from "./chickens/chicken_ui2.png";
-import chicken3 from "./chickens/chicken_ui3.png";
-import chicken4 from "./chickens/chicken_ui4.png";
-import chicken5 from "./chickens/chicken_ui5.png";
+import {ErrorState} from "client/components/ErrorState.js";
+import {LoadingState} from "client/components/LoadingState.js";
 
 type AccoladeWithPlayer = { accolade: Accolade; playerName: string };
-
-const CHICKENS = [chicken1, chicken2, chicken3, chicken4, chicken5];
-
-function getRandomChicken(): string {
-  return CHICKENS[Math.floor(Math.random() * CHICKENS.length)];
-}
 
 export function AccoladesPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [randomChicken] = useState(getRandomChicken);
 
   const matchDaysQuery = useQuery(listMatchDays, {timezone: "-05:00"}, {
     select: (data) => data.matchDays.map(d => {
@@ -112,26 +101,15 @@ export function AccoladesPage() {
         </div>
 
         {loading && (
-            <div className="text-center py-12 text-slate-400">
-              <div className="flex flex-col items-center">
-                <img src={randomChicken}
-                     className="w-16 h-16 object-contain mb-4 animate-chickenBounce"
-                     alt="Loading..."/>
-                <p>Chickens are crunching the stats...</p>
-              </div>
-            </div>
+            <LoadingState message="Chickens are crunching the stats..." />
         )}
 
         {error && !loading && (
-            <div className="text-center py-12 text-red-400">
-              <p>Failed to load accolades. Please try again later.</p>
-            </div>
+            <ErrorState message="Failed to load accolades. Please try again later."/>
         )}
 
         {!loading && !error && accolades.length === 0 && !hasNoDays && (
             <div className="text-center py-16 text-slate-400">
-              <img src={randomChicken} className="w-32 h-32 object-contain mx-auto mb-4"
-                   alt="No data"/>
               <p className="text-lg font-medium">No accolades available for this day.</p>
               <p className="text-sm text-slate-500 mt-1">Even the chickens left.</p>
             </div>

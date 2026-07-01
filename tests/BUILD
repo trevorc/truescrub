@@ -180,6 +180,7 @@ py_test(
     deps = [
         ":db_test_utils",
         "//proto:highlights_service_py_pb2_grpc",
+        "//proto:leaderboard_service_py_pb2_grpc",
         "//proto:season_service_py_pb2_grpc",
         "//truescrub:api",
         "//truescrub:db",
@@ -255,6 +256,19 @@ py_test(
 )
 
 py_test(
+    name = "test_leaderboard_service",
+    srcs = ["test_leaderboard_service.py"],
+    deps = [
+        ":db_test_utils",
+        "//proto:common_py_pb2",
+        "//proto:leaderboard_service_py_pb2_grpc",
+        "//truescrub:rpc",
+        "@pypi//grpcio",
+        "@pypi//pytest",
+    ],
+)
+
+py_test(
     name = "test_match_days",
     srcs = ["test_match_days.py"],
     deps = [
@@ -273,6 +287,7 @@ test_suite(
         "test_highlights_service",
         "test_integration",
         "test_integration_real_data",
+        "test_leaderboard_service",
         "test_log_translator",
         "test_match_days",
         "test_matchmaking",

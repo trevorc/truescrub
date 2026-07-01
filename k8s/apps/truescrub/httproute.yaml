@@ -50,6 +50,19 @@ spec:
     - matches:
         - path:
             type: PathPrefix
+            value: /leaderboard
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              type: ReplaceFullPath
+              replaceFullPath: /index.html
+      backendRefs:
+        - name: client
+          port: 80
+    - matches:
+        - path:
+            type: PathPrefix
             value: /htdocs
       backendRefs:
         - name: client

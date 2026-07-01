@@ -5,36 +5,35 @@ produce identical results from the same game state data.
 Tests also cover the surgery module's filtering logic end-to-end.
 """
 import datetime
-import json
 import pathlib
 import sqlite3
-import tempfile
+import unittest.mock as mock
 
 import pytest
 
+import truescrub.updater.state_loader as state_loader_module
 from tests.db_test_utils import (
-  TestDBManager, TestStateLoader, MockGameState, create_game_state_for_round,
+  TestDBManager, MockGameState, create_game_state_for_round,
 )
-from truescrub import db, seasoncfg
+from truescrub import seasoncfg
 from truescrub.db import (
-  initialize_skill_db, initialize_game_db, execute_one, insert_game_state,
-)
+  initialize_skill_db, )
 from truescrub.proto.game_state_pb2 import GameStateEntry
 from truescrub.statewriter import GameStateLog
 from truescrub.statewriter.state_parsing import parse_game_state
-from truescrub.updater.recalculate import compute_rounds_and_players, recalculate_ratings, load_seasons
-from truescrub.updater.state_loader import RiegeliStateLoader, entry_to_row
-from truescrub.updater.state_parser import parse_game_states
-from truescrub.seasoncfg import get_seasons_by_start_date
+from truescrub.statewriter.state_writer import LOG_DIR_NAME
 from truescrub.tools.surgery import (
-  ImpactedGameStateStats,
   RiegeliBackend,
   purge_rounds_with_player,
   _is_round_end,
   _player_in_gs,
 )
+from truescrub.updater.recalculate import compute_rounds_and_players, \
+  load_seasons
+from truescrub.updater.state_loader import RiegeliStateLoader, entry_to_row
 
 SEASONS_TOML = pathlib.Path('tests/sample_seasons.toml')
+
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -348,11 +347,13 @@ class TestSurgeryHelpers:
     gl = GameStateLog(log_path)
 
     # 2 game states with the target player (1 round end), 1 without
-    gs_with = self._make_gs_json(round_phase='live', prev_round_phase='freezetime',
+    gs_with = self._make_gs_json(round_phase='live',
+                                 prev_round_phase='freezetime',
                                  player_ids=[player_id])
     gs_round_end = self._make_gs_json(
       round_phase='over', prev_round_phase='live', player_ids=[player_id])
-    gs_without = self._make_gs_json(round_phase='live', prev_round_phase='freezetime',
+    gs_without = self._make_gs_json(round_phase='live',
+                                    prev_round_phase='freezetime',
                                     player_ids=[other_id])
 
     with gl.writer() as writer:
@@ -438,8 +439,6 @@ class TestSurgeryFilter:
     ]
     self._write_log(source, entries)
 
-    # Bypass the interactive confirmation prompt
-    import unittest.mock as mock
     backend = RiegeliBackend(
       tmp_path / 'source.riegeli', tmp_path / 'output.riegeli')
     with mock.patch('builtins.input', return_value='1'):
@@ -474,8 +473,6 @@ class TestRiegeliStateLoaderInit:
 
   def test_from_env_constructs_correct_path(self, tmp_path, monkeypatch):
     """from_env() should combine DATA_DIR and LOG_DIR_NAME into the log path."""
-    import truescrub.updater.state_loader as state_loader_module
-    from truescrub.statewriter.state_writer import LOG_DIR_NAME
 
     monkeypatch.setattr(state_loader_module, 'DATA_DIR', tmp_path)
 
@@ -486,5 +483,5 @@ class TestRiegeliStateLoaderInit:
 
 if __name__ == '__main__':
   import pytest as _pytest
-  import sys
+
   raise SystemExit(_pytest.main(['-xv', __file__]))

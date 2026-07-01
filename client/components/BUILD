@@ -2,9 +2,7 @@ load("@aspect_rules_ts//ts:defs.bzl", "ts_project")
 
 ts_project(
     name = "accolade_card",
-    srcs = [
-        "AccoladeCard.tsx",
-    ],
+    srcs = ["AccoladeCard.tsx"],
     assets = [
         "accolades/bench_warmer.png",
         "accolades/big_oofs.png",
@@ -36,12 +34,12 @@ ts_project(
     tsconfig = "//:tsconfig",
     visibility = ["//client:__subpackages__"],
     deps = [
+        ":globals",
         "//:node_modules/@types/react",
         "//:node_modules/@types/react-dom",
         "//:node_modules/react",
         "//:node_modules/react-dom",
         "//proto:highlights_service_js",
-        ":globals",
     ],
 )
 
@@ -78,6 +76,52 @@ ts_project(
     tsconfig = "//:tsconfig",
     visibility = ["//client:__subpackages__"],
     deps = [
+        "//:node_modules/@types/react",
+        "//:node_modules/@types/react-dom",
+        "//:node_modules/react",
+        "//:node_modules/react-dom",
+    ],
+)
+
+ts_project(
+    name = "error_state",
+    srcs = ["ErrorState.tsx"],
+    assets = [
+        "img/chicken_error.png",
+        "img/chicken_error2.png",
+        "img/chicken_error3.png",
+    ],
+    declaration = True,
+    transpiler = "tsc",
+    tsconfig = "//:tsconfig",
+    visibility = ["//client:__subpackages__"],
+    deps = [
+        ":globals",
+        "//:node_modules/@types/react",
+        "//:node_modules/@types/react-dom",
+        "//:node_modules/react",
+        "//:node_modules/react-dom",
+    ],
+)
+
+ts_project(
+    name = "loading_state",
+    srcs = ["LoadingState.tsx"],
+    assets = [
+        "chickens/chicken_ui.png",
+        "chickens/chicken_ui2.png",
+        "chickens/chicken_ui3.png",
+        "chickens/chicken_ui4.png",
+        "chickens/chicken_ui5.png",
+        "chickens/chicken_ui6.png",
+        "chickens/chicken_ui7.png",
+    ],
+    declaration = True,
+    transpiler = "tsc",
+    tsconfig = "//:tsconfig",
+    visibility = ["//client:__subpackages__"],
+    deps = [
+        ":globals",
         "//:node_modules/@types/react",
         "//:node_modules/@types/react-dom",
         "//:node_modules/react",

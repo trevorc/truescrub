@@ -16,11 +16,12 @@ import pytest
 from google.protobuf.field_mask_pb2 import FieldMask
 from proto import common_pb2
 from proto import highlights_service_pb2
+from proto import leaderboard_service_pb2
 from truescrub import db, seasoncfg
 from truescrub.api import app
 from truescrub.envconfig import SHARED_KEY
 from truescrub.interceptors import grpc_db_conn
-from truescrub.rpc import HighlightsServiceServicer
+from truescrub.rpc import HighlightsServiceServicer, LeaderboardServiceServicer
 from truescrub.statewriter.state_writer import GameStateWriter
 from tests.db_test_utils import set_context_var
 from truescrub.updater.recalculate import (
@@ -178,40 +179,29 @@ class TestRealDataPipeline:
     # 3. Drive the updater to compute skills.
     _run_updater(skill_db, sink)
 
-    # 3. Query the leaderboard API.
-    resp = client.get('/api/leaderboard/season/1')
-    assert resp.status_code == 200
-    data = resp.get_json()
-    assert 'players' in data
-    players = data['players']
+    # 4. Query the leaderboard via gRPC servicer.
+    with set_context_var(grpc_db_conn, skill_db):
+      servicer = LeaderboardServiceServicer()
+      request = leaderboard_service_pb2.GetLeaderboardRequest(season_id=1)
+      context = MagicMock()
+      response = servicer.GetLeaderboard(request, context)
+
+    assert not context.abort.called
+    players = response.leaderboard
     assert len(players) >= 2, (
       f'Expected at least 2 players, got {len(players)}')
 
     # Every player record should have the expected shape.
     for p in players:
-      assert 'player_id' in p
-      assert 'steam_name' in p
-      assert 'mmr' in p
-      assert 'skill_group' in p
+      assert p.player_id > 0
+      assert p.steam_name != ''
+      assert p.skill.mmr != 0
+      assert p.skill.skill_group != ''
 
     # Confirm that pseudonymized names appear.
-    names = {p['steam_name'] for p in players}
+    names = {p.steam_name for p in players}
     assert len(names & {'Alpha', 'Bravo', 'Charlie', 'Delta',
                         'Echo', 'Foxtrot'}) >= 2
-
-  def test_leaderboard_page_renders(
-      self, integration_env, real_game_states):
-    client, game_db, skill_db, writer, sink = integration_env
-    _post_game_states(client, real_game_states)
-    _drain_writer(writer)
-    _run_updater(skill_db, sink)
-
-    resp = client.get('/leaderboard/season/1')
-    assert resp.status_code == 200
-    # At least one pseudonymized name should appear in the HTML.
-    assert any(name.encode() in resp.data
-               for name in ('Alpha', 'Bravo', 'Charlie',
-                            'Delta', 'Echo', 'Foxtrot'))
 
   def test_highlights_returns_player_ratings(
       self, integration_env, real_game_states):

@@ -11,6 +11,8 @@ from proto import matchmaking_service_pb2
 from proto import matchmaking_service_pb2_grpc
 from proto import season_service_pb2
 from proto import season_service_pb2_grpc
+from proto import leaderboard_service_pb2
+from proto import leaderboard_service_pb2_grpc
 from truescrub import db, highlights, models
 from truescrub.api import parse_timezone
 from truescrub.interceptors import grpc_db_conn
@@ -72,8 +74,7 @@ def compute_matchmaking(conn, season_id, selected_players) \
     -> Tuple[List[models.Player], Iterable[models.Match]]:
   max_players = MAX_PLAYERS_PER_TEAM * 2
   if len(selected_players) > max_players:
-    raise ValueError('Cannot compute matches for more than '
-                     '{} players'.format(max_players))
+    raise ValueError(f'Cannot compute matches for more than {max_players} players')
   players = db.get_all_players(conn) \
     if season_id is None \
     else db.get_season_players(conn, season_id)
@@ -131,4 +132,23 @@ class MatchmakingServiceServicer(
     return matchmaking_service_pb2.ComputeMatchmakingResponse(
       available_players=available_players,
       proposed_matches=proposed_matches,
+    )
+
+
+class LeaderboardServiceServicer(
+  leaderboard_service_pb2_grpc.LeaderboardServiceServicer):
+
+  def GetLeaderboard(self, request, context):
+    season_id = request.season_id \
+      if request.HasField('season_id') and request.season_id > 0 \
+      else None
+
+    conn = grpc_db_conn.get()
+    players = db.get_all_players(conn) \
+      if season_id is None \
+      else db.get_season_players(conn, season_id)
+    players.sort(key=operator.attrgetter('mmr'), reverse=True)
+
+    return leaderboard_service_pb2.GetLeaderboardResponse(
+      leaderboard=[p.to_message() for p in players]
     )

@@ -7,7 +7,7 @@ import {queryClient, transport} from "client/api/truescrub.js";
 import {MatchmakingPage} from "client/pages/MatchmakingPage.js";
 import {AccoladesPage} from "client/pages/AccoladesPage.js";
 import {HomePage} from "client/pages/HomePage.js";
-
+import {LeaderboardPage} from "client/pages/LeaderboardPage.js";
 import {Navbar} from "client/components/Navbar.js";
 import {Footer} from "client/components/Footer.js";
 
@@ -27,6 +27,10 @@ export function TrueScrubClient() {
                     <Route path="season/:seasonId" element={<MatchmakingPage/>}/>
                   </Route>
                   <Route path="/accolades" element={<AccoladesPage/>}/>
+                  <Route path="/leaderboard">
+                    <Route index element={<LeaderboardPage/>}/>
+                    <Route path="season/:seasonId" element={<LeaderboardPage/>}/>
+                  </Route>
                 </Routes>
               </main>
               <Footer />

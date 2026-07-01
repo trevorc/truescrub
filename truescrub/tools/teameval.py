@@ -158,12 +158,8 @@ def print_match(teams: Iterable[List[Player]], quality: float, team_size: int):
   for team_no in range(len(annotated)):
     team = annotated[team_no]
     team['players'].sort(key=operator.attrgetter('mmr'), reverse=True)
-    print('    Team {} (Avg MMR {}): {}'.format(
-        team_no + 1,
-        int(team['average_mmr']),
-        ', '.join(player.steam_name
-                  for player in team['players']),
-        ))
+    names = ', '.join(player.steam_name for player in team['players'])
+    print(f'    Team {team_no + 1} (Avg MMR {int(team["average_mmr"])}): {names}')
   print()
 
 

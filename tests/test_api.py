@@ -107,31 +107,6 @@ class TestParseTimezone:
 # Route tests
 # ---------------------------------------------------------------------------
 
-class TestLeaderboardApi:
-  def test_season_leaderboard(self, client):
-    resp = client.get('/api/leaderboard/season/1')
-    assert resp.status_code == 200
-    data = resp.get_json()
-    assert 'players' in data
-    assert len(data['players']) >= 1
-
-    player = data['players'][0]
-    assert 'player_id' in player
-    assert 'steam_name' in player
-    assert 'mmr' in player
-    assert 'skill_group' in player
-
-
-class TestLeaderboardPage:
-  def test_default_leaderboard_renders(self, client):
-    resp = client.get('/leaderboard')
-    assert resp.status_code == 200
-    assert b'Player1' in resp.data or b'Player2' in resp.data
-
-  def test_season_leaderboard_renders(self, client):
-    resp = client.get('/leaderboard/season/1')
-    assert resp.status_code == 200
-
 
 class TestGameStateEndpoint:
   def test_rejects_missing_auth(self, client):

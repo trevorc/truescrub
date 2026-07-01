@@ -3,6 +3,8 @@ import {Link, useParams, useSearchParams} from "react-router-dom";
 import {useQuery} from "@connectrpc/connect-query";
 import {getAvailableSeasons} from "proto/season_service-SeasonService_connectquery.js";
 import {computeMatchmaking} from "proto/matchmaking_service-MatchmakingService_connectquery.js";
+import {ErrorState} from "client/components/ErrorState.js";
+import {LoadingState} from "client/components/LoadingState.js";
 import type {
   ComputeMatchmakingRequest,
   PlayerSelection,
@@ -277,11 +279,9 @@ export function MatchmakingPage({isLatest = false}: { isLatest?: boolean }) {
     setSelectedPlayerIds(urlPlayerIds);
   }
 
-  // Fetch available seasons
   const seasonsQuery = useQuery(getAvailableSeasons);
   const seasons = seasonsQuery.data?.availableSeasons ?? [];
 
-  // Build matchmaking request
   const selection: ComputeMatchmakingRequest["selection"] = isLatest
       ? {case: 'roundSelection', value: {} as RoundSelection}
       : {
@@ -289,12 +289,10 @@ export function MatchmakingPage({isLatest = false}: { isLatest?: boolean }) {
         value: {playerIds: Array.from(urlPlayerIds)} as PlayerSelection
       };
 
-  // Fetch matchmaking
   const matchmakingQuery = useQuery(computeMatchmaking, {seasonId, selection});
   const availablePlayers = matchmakingQuery.data?.availablePlayers ?? [];
   const proposedMatches = matchmakingQuery.data?.proposedMatches ?? [];
 
-  // Sync selectedPlayerIds from latest match when using isLatest mode
   const [latestSynced, setLatestSynced] = useState(false);
   if (isLatest && !latestSynced && matchmakingQuery.data && proposedMatches.length > 0 && urlPlayerIds.size === 0) {
     const match = proposedMatches[0];
@@ -375,11 +373,10 @@ export function MatchmakingPage({isLatest = false}: { isLatest?: boolean }) {
                                      playersPerTeam={Math.ceil((selectedPlayerIds.size > 0 ? selectedPlayerIds.size : 10) / 2)}/>
                   ))}
                 </div>
-            ) : loading ? null : error ? (
-                <div
-                    className="h-64 border-2 border-dashed border-red-900 rounded-2xl flex flex-col items-center justify-center text-red-500 bg-red-900/10">
-                  <p className="text-lg font-medium">Failed to compute matches.</p>
-                </div>
+            ) : loading ? (
+                <LoadingState message="Computing matches..." />
+            ) : error ? (
+                <ErrorState message="Failed to compute matches."/>
             ) : proposedMatches.length > 0 ? (
                 <>
                   <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-3">

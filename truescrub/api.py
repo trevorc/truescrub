@@ -3,7 +3,6 @@ import datetime
 import json
 import logging
 import math
-import operator
 import re
 import time
 from typing import Dict
@@ -34,7 +33,7 @@ def start_timer():
 
 @app.after_request
 def end_timer(response):
-  response_time = '%.2fms' % (1000 * (time.time() - g.start_time))
+  response_time = f'{1000 * (time.time() - g.start_time):.2f}ms'
   response.headers['X-Processing-Time'] = response_time
   return response
 
@@ -86,25 +85,6 @@ def parse_timezone(tz: str) -> datetime.timezone:
 
 
 
-
-
-def make_thin_player_viewmodel(player: Player) -> dict:
-  return {
-    'player_id': player.player_id,
-    'steam_name': player.steam_name,
-    'skill_group': skill_group_name(player.skill_group_index),
-    'mmr': player.mmr,
-  }
-
-
-@app.route('/api/leaderboard/season/<int:season>', methods={'GET'})
-def leaderboard_api(season):
-  players = [make_thin_player_viewmodel(player)
-             for player in db.get_season_players(g.conn, season)]
-  players.sort(key=operator.itemgetter('mmr'), reverse=True)
-  return flask.jsonify({'players': players})
-
-
 def make_player_viewmodel(player: Player):
   lower_bound, upper_bound = estimated_skill_range(player.skill)
   min_width = 0.1
@@ -121,12 +101,12 @@ def make_player_viewmodel(player: Player):
     'mmr': player.mmr,
     'rating_offset': left_offset,
     'rating_width': right_offset - left_offset,
-    'lower_bound': '%.1f' % (lower_bound * 100.0),
-    'upper_bound': '%.1f' % (upper_bound * 100.0),
+    'lower_bound': f'{lower_bound * 100.0:.1f}',
+    'upper_bound': f'{upper_bound * 100.0:.1f}',
     'impact_rating': (
       '-'
       if player.impact_rating is None
-      else '%.2f' % player.impact_rating)
+      else f'{player.impact_rating:.2f}')
   }
 
 
@@ -148,7 +128,7 @@ def overall_skill_history(player_id):
   try:
     timezone = parse_timezone(tz)
   except ValueError:
-    return flask.make_response('Invalid timezone {}'.format(tz), 404)
+    return flask.make_response(f'Invalid timezone {tz}', 404)
 
   skill_history = make_skill_history_viewmodel(
     db.get_overall_skill_history(g.conn, player_id, timezone))
@@ -168,7 +148,7 @@ def player_skill_history(player_id, season):
   try:
     timezone = parse_timezone(tz)
   except ValueError:
-    return flask.make_response('Invalid timezone {}'.format(tz), 404)
+    return flask.make_response(f'Invalid timezone {tz}', 404)
 
   skill_history = make_skill_history_viewmodel(
     db.get_season_skill_history(g.conn, season, player_id, timezone))
@@ -182,26 +162,6 @@ def player_skill_history(player_id, season):
     'rating_history': rating_history,
   })
 
-
-@app.route('/leaderboard', methods={'GET'})
-def default_leaderboard():
-  players = [make_player_viewmodel(player)
-             for player in db.get_all_players(g.conn)]
-  players.sort(key=operator.itemgetter('mmr'), reverse=True)
-  seasons = db.get_season_range(g.conn)
-  return render_template('leaderboard.html', brand=TRUESCRUB_BRAND,
-                         leaderboard=players, seasons=seasons,
-                         selected_season=None)
-
-
-@app.route('/leaderboard/season/<int:season>', methods={'GET'})
-def leaderboard(season):
-  players = [make_player_viewmodel(player)
-             for player in db.get_season_players(g.conn, season)]
-  players.sort(key=operator.itemgetter('mmr'), reverse=True)
-  seasons = db.get_season_range(g.conn)
-  return render_template('leaderboard.html', leaderboard=players,
-                         seasons=seasons, selected_season=season)
 
 
 def format_bound(bound):
@@ -225,12 +185,12 @@ def all_skill_groups():
 
 def make_rating_component_viewmodel(components, impact_rating):
   return {
-    'mvp_rating': '%d%%' % (100 * components['average_mvps']),
-    'kill_rating': '%.2f' % components['average_kills'],
-    'death_rating': '%.2f' % components['average_deaths'],
-    'damage_rating': '%d' % components['average_damage'],
-    'kas_rating': '%d%%' % (100 * components['average_kas']),
-    'impact_rating': '%.2f' % impact_rating,
+    'mvp_rating': f'{100 * components["average_mvps"]:.0f}%',
+    'kill_rating': f'{components["average_kills"]:.2f}',
+    'death_rating': f'{components["average_deaths"]:.2f}',
+    'damage_rating': f'{components["average_damage"]:.0f}',
+    'kas_rating': f'{100 * components["average_kas"]:.0f}%',
+    'impact_rating': f'{impact_rating:.2f}',
   }
 
 
