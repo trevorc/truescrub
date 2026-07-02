@@ -23,25 +23,14 @@ run_binary(
     name = "template_index",
     srcs = [
         "index.template.html",
-        "//client:client_metadata",
+        "//client:app_bundle_metadata",
     ],
     outs = ["index.html"],
     args = [
-        "$(location //client:client_metadata)",
+        "$(location //client:app_bundle_metadata)",
         "$(location index.template.html)",
         "$(location index.html)",
     ],
     tool = ":mkindex",
-    visibility = ["//client:__pkg__"],
-)
-
-filegroup(
-    name = "htdocs",
-    srcs = [
-        "htdocs/img/accolades_icon.png",
-        "htdocs/img/c4.png",
-        "htdocs/img/chicken_war.png",
-        "htdocs/img/karambit.png",
-    ],
     visibility = ["//client:__pkg__"],
 )

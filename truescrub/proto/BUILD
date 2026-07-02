@@ -3,7 +3,10 @@ load("@aspect_rules_ts//ts:proto.bzl", "ts_proto_library")
 load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
 
-exports_files(["achievements.json", "skill_groups.json"])
+exports_files([
+    "achievements.json",
+    "skill_groups.json",
+])
 
 js_library(
     name = "achievements_json",

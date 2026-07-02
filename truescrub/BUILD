@@ -96,32 +96,15 @@ py_library(
 )
 
 py_library(
-    name = "api",
-    srcs = [
-        "__init__.py",
-        "api.py",
-        "highlights.py",
-    ],
-
-    deps = [
-        ":accolades",
-        ":achievements",
-        ":db",
-        ":highlights",
-        ":matchmaking",
-        ":models",
-        "@pypi//flask",
-        "@pypi//waitress",
-    ],
-)
-
-py_library(
     name = "rpc",
     srcs = ["rpc.py"],
     deps = [
-        ":api",
+        ":achievements",
         ":db",
+        ":highlights",
         ":interceptors",
+        ":matchmaking",
+        ":models",
         "//proto:common_py_pb2",
         "//proto:highlights_service_py_pb2_grpc",
         "//proto:leaderboard_service_py_pb2_grpc",
@@ -139,7 +122,6 @@ py_library(
         "application.py",
     ],
     deps = [
-        ":api",
         ":db",
         ":interceptors",
         ":queue_consumer",
@@ -155,7 +137,6 @@ py_library(
         "@pypi//grpcio",
         "@pypi//grpcio_health_checking",
         "@pypi//grpcio_reflection",
-        "@pypi//sonora",
     ],
 )
 

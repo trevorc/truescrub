@@ -2,6 +2,9 @@ import {Link} from "react-router-dom";
 import {useQuery} from "@connectrpc/connect-query";
 import {getAvailableSeasons} from "proto/season_service-SeasonService_connectquery.js";
 import chicken_png from "client/components/img/chicken.png";
+import karambit_png from "client/pages/img/karambit.png";
+import c4_png from "client/pages/img/c4.png";
+import accolades_icon_png from "client/pages/img/accolades_icon.png";
 
 export function HomePage() {
   const seasonsQuery = useQuery(getAvailableSeasons);
@@ -37,7 +40,7 @@ export function HomePage() {
                   className="h-32 w-32 mb-6 group-hover:scale-110 transition-transform flex items-center justify-center relative">
                 <div
                     className="absolute inset-0 bg-brand-500 rounded-full opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-300"></div>
-                <img src="/htdocs/img/karambit.png" alt="Leaderboard Icon"
+                <img src={karambit_png} alt="Leaderboard Icon"
                      className="w-full h-full object-contain relative z-10 transition-all drop-shadow-[0_10px_15px_rgba(0,0,0,0.8)] filter group-hover:drop-shadow-[0_0_25px_rgba(14,165,233,0.8)]"/>
               </div>
               <h2 className="text-2xl font-bold text-white mb-2 group-hover:text-brand-400 transition-colors">Leaderboard</h2>
@@ -55,7 +58,7 @@ export function HomePage() {
                   className="h-32 w-32 mb-6 group-hover:scale-110 transition-transform flex items-center justify-center relative">
                 <div
                     className="absolute inset-0 bg-purple-500 rounded-full opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-300"></div>
-                <img src="/htdocs/img/c4.png" alt="Matchmaking Icon"
+                <img src={c4_png} alt="Matchmaking Icon"
                      className="w-full h-full object-contain relative z-10 transition-all drop-shadow-[0_10px_15px_rgba(0,0,0,0.8)] filter group-hover:drop-shadow-[0_0_25px_rgba(168,85,247,0.8)]"/>
               </div>
               <h2 className="text-2xl font-bold text-white mb-2 group-hover:text-purple-400 transition-colors">Matchmaking</h2>
@@ -73,7 +76,7 @@ export function HomePage() {
                   className="h-32 w-32 mb-6 group-hover:scale-110 transition-transform flex items-center justify-center relative">
                 <div
                     className="absolute inset-0 bg-amber-500 rounded-full opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-300"></div>
-                <img src="/htdocs/img/accolades_icon.png" alt="Accolades Icon"
+                <img src={accolades_icon_png} alt="Accolades Icon"
                      className="w-full h-full object-contain relative z-10 transition-all drop-shadow-[0_10px_15px_rgba(0,0,0,0.8)] filter group-hover:drop-shadow-[0_0_25px_rgba(245,158,11,0.8)]"/>
               </div>
               <h2 className="text-2xl font-bold text-white mb-2 group-hover:text-amber-400 transition-colors">Accolades</h2>

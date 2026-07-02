@@ -3,6 +3,11 @@ load("//client:ts_library.bzl", "ts_library")
 ts_library(
     name = "home_page",
     srcs = ["HomePage.tsx"],
+    assets = [
+        "img/accolades_icon.png",
+        "img/c4.png",
+        "img/karambit.png",
+    ],
     visibility = ["//client:__subpackages__"],
     deps = [
         "//:node_modules/@connectrpc/connect-query",
@@ -22,6 +27,9 @@ ts_library(
 ts_library(
     name = "matchmaking_page",
     srcs = ["MatchmakingPage.tsx"],
+    assets = [
+        "img/chicken_war.png",
+    ],
     visibility = ["//client:__subpackages__"],
     deps = [
         "//:node_modules/@connectrpc/connect-query",
@@ -110,6 +118,7 @@ ts_library(
     ],
     visibility = ["//client:__subpackages__"],
     deps = [
+        "//:node_modules/@bufbuild/protobuf",
         "//:node_modules/@connectrpc/connect-query",
         "//:node_modules/@tanstack/react-query",
         "//:node_modules/@types/react",
@@ -117,7 +126,6 @@ ts_library(
         "//:node_modules/react",
         "//:node_modules/react-dom",
         "//:node_modules/react-router-dom",
-        "//:node_modules/@bufbuild/protobuf",
         "//client/components:error_state",
         "//client/components:globals",
         "//client/components:loading_state",
@@ -179,8 +187,8 @@ ts_library(
         "//proto:common_js",
         "//proto:profile_service_js",
         "//proto:season_service_js",
-        "//truescrub/proto:profile_js",
         "//truescrub/proto:achievements_json",
+        "//truescrub/proto:profile_js",
         "//truescrub/proto:skill_groups_json",
     ],
 )

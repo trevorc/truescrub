@@ -12,6 +12,7 @@ import type {
 } from "proto/matchmaking_service_pb.js";
 import {Match} from "proto/matchmaking_service_pb.js";
 import {Player} from "proto/common_pb.js";
+import chicken_war_png from "client/pages/img/chicken_war.png";
 
 const MatchSkeleton = ({playersPerTeam = 5}: { playersPerTeam?: number }) => (
     <div className="glass-panel rounded-2xl overflow-hidden shadow-lg">
@@ -395,7 +396,7 @@ export function MatchmakingPage({isLatest = false}: { isLatest?: boolean }) {
             ) : (
                 <div
                     className="h-64 border-2 border-dashed border-dark-border rounded-2xl flex flex-col items-center justify-center text-slate-500">
-                  <img src="/htdocs/img/chicken_war.png" alt="Waiting"
+                  <img src={chicken_war_png} alt="Waiting"
                        className="w-32 h-32 object-contain mb-4"/>
                   <p className="text-lg font-medium">Select players and generate matches</p>
                   <p className="text-sm text-slate-600 mt-1">The chicken is ready for battle.</p>

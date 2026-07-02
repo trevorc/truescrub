@@ -119,19 +119,6 @@ py_test(
 )
 
 py_test(
-    name = "test_api",
-    srcs = ["test_api.py"],
-    deps = [
-        ":db_test_utils",
-        "//truescrub:api",
-        "//truescrub:db",
-        "//truescrub:models",
-        "@pypi//flask",
-        "@pypi//pytest",
-    ],
-)
-
-py_test(
     name = "test_rpc",
     srcs = ["test_rpc.py"],
     deps = [
@@ -191,7 +178,7 @@ py_test(
         "//proto:highlights_service_py_pb2_grpc",
         "//proto:leaderboard_service_py_pb2_grpc",
         "//proto:season_service_py_pb2_grpc",
-        "//truescrub:api",
+        "//truescrub:application",
         "//truescrub:db",
         "//truescrub:highlights",
         "//truescrub:models",
@@ -200,7 +187,6 @@ py_test(
         "//truescrub/updater",
         "//truescrub/updater:recalculate",
         "//truescrub/updater:state_loader",
-        "@pypi//flask",
         "@pypi//pytest",
     ],
 )
@@ -291,7 +277,7 @@ test_suite(
     name = "tests",
     tests = [
         "test_accolades",
-        "test_api",
+        "test_gsi_http_service",
         "test_highlights",
         "test_highlights_service",
         "test_integration",
@@ -314,15 +300,12 @@ test_suite(
     ],
 )
 
-py_binary(
-    name = "test_grpc_web",
-    srcs = ["test_grpc_web.py"],
+py_test(
+    name = "test_gsi_http_service",
+    srcs = ["test_gsi_http_service.py"],
     deps = [
-        "//proto:common_py_pb2",
-        "//proto:highlights_service_py_pb2_grpc",
-        "@pypi//grpcio",
-        "@pypi//requests",
-        "@pypi//sonora",
+        "//truescrub:application",
+        "@pypi//pytest",
     ],
 )
 

@@ -18,7 +18,7 @@ from proto import common_pb2
 from proto import highlights_service_pb2
 from proto import leaderboard_service_pb2
 from truescrub import db, seasoncfg
-from truescrub.api import app
+from truescrub.application import GsiHttpService
 from truescrub.envconfig import SHARED_KEY
 from truescrub.interceptors import grpc_db_conn
 from truescrub.rpc import HighlightsServiceServicer, LeaderboardServiceServicer
@@ -40,7 +40,7 @@ SEASONS_TOML = pathlib.Path(__file__).parent / 'sample_seasons.toml'
 @pytest.fixture()
 def integration_env(monkeypatch):
   """Stand up in‑memory game + skill DBs, wire up GameStateWriter/Updater,
-  and yield a Flask test client that routes through the real pipeline."""
+  and yield a GsiHttpService that routes through the real pipeline."""
 
   game_db = sqlite3.connect(':memory:')
   skill_db = sqlite3.connect(':memory:')
@@ -93,11 +93,19 @@ def integration_env(monkeypatch):
 
   sink = _MessageSink()
   writer = GameStateWriter(updater=sink)
-  app.state_writer = writer
-  app.config['TESTING'] = True
 
-  with app.test_client() as client:
-    yield client, game_db, skill_db, writer, sink
+  import threading
+  import time
+  service = GsiHttpService(writer, SHARED_KEY, '127.0.0.1', 0)
+  server_thread = threading.Thread(target=service.server.serve_forever)
+  server_thread.daemon = True
+  server_thread.start()
+  time.sleep(0.1)
+
+  yield service, game_db, skill_db, writer, sink
+
+  service.stop()
+  server_thread.join(timeout=1.0)
 
   game_db.close()
   skill_db.close()
@@ -114,17 +122,20 @@ def real_game_states():
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _post_game_states(client, game_states):
+def _post_game_states(service, game_states):
   """POST each game state to the front‑door endpoint."""
+  import urllib.request
+  port = service.server.server_port
   for gs in game_states:
     payload = {**gs, 'auth': {'token': SHARED_KEY}}
-    resp = client.post(
-      '/api/game_state',
-      data=json.dumps(payload),
-      content_type='application/json',
+    req = urllib.request.Request(
+      f'http://127.0.0.1:{port}/api/game_state',
+      data=json.dumps(payload).encode('utf-8'),
+      headers={'Content-Type': 'application/json'},
+      method='POST',
     )
-    assert resp.status_code == 200, (
-      f'game_state POST failed: {resp.status_code} {resp.data}')
+    resp = urllib.request.urlopen(req)
+    assert resp.getcode() == 200, f'game_state POST failed: {resp.getcode()}'
 
 
 def _drain_writer(writer):

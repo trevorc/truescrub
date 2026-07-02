@@ -28,12 +28,16 @@ class TestMkIndex(unittest.TestCase):
       out_path = td_path / "out.html"
 
       meta_path.write_text(
-        json.dumps(
-          {"outputs": {"dist/app-HASH.js": {"entryPoint": "app.tsx"}}}),
+        json.dumps({
+          "outputs": {
+            "dist/app-HASH.js": {"entryPoint": "app.tsx"},
+            "dist/styles-123.css": {"entryPoint": "styles.css"}
+          }
+        }),
         encoding="utf-8"
       )
       tmpl_path.write_text(
-        "<html><script src='/{{JS_BUNDLE}}'></script></html>",
+        "<html><link rel='stylesheet' href='/htdocs/{{CSS_BUNDLE}}'><script src='/htdocs/{{JS_BUNDLE}}'></script></html>",
         encoding="utf-8"
       )
 
@@ -41,7 +45,7 @@ class TestMkIndex(unittest.TestCase):
 
       self.assertEqual(
         out_path.read_text(encoding="utf-8"),
-        "<html><script src='/app-HASH.js'></script></html>"
+        "<html><link rel='stylesheet' href='/htdocs/styles-123.css'><script src='/htdocs/app-HASH.js'></script></html>"
       )
 
   def test_process_template_missing_placeholder(self) -> None:
@@ -52,8 +56,12 @@ class TestMkIndex(unittest.TestCase):
       out_path = td_path / "out.html"
 
       meta_path.write_text(
-        json.dumps(
-          {"outputs": {"dist/app-HASH.js": {"entryPoint": "app.tsx"}}}),
+        json.dumps({
+          "outputs": {
+            "dist/app-HASH.js": {"entryPoint": "app.tsx"},
+            "dist/styles-123.css": {"entryPoint": "styles.css"}
+          }
+        }),
         encoding="utf-8"
       )
       tmpl_path.write_text("<html><body></body></html>", encoding="utf-8")

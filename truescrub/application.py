@@ -1,14 +1,15 @@
 import abc
 import argparse
 import concurrent.futures
+import functools
+import json
 import logging
 import os
 import threading
 from concurrent.futures import Future
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Dict, List, Callable, Tuple
 
-import flask
-import waitress.server
 from grpc_health.v1 import health
 from grpc_health.v1 import health_pb2
 from grpc_health.v1 import health_pb2_grpc
@@ -21,8 +22,7 @@ from proto import matchmaking_service_pb2_grpc
 from proto import profile_service_pb2_grpc
 from proto import season_service_pb2_grpc
 from truescrub import db
-from truescrub.api import app
-from truescrub.envconfig import LOG_LEVEL
+from truescrub.envconfig import LOG_LEVEL, SHARED_KEY
 from truescrub.interceptors import TimerInterceptor, DatabaseInterceptor
 from truescrub.queue_consumer import QueueConsumer
 from truescrub.rpc import (
@@ -98,21 +98,62 @@ class QueueConsumerService(Service):
     return type(self.consumer).__name__
 
 
-class WaitressService(Service):
-  def __init__(self, app, host, port):
-    self.server = waitress.server.create_server(
-      app, host=host, port=port, _start=False)
+class GameStateHandler(BaseHTTPRequestHandler):
+  def __init__(self, state_writer, shared_key, *args, **kwargs):
+    self.state_writer = state_writer
+    self.shared_key = shared_key
+    super().__init__(*args, **kwargs)
+
+  def do_POST(self):
+    if self.path != '/api/game_state':
+      self.send_response(404)
+      self.end_headers()
+      return
+
+    content_length = int(self.headers.get('Content-Length', 0))
+    post_data = self.rfile.read(content_length)
+
+    try:
+      state_json = json.loads(post_data)
+    except ValueError:
+      self.send_response(400)
+      self.end_headers()
+      self.wfile.write(b"Invalid JSON\n")
+      return
+
+    if state_json.get('auth', {}).get('token') != self.shared_key:
+      self.send_response(403)
+      self.end_headers()
+      self.wfile.write(b"Invalid auth token\n")
+      return
+
+    del state_json['auth']
+    self.state_writer.send_message(game_state=json.dumps(state_json))
+
+    self.send_response(200)
+    self.end_headers()
+    self.wfile.write(b"<h1>OK</h1>\n")
+
+  def log_message(self, format, *args):
+    logger.debug(f"{self.address_string()} - {format % args}")
+
+
+class GsiHttpService(Service):
+  def __init__(self, state_writer, shared_key, host, port):
+    handler_factory = functools.partial(GameStateHandler, state_writer,
+                                        shared_key)
+    self.server = ThreadingHTTPServer((host, port), handler_factory)
     logger.info('listening on %s:%s', host, port)
 
   def __call__(self):
     logger.info('running %s', self)
-    self.server.accept_connections()
-    self.server.run()
+    self.server.serve_forever()
 
   def stop(self):
     if self.server is not None:
       logger.debug('closing server')
-      self.server.close()
+      self.server.shutdown()
+      self.server.server_close()
 
 
 def create_grpc_server(host, port):
@@ -204,8 +245,8 @@ def main(args: List[str]):
 
   with Watchdog(futures, interval=8.0), \
       QueueConsumerService(updater) as updater_service, \
-      WaitressService(app, host=args.addr, port=args.port) \
-          as waitress_service, \
+      GsiHttpService(state_writer, SHARED_KEY, host=args.addr, port=args.port) \
+          as gsi_service, \
       QueueConsumerService(state_writer) as state_writer_service, \
       GrpcService(host=args.addr, port=args.grpc_port) as grpc_service:
 
@@ -220,10 +261,9 @@ def main(args: List[str]):
     profile_service_pb2_grpc.add_ProfileServiceServicer_to_server(
       ProfileServiceServicer(), grpc_service.server)
 
-    app.state_writer = state_writer
     futures[executor.submit(updater_service)] = updater_service
     futures[executor.submit(state_writer_service)] = state_writer_service
-    futures[executor.submit(waitress_service)] = waitress_service
+    futures[executor.submit(gsi_service)] = gsi_service
     futures[executor.submit(grpc_service)] = grpc_service
 
     for future in concurrent.futures.as_completed(futures):
