@@ -28,7 +28,7 @@ export function HomePage() {
         </div>
 
         <div className="grid md:grid-cols-3 gap-6 w-full max-w-6xl mt-12">
-          <a href={`/leaderboard${seasonPath}`}
+          <Link to={`/leaderboard${seasonPath}`}
              className="block p-8 glass-panel rounded-2xl interactive-card relative overflow-hidden group border-brand-500/20 hover:border-brand-500/50">
             <div
                 className="absolute inset-0 bg-gradient-to-br from-brand-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
@@ -44,7 +44,7 @@ export function HomePage() {
               <p className="text-slate-400">View rankings, seasonal MMR performance, and detailed
                 impact stats for top players.</p>
             </div>
-          </a>
+          </Link>
 
           <Link to={`/matchmaking${seasonPath}`}
                 className="block p-8 glass-panel rounded-2xl interactive-card relative overflow-hidden group border-purple-500/20 hover:border-purple-500/50">

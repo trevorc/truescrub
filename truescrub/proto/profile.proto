@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package truescrub.proto;
+
+message AchievementTierConfig {
+  int32 threshold = 1;
+  string name = 2;
+}
+
+message Achievement {
+  string id = 1;
+  string name = 2;
+  repeated AchievementTierConfig tiers = 3;
+}
+
+message AchievementConfiguration {
+  repeated Achievement achievements = 1;
+}
+
+message SkillGroup {
+  string name = 1;
+  string special_name = 2;
+  double lower_bound = 3;
+}
+
+message SkillGroupConfiguration {
+  repeated SkillGroup skill_groups = 1;
+}

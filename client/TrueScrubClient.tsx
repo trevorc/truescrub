@@ -8,6 +8,9 @@ import {MatchmakingPage} from "client/pages/MatchmakingPage.js";
 import {AccoladesPage} from "client/pages/AccoladesPage.js";
 import {HomePage} from "client/pages/HomePage.js";
 import {LeaderboardPage} from "client/pages/LeaderboardPage.js";
+import {ProfilePage} from "client/pages/ProfilePage.js";
+import {SkillGroupsPage} from "client/pages/SkillGroupsPage.js";
+import {NotFoundPage} from "client/pages/NotFoundPage.js";
 import {Navbar} from "client/components/Navbar.js";
 import {Footer} from "client/components/Footer.js";
 
@@ -31,6 +34,9 @@ export function TrueScrubClient() {
                     <Route index element={<LeaderboardPage/>}/>
                     <Route path="season/:seasonId" element={<LeaderboardPage/>}/>
                   </Route>
+                  <Route path="/profiles/:playerId/*" element={<ProfilePage/>}/>
+                  <Route path="/skill_groups" element={<SkillGroupsPage/>}/>
+                  <Route path="*" element={<NotFoundPage/>}/>
                 </Routes>
               </main>
               <Footer />

@@ -114,3 +114,26 @@ ts_proto_library(
     proto = ":leaderboard_service_proto",
     deps = [":common_js"],
 )
+
+proto_library(
+    name = "profile_service_proto",
+    srcs = ["profile_service.proto"],
+    deps = [":common_proto"],
+)
+
+python_grpc_library(
+    name = "profile_service_py_pb2_grpc",
+    protos = [":profile_service_proto"],
+)
+
+ts_proto_library(
+    name = "profile_service_js",
+    copy_files = False,
+    gen_connect_query = True,
+    gen_connect_query_service_mapping = {
+        "profile_service.proto": ["ProfileService"],
+    },
+    node_modules = "//:node_modules",
+    proto = ":profile_service_proto",
+    deps = [":common_js"],
+)

@@ -2,8 +2,9 @@ import json
 import logging
 from typing import Optional
 
-from google.protobuf.timestamp_pb2 import Timestamp
+from google.protobuf.json_format import ParseDict
 
+from google.protobuf.timestamp_pb2 import Timestamp
 from truescrub.proto import game_state_pb2
 
 
@@ -47,12 +48,15 @@ WEAPON_TYPES = translate_enum(game_state_pb2.Weapon.WeaponType, 'WEAPON_TYPE_')
 
 
 def parse_team_state(ts_json: dict) -> game_state_pb2.TeamState:
-  return game_state_pb2.TeamState(
-    score=ts_json.get('score'),
-    consecutive_round_losses=ts_json.get('consecutive_round_losses'),
-    timeouts_remaining=ts_json.get('timeouts_remaining'),
-    matches_won_this_series=ts_json.get('matches_won_this_series'),
-  )
+  return ParseDict(ts_json, game_state_pb2.TeamState())
+
+
+def parse_match_stats(ms: dict) -> game_state_pb2.MatchStats:
+  return ParseDict(ms, game_state_pb2.MatchStats())
+
+
+def parse_player_state(ps: dict) -> game_state_pb2.PlayerState:
+  return ParseDict(ps, game_state_pb2.PlayerState())
 
 
 def parse_round_win(round_num: str,
@@ -145,10 +149,6 @@ def parse_round(round_json: Optional[dict]) -> Optional[game_state_pb2.Round]:
     raise DeserializationError(e)
 
 
-def parse_match_stats(ms: dict) -> game_state_pb2.MatchStats:
-  return game_state_pb2.MatchStats(**ms)
-
-
 def parse_weapon(weapon_json: dict) -> game_state_pb2.Weapon:
   try:
     weapon_type = WEAPON_TYPES[weapon_json['type'].lower().replace(' ', '_')] \
@@ -172,10 +172,6 @@ def parse_weapons(weapons_json: dict) -> game_state_pb2.Weapons:
     key: parse_weapon(weapon_json)
     for key, weapon_json in weapons_json.items()
   })
-
-
-def parse_player_state(ps: dict) -> game_state_pb2.PlayerState:
-  return game_state_pb2.PlayerState(**ps)
 
 
 def parse_allplayers_entry(steam_id: str, player: dict) -> \

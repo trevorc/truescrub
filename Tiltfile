@@ -1,12 +1,6 @@
-def get_bazel_deps(target, keep_going = False):
+def get_bazel_deps(target):
     bazel_query = 'filter("^//", kind("source file", deps({0})) union buildfiles(deps({0})))'.format(target)
-    cmd = "bazel query '{0}'".format(bazel_query)
-
-    if keep_going:
-        # Hack until https://github.com/protocolbuffers/protobuf/issues/24084 is fixed
-        cmd += " --keep_going || true"
-
-    result = local(cmd, quiet = True)
+    result = local("bazel query '{0}'".format(bazel_query), quiet = True)
     return [
         line[2:].replace(":", "/")
         for line in str(result).splitlines()

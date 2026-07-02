@@ -1,10 +1,12 @@
-import pytest
-from proto import season_service_pb2
-from truescrub.rpc import SeasonServiceServicer
-from truescrub.interceptors import grpc_db_conn
-from truescrub import db
-from tests.db_test_utils import set_context_var
 from unittest.mock import MagicMock
+
+import pytest
+
+from proto import season_service_pb2
+from tests.db_test_utils import set_context_var
+from truescrub import db
+from truescrub.interceptors import grpc_db_conn
+from truescrub.rpc import SeasonServiceServicer
 
 
 def test_get_available_seasons(monkeypatch):

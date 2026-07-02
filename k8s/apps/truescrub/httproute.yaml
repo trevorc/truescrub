@@ -11,55 +11,10 @@ spec:
     - matches:
         - path:
             type: Exact
-            value: /
-      filters:
-        - type: URLRewrite
-          urlRewrite:
-            path:
-              type: ReplaceFullPath
-              replaceFullPath: /index.html
+            value: /api/game_state
       backendRefs:
-        - name: client
-          port: 80
-    - matches:
-        - path:
-            type: Exact
-            value: /accolades
-      filters:
-        - type: URLRewrite
-          urlRewrite:
-            path:
-              type: ReplaceFullPath
-              replaceFullPath: /index.html
-      backendRefs:
-        - name: client
-          port: 80
-    - matches:
-        - path:
-            type: PathPrefix
-            value: /matchmaking
-      filters:
-        - type: URLRewrite
-          urlRewrite:
-            path:
-              type: ReplaceFullPath
-              replaceFullPath: /index.html
-      backendRefs:
-        - name: client
-          port: 80
-    - matches:
-        - path:
-            type: PathPrefix
-            value: /leaderboard
-      filters:
-        - type: URLRewrite
-          urlRewrite:
-            path:
-              type: ReplaceFullPath
-              replaceFullPath: /index.html
-      backendRefs:
-        - name: client
-          port: 80
+        - name: truescrub
+          port: 9000
     - matches:
         - path:
             type: PathPrefix
@@ -71,6 +26,12 @@ spec:
         - path:
             type: PathPrefix
             value: /
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              type: ReplaceFullPath
+              replaceFullPath: /index.html
       backendRefs:
-        - name: truescrub
-          port: 9000
+        - name: client
+          port: 80

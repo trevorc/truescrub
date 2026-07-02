@@ -17,6 +17,8 @@ spec:
             service: "truescrub.rpc.matchmaking.MatchmakingService"
         - method:
             service: "truescrub.rpc.season.SeasonService"
+        - method:
+            service: "truescrub.rpc.profile.ProfileService"
       backendRefs:
         - name: truescrub
           port: 9900

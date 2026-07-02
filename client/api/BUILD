@@ -1,11 +1,8 @@
-load("@aspect_rules_ts//ts:defs.bzl", "ts_project")
+load("//client:ts_library.bzl", "ts_library")
 
-ts_project(
+ts_library(
     name = "api",
     srcs = ["truescrub.ts"],
-    declaration = True,
-    transpiler = "tsc",
-    tsconfig = "//:tsconfig",
     visibility = ["//client:__subpackages__"],
     deps = [
         "//:node_modules/@connectrpc/connect",

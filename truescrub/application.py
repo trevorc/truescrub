@@ -4,7 +4,6 @@ import concurrent.futures
 import logging
 import os
 import threading
-import uuid
 from concurrent.futures import Future
 from typing import Dict, List, Callable, Tuple
 
@@ -19,14 +18,20 @@ import grpc
 from proto import highlights_service_pb2_grpc
 from proto import leaderboard_service_pb2_grpc
 from proto import matchmaking_service_pb2_grpc
+from proto import profile_service_pb2_grpc
 from proto import season_service_pb2_grpc
 from truescrub import db
 from truescrub.api import app
 from truescrub.envconfig import LOG_LEVEL
 from truescrub.interceptors import TimerInterceptor, DatabaseInterceptor
 from truescrub.queue_consumer import QueueConsumer
-from truescrub.rpc import HighlightsServiceServicer, MatchmakingServiceServicer, \
-  SeasonServiceServicer, LeaderboardServiceServicer
+from truescrub.rpc import (
+  SeasonServiceServicer,
+  MatchmakingServiceServicer,
+  HighlightsServiceServicer,
+  LeaderboardServiceServicer,
+  ProfileServiceServicer
+)
 from truescrub.statewriter.state_writer import GameStateWriter, \
   RiegeliGameStateWriter
 from truescrub.updater import Updater
@@ -176,9 +181,6 @@ class Watchdog:
     os._exit(-1)
 
 
-START_ID = uuid.uuid4().hex
-
-
 def main(args: List[str]):
   args = arg_parser.parse_args(args)
   state_loader_provider, state_writer_provider = \
@@ -215,6 +217,8 @@ def main(args: List[str]):
       SeasonServiceServicer(), grpc_service.server)
     leaderboard_service_pb2_grpc.add_LeaderboardServiceServicer_to_server(
       LeaderboardServiceServicer(), grpc_service.server)
+    profile_service_pb2_grpc.add_ProfileServiceServicer_to_server(
+      ProfileServiceServicer(), grpc_service.server)
 
     app.state_writer = state_writer
     futures[executor.submit(updater_service)] = updater_service

@@ -1,0 +1,69 @@
+{
+  "skillGroups": [
+    {
+      "name": "Cardboard I",
+      "specialName": "Mild Sauce",
+      "lowerBound": "-Infinity"
+    },
+    {
+      "name": "Cardboard II",
+      "specialName": "Soft Taco",
+      "lowerBound": 125
+    },
+    {
+      "name": "Cardboard III",
+      "specialName": "Crunchy Taco",
+      "lowerBound": 250
+    },
+    {
+      "name": "Cardboard IV",
+      "specialName": "Crunchy Taco Supreme",
+      "lowerBound": 375
+    },
+    {
+      "name": "Plastic I",
+      "specialName": "Doritos Locos Taco",
+      "lowerBound": 500
+    },
+    {
+      "name": "Plastic II",
+      "specialName": "Triple Layer Nachos",
+      "lowerBound": 625
+    },
+    {
+      "name": "Plastic III",
+      "specialName": "Nachos Supreme",
+      "lowerBound": 750
+    },
+    {
+      "name": "Plastic Elite",
+      "specialName": "Nachos Bell Grande",
+      "lowerBound": 875
+    },
+    {
+      "name": "Legendary Wood",
+      "specialName": "Cheesy Gordita Crunch",
+      "lowerBound": 1000
+    },
+    {
+      "name": "Garb Salad",
+      "specialName": "Chalupa Supreme",
+      "lowerBound": 1125
+    },
+    {
+      "name": "Master Garbian",
+      "specialName": "Crunchwrap Supreme",
+      "lowerBound": 1250
+    },
+    {
+      "name": "Master Garbian Elite",
+      "specialName": "Crunchwrap Supreme Combo",
+      "lowerBound": 1375
+    },
+    {
+      "name": "Low-Key Dirty",
+      "specialName": "Triplelupa",
+      "lowerBound": 1500
+    }
+  ]
+}

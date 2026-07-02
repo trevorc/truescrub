@@ -8,15 +8,15 @@ export function Navbar() {
             TrueScrub
           </Link>
           <div className="flex space-x-2 sm:space-x-6">
-            <a href="/leaderboard"
-               className="text-slate-400 hover:text-brand-500 font-medium transition-colors">Leaderboard</a>
+            <Link to="/leaderboard"
+               className="text-slate-400 hover:text-brand-500 font-medium transition-colors">Leaderboard</Link>
             <Link to="/matchmaking"
                   className="text-slate-400 hover:text-brand-500 font-medium transition-colors">Matchmaking</Link>
             <Link to="/accolades"
                   className="text-slate-400 hover:text-brand-500 font-medium transition-colors">Accolades</Link>
-            <a href="/skill_groups"
+            <Link to="/skill_groups"
                className="text-slate-400 hover:text-brand-500 font-medium transition-colors">Skill
-              Groups</a>
+              Groups</Link>
           </div>
         </div>
       </nav>

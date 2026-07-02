@@ -196,7 +196,8 @@ class TestRealDataPipeline:
       assert p.player_id > 0
       assert p.steam_name != ''
       assert p.skill.mmr != 0
-      assert p.skill.skill_group != ''
+      from truescrub.models import find_skill_group
+      assert find_skill_group(p.skill.mmr) >= 0
 
     # Confirm that pseudonymized names appear.
     names = {p.steam_name for p in players}
@@ -265,16 +266,7 @@ class TestRealDataPipeline:
     assert 'Cannon Fodder' in accolade_names
     assert 'Wallflower' in accolade_names
 
-  def test_skill_groups_page_renders(
-      self, integration_env, real_game_states):
-    client, game_db, skill_db, writer, sink = integration_env
-    _post_game_states(client, real_game_states)
-    _drain_writer(writer)
-    _run_updater(skill_db, sink)
 
-    resp = client.get('/skill_groups')
-    assert resp.status_code == 200
-    assert b'Cardboard' in resp.data
 
 
 if __name__ == '__main__':

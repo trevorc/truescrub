@@ -1,0 +1,152 @@
+{
+  "achievements": [
+    {
+      "id": "rounds_played",
+      "name": "Rounds Played",
+      "tiers": [
+        {
+          "threshold": 10,
+          "name": "Warm Body"
+        },
+        {
+          "threshold": 100,
+          "name": "Furniture"
+        },
+        {
+          "threshold": 500,
+          "name": "Veteran Scrub"
+        }
+      ]
+    },
+    {
+      "id": "total_kills",
+      "name": "Total Kills",
+      "tiers": [
+        {
+          "threshold": 50,
+          "name": "First Blood"
+        },
+        {
+          "threshold": 250,
+          "name": "Serial Killer"
+        },
+        {
+          "threshold": 1000,
+          "name": "Chicken Slayer"
+        }
+      ]
+    },
+    {
+      "id": "total_mvps",
+      "name": "Total MVPs",
+      "tiers": [
+        {
+          "threshold": 10,
+          "name": "Shiny Star"
+        },
+        {
+          "threshold": 50,
+          "name": "Star Collector"
+        }
+      ]
+    },
+    {
+      "id": "total_headshots",
+      "name": "Total Headshots",
+      "tiers": [
+        {
+          "threshold": 25,
+          "name": "Lucky Shot"
+        },
+        {
+          "threshold": 100,
+          "name": "Actually Aiming"
+        }
+      ]
+    },
+    {
+      "id": "distinct_teammates",
+      "name": "Distinct Teammates",
+      "tiers": [
+        {
+          "threshold": 5,
+          "name": "Socialite"
+        },
+        {
+          "threshold": 15,
+          "name": "Knows Everyone"
+        }
+      ]
+    },
+    {
+      "id": "distinct_maps",
+      "name": "Distinct Maps",
+      "tiers": [
+        {
+          "threshold": 3,
+          "name": "Tourist"
+        },
+        {
+          "threshold": 5,
+          "name": "World Traveler"
+        }
+      ]
+    },
+    {
+      "id": "multi_kill_rounds",
+      "name": "Rounds with 3+ Kills",
+      "tiers": [
+        {
+          "threshold": 1,
+          "name": "Hat Trick"
+        },
+        {
+          "threshold": 10,
+          "name": "Multi-Kill Machine"
+        }
+      ]
+    },
+    {
+      "id": "survived_losses",
+      "name": "Survived Lost Rounds",
+      "tiers": [
+        {
+          "threshold": 5,
+          "name": "Last One Standing"
+        },
+        {
+          "threshold": 25,
+          "name": "Sole Survivor"
+        }
+      ]
+    },
+    {
+      "id": "zero_damage_rounds",
+      "name": "Rounds with 0 Damage",
+      "tiers": [
+        {
+          "threshold": 5,
+          "name": "AFK Legend"
+        },
+        {
+          "threshold": 25,
+          "name": "Ghost"
+        }
+      ]
+    },
+    {
+      "id": "seasons_played",
+      "name": "Seasons Played",
+      "tiers": [
+        {
+          "threshold": 2,
+          "name": "Returning Customer"
+        },
+        {
+          "threshold": 4,
+          "name": "Lifer"
+        }
+      ]
+    }
+  ]
+}

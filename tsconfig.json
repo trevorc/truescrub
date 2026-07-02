@@ -8,6 +8,7 @@
     "paths": {
       "proto/*": ["./proto/*"],
       "client/*": ["./client/*"],
+      "truescrub/*": ["./truescrub/*"],
       "../google/type/*": [
         "./node_modules/@buf/googleapis_googleapis.bufbuild_es/google/type/*"
       ]
@@ -15,7 +16,8 @@
     "jsx": "react-jsx",
     "sourceMap": false,
     "strict": true,
-    "target": "ESNext"
+    "target": "ESNext",
+    "resolveJsonModule": true
   },
   "include": ["**/*.ts", "**/*.tsx"]
 }

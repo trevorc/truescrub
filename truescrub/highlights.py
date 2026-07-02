@@ -10,7 +10,7 @@ from proto import common_pb2
 from proto import highlights_service_pb2
 from truescrub.accolades import get_accolades
 from truescrub.db import execute_one, execute, COEFFICIENTS_DICT
-from truescrub.models import Player, SKILL_STDEV, SKILL_MEAN, skill_group_name
+from truescrub.models import Player, SKILL_STDEV, SKILL_MEAN
 
 
 class PlayerRatingRow(NamedTuple):
@@ -188,13 +188,11 @@ def get_player_ratings_between_rounds(
         steam_name=row.steam_name,
         skill=common_pb2.SkillInfo(
           mmr=current_player.mmr,
-          skill_group=skill_group_name(current_player.skill_group_index),
         ),
       ),
       impact_rating=row.impact_rating,
       starting_skill=common_pb2.SkillInfo(
         mmr=starting_player.mmr,
-        skill_group=skill_group_name(starting_player.skill_group_index),
       ),
       rating_details=highlights_service_pb2.RatingDetails(
         average_kills=row.average_kills,
@@ -269,18 +267,15 @@ def get_skill_changes_between_rounds(
     for row in itertools.starmap(SkillChangeRow, skill_change_rows)
   ]
 
-  # Filter to only players whose skill group actually changed
   filtered_changes = [
     highlights_service_pb2.SkillGroupChange(
       player_id=previous_skill.player_id,
       steam_name=previous_skill.steam_name,
       previous_skill=common_pb2.SkillInfo(
         mmr=previous_skill.mmr,
-        skill_group=skill_group_name(previous_skill.skill_group_index),
       ),
       next_skill=common_pb2.SkillInfo(
         mmr=next_skill.mmr,
-        skill_group=skill_group_name(next_skill.skill_group_index),
       ),
     )
     for previous_skill, next_skill in skill_changes

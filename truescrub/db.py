@@ -1,9 +1,9 @@
-import json
-import sqlite3
-import logging
 import datetime
-import operator
 import itertools
+import json
+import logging
+import operator
+import sqlite3
 from typing import FrozenSet, Iterator, Optional, Tuple, List, Dict, Set
 
 import trueskill
@@ -279,7 +279,7 @@ def get_all_players(skill_db) -> List[Player]:
     ]
 
 
-def get_overall_skills(skill_db) -> {int: trueskill.Rating}:
+def get_overall_skills(skill_db) -> Dict[int, trueskill.Rating]:
     return {
         player.player_id: player.skill
         for player in get_all_players(skill_db)
@@ -316,7 +316,7 @@ def get_player_round_stat_averages(skill_db, player_id) -> dict:
 
 
 def get_player_round_stat_averages_by_season(
-        skill_db, player_id) -> {int: dict}:
+        skill_db, player_id) -> Dict[int, dict]:
     # Call me when SQLite supports WITH ROLLUP
     stat_rows = execute(skill_db, '''
     SELECT r.season_id
@@ -353,7 +353,7 @@ def get_player_round_stat_averages_by_season(
     }
 
 
-def get_overall_impact_ratings(skill_db) -> {int: float}:
+def get_overall_impact_ratings(skill_db) -> Dict[int, float]:
     return dict(execute(skill_db, '''
     SELECT rc.player_id
          , :kill_coeff * AVG(rc.kill_rating)
@@ -944,3 +944,86 @@ def initialize_dbs():
         initialize_game_db(game_db)
         skill_db.commit()
         game_db.commit()
+
+def get_player_team_records(skill_db, player_id: int):
+    team_rows = skill_db.execute('''
+    SELECT participants.team_id, players.steam_name
+    FROM team_membership m
+    JOIN team_membership participants
+    ON   participants.team_id = m.team_id
+    JOIN players
+    ON   players.player_id = participants.player_id
+    WHERE m.player_id = ?
+    ORDER BY participants.team_id
+    ''', (player_id,)).fetchall()
+
+    teams = {team_id: list(val[1] for val in group)
+             for team_id, group in itertools.groupby(team_rows, operator.itemgetter(0))}
+
+    team_record_rows = skill_db.execute('''
+    SELECT m.team_id
+         , ifnull(rounds_won.num_rounds, 0)
+         , ifnull(rounds_lost.num_rounds, 0)
+    FROM team_membership m
+    LEFT JOIN ( SELECT r.winner AS team_id, COUNT(*) AS num_rounds
+                FROM rounds r
+                GROUP BY r.winner
+              ) rounds_won
+    ON m.team_id = rounds_won.team_id
+    LEFT JOIN ( SELECT r.loser AS team_id, COUNT(*) AS num_rounds
+                FROM rounds r
+                GROUP BY r.loser
+              ) rounds_lost
+    ON m.team_id = rounds_lost.team_id
+    WHERE m.player_id = ?
+    ''', (player_id,)).fetchall()
+
+    return [{
+        'team_members': teams[row[0]],
+        'rounds_won': row[1],
+        'rounds_lost': row[2],
+    } for row in team_record_rows]
+
+def get_player_rounds(skill_db, player_id: int):
+    team_rows = skill_db.execute('''
+    SELECT participants.team_id, players.steam_name
+    FROM (
+        SELECT r.winner AS team_id
+        FROM rounds r
+        JOIN team_membership m ON m.team_id = r.winner OR m.team_id = r.loser
+        WHERE m.player_id = ?
+        UNION
+        SELECT r.loser AS team_id
+        FROM rounds r
+        JOIN team_membership m ON m.team_id = r.winner OR m.team_id = r.loser
+        WHERE m.player_id = ?
+    ) match_teams
+    JOIN team_membership participants
+    ON   participants.team_id = match_teams.team_id
+    JOIN players
+    ON   players.player_id = participants.player_id
+    ORDER BY participants.team_id
+    ''', (player_id, player_id)).fetchall()
+
+    teams = {
+      team_id: list(val[1] for val in group)
+      for team_id, group in itertools.groupby(
+        team_rows, operator.itemgetter(0))
+    }
+
+    round_rows = skill_db.execute('''
+    SELECT created_at, winner, loser
+    FROM rounds
+    JOIN team_membership m
+    ON m.team_id = rounds.winner OR m.team_id = rounds.loser
+    WHERE m.player_id = ?
+    ORDER BY created_at DESC
+    LIMIT 50
+    ''', (player_id,)).fetchall()
+
+    return [{
+        'created_at': row[0],
+        'winning_team': teams[row[1]],
+        'losing_team': teams[row[2]],
+    } for row in round_rows]
+

@@ -1,6 +1,6 @@
-load("@aspect_rules_ts//ts:defs.bzl", "ts_project")
+load("//client:ts_library.bzl", "ts_library")
 
-ts_project(
+ts_library(
     name = "accolade_card",
     srcs = ["AccoladeCard.tsx"],
     assets = [
@@ -29,9 +29,6 @@ ts_project(
         "accolades/winner_winner_chicken_dinner.png",
         "img/chicken.png",
     ],
-    declaration = True,
-    transpiler = "tsc",
-    tsconfig = "//:tsconfig",
     visibility = ["//client:__subpackages__"],
     deps = [
         ":globals",
@@ -43,21 +40,15 @@ ts_project(
     ],
 )
 
-ts_project(
+ts_library(
     name = "globals",
     srcs = ["globals.d.ts"],
-    declaration = True,
-    transpiler = "tsc",
-    tsconfig = "//:tsconfig",
     visibility = ["//client:__subpackages__"],
 )
 
-ts_project(
+ts_library(
     name = "navbar",
     srcs = ["Navbar.tsx"],
-    declaration = True,
-    transpiler = "tsc",
-    tsconfig = "//:tsconfig",
     visibility = ["//client:__subpackages__"],
     deps = [
         "//:node_modules/@types/react",
@@ -68,12 +59,9 @@ ts_project(
     ],
 )
 
-ts_project(
+ts_library(
     name = "footer",
     srcs = ["Footer.tsx"],
-    declaration = True,
-    transpiler = "tsc",
-    tsconfig = "//:tsconfig",
     visibility = ["//client:__subpackages__"],
     deps = [
         "//:node_modules/@types/react",
@@ -83,7 +71,7 @@ ts_project(
     ],
 )
 
-ts_project(
+ts_library(
     name = "error_state",
     srcs = ["ErrorState.tsx"],
     assets = [
@@ -91,9 +79,6 @@ ts_project(
         "img/chicken_error2.png",
         "img/chicken_error3.png",
     ],
-    declaration = True,
-    transpiler = "tsc",
-    tsconfig = "//:tsconfig",
     visibility = ["//client:__subpackages__"],
     deps = [
         ":globals",
@@ -104,7 +89,7 @@ ts_project(
     ],
 )
 
-ts_project(
+ts_library(
     name = "loading_state",
     srcs = ["LoadingState.tsx"],
     assets = [
@@ -116,9 +101,6 @@ ts_project(
         "chickens/chicken_ui6.png",
         "chickens/chicken_ui7.png",
     ],
-    declaration = True,
-    transpiler = "tsc",
-    tsconfig = "//:tsconfig",
     visibility = ["//client:__subpackages__"],
     deps = [
         ":globals",

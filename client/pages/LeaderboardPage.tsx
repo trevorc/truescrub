@@ -3,8 +3,42 @@ import {useQuery} from '@connectrpc/connect-query';
 import {Link, useParams} from 'react-router-dom';
 import {getLeaderboard} from 'proto/leaderboard_service-LeaderboardService_connectquery.js';
 import {getAvailableSeasons} from 'proto/season_service-SeasonService_connectquery.js';
+import {fromJson} from '@bufbuild/protobuf';
+import {SkillGroupConfigurationSchema} from 'truescrub/proto/profile_pb.js';
+import skillGroupsJson from 'truescrub/proto/skill_groups.json';
+import {skillGroupName} from 'client/utils/skill_group.js';
 import {ErrorState} from 'client/components/ErrorState.js';
 import {LoadingState} from 'client/components/LoadingState.js';
+
+import rank_cardboard_i from "client/pages/ranks/cardboard_i.png";
+import rank_cardboard_ii from "client/pages/ranks/cardboard_ii.png";
+import rank_cardboard_iii from "client/pages/ranks/cardboard_iii.png";
+import rank_cardboard_iv from "client/pages/ranks/cardboard_iv.png";
+import rank_garb_salad from "client/pages/ranks/garb_salad.png";
+import rank_legendary_wood from "client/pages/ranks/legendary_wood.png";
+import rank_low_key_dirty from "client/pages/ranks/low_key_dirty.png";
+import rank_master_garbian from "client/pages/ranks/master_garbian.png";
+import rank_master_garbian_elite from "client/pages/ranks/master_garbian_elite.png";
+import rank_plastic_elite from "client/pages/ranks/plastic_elite.png";
+import rank_plastic_i from "client/pages/ranks/plastic_i.png";
+import rank_plastic_ii from "client/pages/ranks/plastic_ii.png";
+import rank_plastic_iii from "client/pages/ranks/plastic_iii.png";
+
+const RANKS: Record<string, string> = {
+  "Cardboard I": rank_cardboard_i,
+  "Cardboard II": rank_cardboard_ii,
+  "Cardboard III": rank_cardboard_iii,
+  "Cardboard IV": rank_cardboard_iv,
+  "Garb Salad": rank_garb_salad,
+  "Legendary Wood": rank_legendary_wood,
+  "Low-Key Dirty": rank_low_key_dirty,
+  "Master Garbian": rank_master_garbian,
+  "Master Garbian Elite": rank_master_garbian_elite,
+  "Plastic Elite": rank_plastic_elite,
+  "Plastic I": rank_plastic_i,
+  "Plastic II": rank_plastic_ii,
+  "Plastic III": rank_plastic_iii,
+};
 
 // Winitzki approximation for the Error Function; maximum error ~1.2e-4
 function erf(x: number): number {
@@ -75,6 +109,7 @@ export function LeaderboardPage() {
   const parsedSeasonId = seasonId ? parseInt(seasonId, 10) : undefined;
   const [showSpecialSkillGroups, setShowSpecialSkillGroups] = useState(false);
   const [confidence, setConfidence] = useState(0.95);
+  const skillGroupsConfig = React.useMemo(() => fromJson(SkillGroupConfigurationSchema, skillGroupsJson), []);
 
   const leaderboardQuery = useQuery(getLeaderboard, {
     seasonId: parsedSeasonId,
@@ -101,7 +136,7 @@ export function LeaderboardPage() {
   }, [rawPlayers, confidence]);
 
   return (
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <div className="flex flex-col">
         <div className="mb-4 flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
             <h1 className="text-4xl font-bold text-white mb-2">Leaderboard</h1>
@@ -180,8 +215,9 @@ export function LeaderboardPage() {
                     const impact = player.impactRating != null ? player.impactRating.toFixed(2) : '-';
 
                     // Map legacy image names
-                    const skillGroupStr = player.skill?.skillGroup || 'Unranked';
-                    const imgName = skillGroupStr.toLowerCase().replace(/ /g, '_').replace(/-/g, '_') + '.png';
+                    const displayName = skillGroupName(player.skill!.mmr, skillGroupsConfig, showSpecialSkillGroups);
+                    const baseName = skillGroupName(player.skill!.mmr, skillGroupsConfig, false);
+                    const isSpecial = showSpecialSkillGroups && displayName !== baseName;
 
                     return (
                         <tr key={player.playerId.toString()}
@@ -218,12 +254,12 @@ export function LeaderboardPage() {
                           </td>
                           <td className="py-3 px-6">
                             <div
-                                className={`skill flex items-center gap-2 ${showSpecialSkillGroups ? 'hidden' : 'inline-block'}`}>
-                              <img src={`/htdocs/img/ranks/${imgName}`} alt={skillGroupStr}
-                                   className="w-10 h-10 object-contain drop-shadow-md"/>
+                                className={`skill flex items-center gap-2 inline-block`}>
+                              <img src={RANKS[baseName] || ""} alt={displayName}
+                                   className={`w-12 h-12 object-contain filter drop-shadow-[0_2px_5px_rgba(0,0,0,0.5)] transform group-hover:scale-110 transition-transform duration-300 ${isSpecial ? 'hue-rotate-180 sepia brightness-110' : ''}`}/>
                               <span
-                                  className="inline-block px-2 py-1 bg-dark-card border border-dark-border rounded-lg text-sm text-slate-300 font-medium tracking-wide">
-                        {skillGroupStr}
+                                  className={`inline-block px-2 py-1 bg-dark-card border border-dark-border rounded-lg text-sm font-medium tracking-wide ${isSpecial ? 'text-orange-400' : 'text-slate-300'}`}>
+                        {displayName}
                       </span>
                             </div>
                           </td>

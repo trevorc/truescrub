@@ -7,10 +7,12 @@ from typing import Optional
 import trueskill
 
 from proto import common_pb2
+from truescrub.proto.profile_pb2 import SkillGroupConfiguration
+from google.protobuf import json_format
 
-__all__ = ['SKILL_MEAN', 'SKILL_STDEV', 'SKILL_GROUP_NAMES', 'Match', 'Player',
+__all__ = ['SKILL_MEAN', 'SKILL_STDEV', 'Match', 'Player',
            'SkillHistory', 'RoundRow', 'GameStateRow',
-           'skill_groups', 'skill_group_name', 'setup_trueskill']
+           'setup_trueskill']
 
 SKILL_MEAN = 1000.0
 SKILL_STDEV = SKILL_MEAN / 4.0
@@ -18,50 +20,16 @@ BETA = SKILL_STDEV * 2.0
 TAU = SKILL_STDEV / 100.0
 
 SKILL_GROUP_SPACING = SKILL_STDEV * 0.5
-SKILL_GROUP_NAMES = [
-  'Cardboard I',
-  'Cardboard II',
-  'Cardboard III',
-  'Cardboard IV',
-  'Plastic I',
-  'Plastic II',
-  'Plastic III',
-  'Plastic Elite',
-  'Legendary Wood',
-  'Garb Salad',
-  'Master Garbian',
-  'Master Garbian Elite',
-  'Low-Key Dirty',
-]
-SPECIAL_SKILL_GROUP_NAMES = [
-  'Mild Sauce',
-  'Soft Taco',
-  'Crunchy Taco',
-  'Crunchy Taco Supreme',
-  'Doritos Locos Taco',
-  'Triple Layer Nachos',
-  'Nachos Supreme',
-  'Nachos Bell Grande',
-  'Cheesy Gordita Crunch',
-  'Chalupa Supreme',
-  'Crunchwrap Supreme',
-  'Crunchwrap Supreme Combo',
-  'Triplelupa',
-]
-SKILL_GROUP_CUTOFFS = (float('-inf'),) + tuple(
-  SKILL_GROUP_SPACING * (i + 1)
-  for i in range(len(SKILL_GROUP_NAMES))
-)
 
 
-def skill_groups():
-  return zip(SKILL_GROUP_CUTOFFS, SKILL_GROUP_NAMES)
+def load_skill_groups():
+  with open('truescrub/proto/skill_groups.json', 'r') as f:
+    config = json_format.Parse(f.read(), SkillGroupConfiguration())
+    cutoffs = [sg.lower_bound for sg in config.skill_groups]
+    return tuple(cutoffs)
 
 
-def skill_group_name(skill_group_index, special_name=False):
-  return (SPECIAL_SKILL_GROUP_NAMES
-          if special_name
-          else SKILL_GROUP_NAMES)[skill_group_index]
+SKILL_GROUP_CUTOFFS = load_skill_groups()
 
 
 def setup_trueskill():
@@ -111,7 +79,6 @@ class Player:
       steam_name=self.steam_name,
       skill=common_pb2.SkillInfo(
         mmr=float(self.mmr),
-        skill_group=skill_group_name(self.skill_group_index),
         mu=self.skill.mu,
         sigma=self.skill.sigma,
       ),

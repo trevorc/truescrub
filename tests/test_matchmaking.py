@@ -60,26 +60,6 @@ def test_estimated_skill_range():
   assert ub == pytest.approx(expected_ub, rel=1e-3)
 
 
-def test_skill_group_ranges():
-  # Validate that skill_group_ranges returns expected ranges
-  ranges = list(mm.skill_group_ranges())
-
-  # Verify the structure: (group_name, lower_bound, upper_bound)
-  assert len(ranges) > 0
-  for group_name, lower_bound, upper_bound in ranges:
-    assert isinstance(group_name, str)
-    assert isinstance(lower_bound, (int, float))
-    assert isinstance(upper_bound, (int, float))
-    assert lower_bound <= upper_bound
-
-  # Verify the last range has upper_bound = infinity
-  assert ranges[-1][2] == float('inf')
-
-  # Verify ranges are contiguous
-  for i in range(1, len(ranges)):
-    assert ranges[i][1] == ranges[i - 1][2]
-
-
 def test_win_probability():
   # Simple test with equal teams
   team1 = [Gaussian(1000, 100), Gaussian(1000, 100)]

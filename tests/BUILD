@@ -132,6 +132,15 @@ py_test(
 )
 
 py_test(
+    name = "test_rpc",
+    srcs = ["test_rpc.py"],
+    deps = [
+        "//truescrub:rpc",
+        "@pypi//pytest",
+    ],
+)
+
+py_test(
     name = "test_riegeli_loader",
     srcs = ["test_riegeli_loader.py"],
     deps = [
@@ -295,6 +304,7 @@ test_suite(
         "test_models",
         "test_recalculate",
         "test_riegeli_loader",
+        "test_rpc",
         "test_seasoncfg",
         "test_segmented_log",
         "test_segmented_log_dir",

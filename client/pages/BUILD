@@ -1,11 +1,8 @@
-load("@aspect_rules_ts//ts:defs.bzl", "ts_project")
+load("//client:ts_library.bzl", "ts_library")
 
-ts_project(
+ts_library(
     name = "home_page",
     srcs = ["HomePage.tsx"],
-    declaration = True,
-    transpiler = "tsc",
-    tsconfig = "//:tsconfig",
     visibility = ["//client:__subpackages__"],
     deps = [
         "//:node_modules/@connectrpc/connect-query",
@@ -22,12 +19,9 @@ ts_project(
     ],
 )
 
-ts_project(
+ts_library(
     name = "matchmaking_page",
     srcs = ["MatchmakingPage.tsx"],
-    declaration = True,
-    transpiler = "tsc",
-    tsconfig = "//:tsconfig",
     visibility = ["//client:__subpackages__"],
     deps = [
         "//:node_modules/@connectrpc/connect-query",
@@ -45,12 +39,9 @@ ts_project(
     ],
 )
 
-ts_project(
+ts_library(
     name = "accolades_page",
     srcs = ["AccoladesPage.tsx"],
-    declaration = True,
-    transpiler = "tsc",
-    tsconfig = "//:tsconfig",
     visibility = ["//client:__subpackages__"],
     deps = [
         "//:node_modules/@connectrpc/connect-query",
@@ -62,18 +53,61 @@ ts_project(
         "//:node_modules/react-router-dom",
         "//client/components:accolade_card",
         "//client/components:error_state",
-        "//client/components:loading_state",
         "//client/components:globals",
+        "//client/components:loading_state",
         "//proto:highlights_service_js",
     ],
 )
 
-ts_project(
+ts_library(
+    name = "skill_groups_page",
+    srcs = ["SkillGroupsPage.tsx"],
+    assets = [
+        "ranks/cardboard_i.png",
+        "ranks/cardboard_ii.png",
+        "ranks/cardboard_iii.png",
+        "ranks/cardboard_iv.png",
+        "ranks/garb_salad.png",
+        "ranks/legendary_wood.png",
+        "ranks/low_key_dirty.png",
+        "ranks/master_garbian.png",
+        "ranks/master_garbian_elite.png",
+        "ranks/plastic_elite.png",
+        "ranks/plastic_i.png",
+        "ranks/plastic_ii.png",
+        "ranks/plastic_iii.png",
+    ],
+    visibility = ["//client:__subpackages__"],
+    deps = [
+        "//:node_modules/@bufbuild/protobuf",
+        "//:node_modules/@types/react",
+        "//:node_modules/@types/react-dom",
+        "//:node_modules/react",
+        "//:node_modules/react-dom",
+        "//client/components:globals",
+        "//truescrub/proto:profile_js",
+        "//truescrub/proto:skill_groups_json",
+    ],
+)
+
+ts_library(
     name = "leaderboard_page",
     srcs = ["LeaderboardPage.tsx"],
-    declaration = True,
-    transpiler = "tsc",
-    tsconfig = "//:tsconfig",
+    assets = [
+        "ranks/cardboard_i.png",
+        "ranks/cardboard_ii.png",
+        "ranks/cardboard_iii.png",
+        "ranks/cardboard_iv.png",
+        "ranks/garb_salad.png",
+        "ranks/legendary_wood.png",
+        "ranks/low_key_dirty.png",
+        "ranks/master_garbian.png",
+        "ranks/master_garbian_elite.png",
+        "ranks/plastic_elite.png",
+        "ranks/plastic_i.png",
+        "ranks/plastic_ii.png",
+        "ranks/plastic_iii.png",
+    ],
     visibility = ["//client:__subpackages__"],
     deps = [
         "//:node_modules/@connectrpc/connect-query",
@@ -83,10 +117,89 @@ ts_project(
         "//:node_modules/react",
         "//:node_modules/react-dom",
         "//:node_modules/react-router-dom",
+        "//:node_modules/@bufbuild/protobuf",
         "//client/components:error_state",
+        "//client/components:globals",
         "//client/components:loading_state",
+        "//client/utils:skill_group",
         "//proto:common_js",
         "//proto:leaderboard_service_js",
         "//proto:season_service_js",
+        "//truescrub/proto:profile_js",
+        "//truescrub/proto:skill_groups_json",
+    ],
+)
+
+ts_library(
+    name = "profile_page",
+    srcs = [
+        "MatchesTab.tsx",
+        "ProfilePage.tsx",
+        "TeamRecordsTab.tsx",
+    ],
+    assets = [
+        "ranks/cardboard_i.png",
+        "ranks/cardboard_ii.png",
+        "ranks/cardboard_iii.png",
+        "ranks/cardboard_iv.png",
+        "ranks/garb_salad.png",
+        "ranks/legendary_wood.png",
+        "ranks/low_key_dirty.png",
+        "ranks/master_garbian.png",
+        "ranks/master_garbian_elite.png",
+        "ranks/plastic_elite.png",
+        "ranks/plastic_i.png",
+        "ranks/plastic_ii.png",
+        "ranks/plastic_iii.png",
+        "achievements/distinct_maps.png",
+        "achievements/distinct_teammates.png",
+        "achievements/multi_kill_rounds.png",
+        "achievements/rounds_played.png",
+        "achievements/seasons_played.png",
+        "achievements/survived_losses.png",
+        "achievements/total_headshots.png",
+        "achievements/total_kills.png",
+        "achievements/total_mvps.png",
+        "achievements/zero_damage_rounds.png",
+    ],
+    visibility = ["//client:__subpackages__"],
+    deps = [
+        "//:node_modules/@connectrpc/connect-query",
+        "//:node_modules/@tanstack/react-query",
+        "//:node_modules/@types/react",
+        "//:node_modules/@types/react-dom",
+        "//:node_modules/react",
+        "//:node_modules/react-dom",
+        "//:node_modules/react-router-dom",
+        "//:node_modules/recharts",
+        "//:node_modules/redux",
+        "//client/components:error_state",
+        "//client/components:loading_state",
+        "//client/utils:skill_group",
+        "//proto:common_js",
+        "//proto:profile_service_js",
+        "//proto:season_service_js",
+        "//truescrub/proto:profile_js",
+        "//truescrub/proto:achievements_json",
+        "//truescrub/proto:skill_groups_json",
+    ],
+)
+
+ts_library(
+    name = "not_found_page",
+    srcs = ["NotFoundPage.tsx"],
+    assets = [
+        "chickens/404_chicken_1.png",
+        "chickens/404_chicken_2.png",
+        "chickens/404_chicken_3.png",
+    ],
+    visibility = ["//client:__subpackages__"],
+    deps = [
+        "//:node_modules/@types/react",
+        "//:node_modules/@types/react-dom",
+        "//:node_modules/react",
+        "//:node_modules/react-dom",
+        "//:node_modules/react-router-dom",
+        "//client/components:globals",
     ],
 )

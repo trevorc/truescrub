@@ -10,7 +10,7 @@ import json
 import pytest
 
 from tests.db_test_utils import TestDBManager, create_game_state_for_round
-from truescrub.api import app, parse_timezone
+from truescrub.api import app
 
 
 # ---------------------------------------------------------------------------
@@ -77,33 +77,6 @@ def client(populated_db, monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# parse_timezone (unit)
-# ---------------------------------------------------------------------------
-
-class TestParseTimezone:
-  def test_positive_offset(self):
-    tz = parse_timezone('+05:00')
-    assert tz.utcoffset(None) == datetime.timedelta(hours=5)
-
-  def test_negative_offset(self):
-    tz = parse_timezone('-05:00')
-    assert tz.utcoffset(None) == datetime.timedelta(hours=-5)
-
-  def test_zero_offset(self):
-    tz = parse_timezone('+00:00')
-    assert tz.utcoffset(None) == datetime.timedelta(0)
-
-  def test_invalid_raises(self):
-    with pytest.raises(ValueError):
-      parse_timezone('invalid')
-
-  def test_partial_offset_accepted(self):
-    """strptime %z handles partial offsets correctly."""
-    tz = parse_timezone('+05:30')
-    assert tz.utcoffset(None) == datetime.timedelta(hours=5, minutes=30)
-
-
-# ---------------------------------------------------------------------------
 # Route tests
 # ---------------------------------------------------------------------------
 
@@ -125,10 +98,7 @@ class TestGameStateEndpoint:
     assert resp.status_code == 403
 
 
-class TestSkillGroupsPage:
-  def test_renders(self, client):
-    resp = client.get('/skill_groups')
-    assert resp.status_code == 200
+
 
 
 

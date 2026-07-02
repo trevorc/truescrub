@@ -172,7 +172,8 @@ def test_get_skill_changes_between_rounds(test_db):
 
   skill_change = next(change for change in result if change.player_id == 1)
 
-  assert skill_change.previous_skill.skill_group != skill_change.next_skill.skill_group
+  from truescrub.models import find_skill_group
+  assert find_skill_group(skill_change.previous_skill.mmr) != find_skill_group(skill_change.next_skill.mmr)
   assert skill_change.next_skill.mmr > skill_change.previous_skill.mmr
 
 
@@ -211,7 +212,8 @@ def test_get_highlights(test_db):
 
   assert player1_change.HasField('previous_skill')
   assert player1_change.HasField('next_skill')
-  assert player1_change.previous_skill.skill_group != player1_change.next_skill.skill_group
+  from truescrub.models import find_skill_group
+  assert find_skill_group(player1_change.previous_skill.mmr) != find_skill_group(player1_change.next_skill.mmr)
   assert player1_change.next_skill.mmr > player1_change.previous_skill.mmr
 
 

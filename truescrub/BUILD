@@ -24,8 +24,10 @@ py_library(
 py_library(
     name = "models",
     srcs = ["models.py"],
+    data = ["//truescrub/proto:skill_groups.json"],
     deps = [
         "//proto:common_py_pb2",
+        "//truescrub/proto:profile_py_pb2",
         "@pypi//trueskill",
     ],
 )
@@ -85,8 +87,12 @@ py_library(
 py_library(
     name = "achievements",
     srcs = ["achievements.py"],
+    data = ["//truescrub/proto:achievements.json"],
     visibility = ["//tests:__pkg__"],
-    deps = [":db"],
+    deps = [
+        ":db",
+        "//truescrub/proto:profile_py_pb2",
+    ],
 )
 
 py_library(
@@ -96,12 +102,7 @@ py_library(
         "api.py",
         "highlights.py",
     ],
-    data = [
-        "templates/layout.html",
-        "templates/macros.html",
-        "templates/profile.html",
-        "templates/skill_groups.html",
-    ],
+
     deps = [
         ":accolades",
         ":achievements",
@@ -125,6 +126,7 @@ py_library(
         "//proto:highlights_service_py_pb2_grpc",
         "//proto:leaderboard_service_py_pb2_grpc",
         "//proto:matchmaking_service_py_pb2_grpc",
+        "//proto:profile_service_py_pb2_grpc",
         "//proto:season_service_py_pb2_grpc",
         "@pypi//grpcio",
     ],
@@ -145,6 +147,7 @@ py_library(
         "//proto:highlights_service_py_pb2_grpc",
         "//proto:leaderboard_service_py_pb2_grpc",
         "//proto:matchmaking_service_py_pb2_grpc",
+        "//proto:profile_service_py_pb2_grpc",
         "//proto:season_service_py_pb2_grpc",
         "//truescrub/proto:game_state_py_pb2",
         "//truescrub/statewriter",

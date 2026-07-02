@@ -10,7 +10,7 @@ message Date {
 
 message SkillInfo {
   double mmr = 1;
-  string skill_group = 2;
+  reserved 2;
   double mu = 3;
   double sigma = 4;
 }
