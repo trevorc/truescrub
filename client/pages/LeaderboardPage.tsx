@@ -6,7 +6,7 @@ import {getAvailableSeasons} from 'proto/season_service-SeasonService_connectque
 import {fromJson} from '@bufbuild/protobuf';
 import {SkillGroupConfigurationSchema} from 'truescrub/proto/profile_pb.js';
 import skillGroupsJson from 'truescrub/proto/skill_groups.json';
-import {skillGroupName} from 'client/utils/skill_group.js';
+import {skillGroupName} from 'client/pages/skill_group.js';
 import {ErrorState} from 'client/components/ErrorState.js';
 import {LoadingState} from 'client/components/LoadingState.js';
 
@@ -41,7 +41,7 @@ const RANKS: Record<string, string> = {
 };
 
 // Winitzki approximation for the Error Function; maximum error ~1.2e-4
-function erf(x: number): number {
+export function erf(x: number): number {
   const sign = x < 0 ? -1 : 1;
   const x2 = x * x;
   const a = (8 * (Math.PI - 3)) / (3 * Math.PI * (4 - Math.PI));
@@ -49,45 +49,24 @@ function erf(x: number): number {
   return sign * Math.sqrt(1 - inner);
 }
 
-// Winitzki approximation for the Inverse Error Function
-function erfinv(x: number): number {
-  const sign = x < 0 ? -1 : 1;
-  const a = 0.147;
-
-  const ln1MinusX2 = Math.log(1 - x * x);
-  const term1 = 2 / (Math.PI * a) + ln1MinusX2 / 2;
-  const term2 = ln1MinusX2 / a;
-
-  return sign * Math.sqrt(Math.sqrt(term1 * term1 - term2) - term1);
-}
-
-// Computes the z-score for a given two-tailed confidence interval
-function confidenceIntervalZ(confidenceLevel: number): number {
-  const alpha = 1 - confidenceLevel;
-  const p = alpha / 2.0;
-  return -Math.sqrt(2) * erfinv(2 * p - 1);
-}
-
 const GLOBAL_MU = 1000.0;
 const GLOBAL_SIGMA = 250.0;
 
-function calculatePercentileBounds(mu: number, sigma: number, confidence: number = 0.95) {
-  const z_star = confidenceIntervalZ(confidence);
-
-  const lower_skill = mu - z_star * sigma;
-  const upper_skill = mu + z_star * sigma;
+export function calculatePercentileBounds(mu: number, sigma: number, zScore: number = 2.0) {
+  const lower_skill = mu - zScore * sigma;
+  const upper_skill = mu + zScore * sigma;
 
   const lower = 0.5 * (1 + erf((lower_skill - GLOBAL_MU) / (GLOBAL_SIGMA * Math.sqrt(2))));
   const upper = 0.5 * (1 + erf((upper_skill - GLOBAL_MU) / (GLOBAL_SIGMA * Math.sqrt(2))));
   return {lower, upper};
 }
 
-function PercentileEstimate({mu, sigma, confidence}: {
+function PercentileEstimate({mu, sigma, zScore}: {
   mu: number;
   sigma: number;
-  confidence: number
+  zScore: number
 }) {
-  const {lower, upper} = calculatePercentileBounds(mu, sigma, confidence);
+  const {lower, upper} = calculatePercentileBounds(mu, sigma, zScore);
   const minWidth = 0.1;
   const leftOffset = Math.min(lower, 1 - minWidth);
   const rightOffset = Math.max(upper, 0 + minWidth);
@@ -108,7 +87,7 @@ export function LeaderboardPage() {
   const {seasonId} = useParams();
   const parsedSeasonId = seasonId ? parseInt(seasonId, 10) : undefined;
   const [showSpecialSkillGroups, setShowSpecialSkillGroups] = useState(false);
-  const [confidence, setConfidence] = useState(0.95);
+  const [zScore, setZScore] = useState(2.0);
   const skillGroupsConfig = React.useMemo(() => fromJson(SkillGroupConfigurationSchema, skillGroupsJson), []);
 
   const leaderboardQuery = useQuery(getLeaderboard, {
@@ -125,15 +104,15 @@ export function LeaderboardPage() {
     return [...rawPlayers].sort((a, b) => {
       const muA = a.skill?.mu || 0;
       const sigmaA = a.skill?.sigma || 1;
-      const lowerA = calculatePercentileBounds(muA, sigmaA, confidence).lower;
+      const lowerA = calculatePercentileBounds(muA, sigmaA, zScore).lower;
 
       const muB = b.skill?.mu || 0;
       const sigmaB = b.skill?.sigma || 1;
-      const lowerB = calculatePercentileBounds(muB, sigmaB, confidence).lower;
+      const lowerB = calculatePercentileBounds(muB, sigmaB, zScore).lower;
 
       return lowerB - lowerA; // Descending
     });
-  }, [rawPlayers, confidence]);
+  }, [rawPlayers, zScore]);
 
   return (
       <div className="flex flex-col">
@@ -161,15 +140,17 @@ export function LeaderboardPage() {
             <div
                 className="ml-auto flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pr-2">
               <label htmlFor="confidence-slider"
-                     className="text-xs font-medium text-slate-400">Confidence: {(confidence * 100).toFixed(0)}%</label>
+                     className="text-xs font-medium text-slate-400">
+                Penalty: {zScore.toFixed(1)}σ (CL: {(erf(zScore / Math.SQRT2) * 100).toFixed(1)}%)
+              </label>
               <input
                   id="confidence-slider"
                   type="range"
-                  min="0.5"
-                  max="0.99"
-                  step="0.01"
-                  value={confidence}
-                  onChange={(e) => setConfidence(parseFloat(e.target.value))}
+                  min="0.0"
+                  max="3.0"
+                  step="0.1"
+                  value={zScore}
+                  onChange={(e) => setZScore(parseFloat(e.target.value))}
                   className="w-24 h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-brand-500"
               />
             </div>
@@ -211,12 +192,13 @@ export function LeaderboardPage() {
                   {players.map((player, index) => {
                     const mu = player.skill?.mu || 0;
                     const sigma = player.skill?.sigma || 1;
-                    const {lower, upper} = calculatePercentileBounds(mu, sigma, confidence);
+                    const dynamicMmr = mu - (zScore * sigma);
+                    const {lower, upper} = calculatePercentileBounds(mu, sigma, zScore);
                     const impact = player.impactRating != null ? player.impactRating.toFixed(2) : '-';
 
                     // Map legacy image names
-                    const displayName = skillGroupName(player.skill!.mmr, skillGroupsConfig, showSpecialSkillGroups);
-                    const baseName = skillGroupName(player.skill!.mmr, skillGroupsConfig, false);
+                    const displayName = skillGroupName(dynamicMmr, skillGroupsConfig, showSpecialSkillGroups);
+                    const baseName = skillGroupName(dynamicMmr, skillGroupsConfig, false);
                     const isSpecial = showSpecialSkillGroups && displayName !== baseName;
 
                     return (
@@ -235,13 +217,13 @@ export function LeaderboardPage() {
                           </td>
                           <td className="py-3 px-6 text-right text-brand-400 font-mono font-bold"
                               title={`${Math.round(mu)} ± ${Math.round(sigma)}σ`}>
-                            {Math.round(player.skill?.mmr || 0)}
+                            {Math.round(dynamicMmr)}
                           </td>
                           <td className="py-3 px-6">
                             <div className="flex items-center gap-3">
                           <span
                               className="text-sm font-medium text-slate-300 w-12 text-right">{(lower * 100).toFixed(1)}%</span>
-                              <PercentileEstimate mu={mu} sigma={sigma} confidence={confidence}/>
+                              <PercentileEstimate mu={mu} sigma={sigma} zScore={zScore}/>
                               <span
                                   className="text-sm font-medium text-slate-300 w-12">{(upper * 100).toFixed(1)}%</span>
                             </div>

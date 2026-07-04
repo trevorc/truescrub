@@ -66,6 +66,9 @@ ts_proto_library(
     copy_files = False,
     node_modules = "//:node_modules",
     proto = ":common_proto",
+    protoc_gen_options = {
+        "js_import_style": "legacy_commonjs",
+    },
 )
 
 ts_proto_library(
@@ -77,6 +80,9 @@ ts_proto_library(
     },
     node_modules = "//:node_modules",
     proto = ":highlights_service_proto",
+    protoc_gen_options = {
+        "js_import_style": "legacy_commonjs",
+    },
     deps = [":common_js"],
 )
 
@@ -89,6 +95,9 @@ ts_proto_library(
     },
     node_modules = "//:node_modules",
     proto = ":matchmaking_service_proto",
+    protoc_gen_options = {
+        "js_import_style": "legacy_commonjs",
+    },
     deps = [":common_js"],
 )
 
@@ -101,6 +110,9 @@ ts_proto_library(
     },
     node_modules = "//:node_modules",
     proto = ":season_service_proto",
+    protoc_gen_options = {
+        "js_import_style": "legacy_commonjs",
+    },
 )
 
 ts_proto_library(
@@ -112,6 +124,9 @@ ts_proto_library(
     },
     node_modules = "//:node_modules",
     proto = ":leaderboard_service_proto",
+    protoc_gen_options = {
+        "js_import_style": "legacy_commonjs",
+    },
     deps = [":common_js"],
 )
 
@@ -135,5 +150,8 @@ ts_proto_library(
     },
     node_modules = "//:node_modules",
     proto = ":profile_service_proto",
+    protoc_gen_options = {
+        "js_import_style": "legacy_commonjs",
+    },
     deps = [":common_js"],
 )

@@ -1,12 +1,12 @@
 bazel_dep(name = "aspect_rules_esbuild", version = "0.26.0")
 bazel_dep(name = "aspect_rules_js", version = "3.2.2")
+bazel_dep(name = "aspect_rules_jest", version = "0.25.2")
 bazel_dep(name = "aspect_rules_py", version = "2.0.0-alpha.4")
 bazel_dep(name = "aspect_rules_ts", version = "3.8.11")
 bazel_dep(name = "bazel_lib", version = "3.4.0")
 bazel_dep(name = "bazel_skylib", version = "1.9.0")
-bazel_dep(name = "googleapis", version = "0.0.0-20260623-b6f9ff05")
 bazel_dep(name = "grpc", version = "1.81.1")
-bazel_dep(name = "highwayhash", version = "0.0.0-20240305-5ad3bf8.bcr.1")
+bazel_dep(name = "jq.bzl", version = "0.6.1")
 bazel_dep(name = "llvm", version = "0.8.11")
 bazel_dep(name = "platforms", version = "1.1.0")
 bazel_dep(name = "protobuf", version = "35.1")
@@ -16,7 +16,6 @@ bazel_dep(name = "rules_oci", version = "2.3.0")
 bazel_dep(name = "rules_pkg", version = "1.2.0")
 bazel_dep(name = "rules_proto_grpc_python", version = "5.8.0")
 bazel_dep(name = "rules_python", version = "2.1.0")
-bazel_dep(name = "tar.bzl", version = "0.10.5")
 
 single_version_override(
     module_name = "aspect_rules_py",
@@ -29,11 +28,17 @@ single_version_override(
 
 single_version_override(
     module_name = "envoy_api",
-    patch_strip = 1,
-    patches = [
-        "//patches:envoy_api_bzlmod.patch",
-    ],
-    version = "0.0.0-20251216-6ef568c",
+    version = "0.0.0-20260130-84e8436",
+)
+
+single_version_override(
+    module_name = "googleapis",
+    version = "0.0.0-20260623-b6f9ff05",
+)
+
+single_version_override(
+    module_name = "highwayhash",
+    version = "0.0.0-20240305-5ad3bf8.bcr.1",
 )
 
 register_toolchains("@llvm//toolchain:all")

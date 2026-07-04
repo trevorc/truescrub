@@ -4,13 +4,10 @@ from google.protobuf import json_format
 from truescrub.db import execute_one
 from truescrub.proto.profile_pb2 import AchievementConfiguration, Achievement
 
-
-def load_achievements() -> List[Achievement]:
-  with open('truescrub/proto/achievements.json', 'r') as f:
-    return json_format.Parse(f.read(), AchievementConfiguration()).achievements
+from pathlib import Path
 
 
-ACHIEVEMENTS = load_achievements()
+ACHIEVEMENTS = json_format.Parse(Path('truescrub/proto/achievements.json').read_text(), AchievementConfiguration()).achievements
 
 
 def get_achievement_stats(skill_db, player_id):

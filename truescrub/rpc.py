@@ -212,17 +212,15 @@ class ProfileServiceServicer(profile_service_pb2_grpc.ProfileServiceServicer):
     )
 
     season_ratings = {}
-    season_averages = db.get_player_round_stat_averages_by_season(
-      conn, request.player_id)
-    for season_id, components in season_averages.items():
-      impact_rating = skills_by_season[season_id].impact_rating
+    for season_id, components in db.get_player_round_stat_averages_by_season(
+        conn, request.player_id).items():
       season_ratings[season_id] = profile_service_pb2.RatingComponents(
         mvp_rating=components['average_mvps'],
         kill_rating=components['average_kills'],
         death_rating=components['average_deaths'],
         damage_rating=components['average_damage'],
         kas_rating=components['average_kas'],
-        impact_rating=impact_rating,
+        impact_rating=(skills_by_season[season_id].impact_rating),
       )
 
     player_achievements = achievements.get_achievements(conn, request.player_id)

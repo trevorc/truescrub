@@ -1,5 +1,5 @@
 load("@aspect_rules_esbuild//esbuild:defs.bzl", "esbuild")
-load("@aspect_rules_js//js:defs.bzl", "js_binary")
+load("@aspect_rules_js//js:defs.bzl", "js_binary", "js_library")
 load("@aspect_rules_py//py:defs.bzl", "py_binary", "py_library", "py_test")
 load("@bazel_lib//lib:directory_path.bzl", "directory_path")
 load("@bazel_skylib//rules:run_binary.bzl", "run_binary")
@@ -9,9 +9,12 @@ load("//client:rules/esbuild.bzl", "esbuild_metadata")
 load("//client:rules/tailwind.bzl", "tailwind_css")
 load("//client:ts_library.bzl", "ts_library")
 
-exports_files([
-    "esbuild.config.mjs",
-])
+
+js_library(
+    name = "file_mock",
+    srcs = ["fileMock.js"],
+    visibility = ["//client:__subpackages__"],
+)
 
 ts_library(
     name = "client_ts",
@@ -103,6 +106,7 @@ pkg_tar(
 pkg_tar(
     name = "client_public_layer",
     srcs = [
+        "//client/public:favicon.png",
         "//client/public:index.html",
     ],
     package_dir = "/public",
@@ -124,8 +128,8 @@ oci_image(
     entrypoint = ["/static-web-server"],
     tars = [
         ":sws_config_layer",
-        ":client_layer",
         ":client_public_layer",
+        ":client_layer",
     ],
 )
 
@@ -135,8 +139,8 @@ oci_image(
     entrypoint = ["/static-web-server"],
     tars = [
         ":sws_config_layer",
-        ":client_layer",
         ":client_public_layer",
+        ":client_layer",
     ],
 )
 

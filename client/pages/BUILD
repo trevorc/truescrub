@@ -1,3 +1,4 @@
+load("@aspect_rules_jest//jest:defs.bzl", "jest_test")
 load("//client:ts_library.bzl", "ts_library")
 
 ts_library(
@@ -129,7 +130,7 @@ ts_library(
         "//client/components:error_state",
         "//client/components:globals",
         "//client/components:loading_state",
-        "//client/utils:skill_group",
+        ":skill_group",
         "//proto:common_js",
         "//proto:leaderboard_service_js",
         "//proto:season_service_js",
@@ -183,7 +184,7 @@ ts_library(
         "//:node_modules/redux",
         "//client/components:error_state",
         "//client/components:loading_state",
-        "//client/utils:skill_group",
+        ":skill_group",
         "//proto:common_js",
         "//proto:profile_service_js",
         "//proto:season_service_js",
@@ -200,6 +201,7 @@ ts_library(
         "chickens/404_chicken_1.png",
         "chickens/404_chicken_2.png",
         "chickens/404_chicken_3.png",
+        "chickens/404_chicken_4.png",
     ],
     visibility = ["//client:__subpackages__"],
     deps = [
@@ -210,4 +212,80 @@ ts_library(
         "//:node_modules/react-router-dom",
         "//client/components:globals",
     ],
+)
+
+ts_library(
+    name = "leaderboard_page_test_lib",
+    srcs = ["LeaderboardPage.test.ts"],
+    tsconfig = "//:tsconfig_test",
+    deps = [
+        ":leaderboard_page",
+        "//:node_modules/@types/jest",
+    ],
+)
+
+jest_test(
+    name = "leaderboard_page_test",
+    config = "//:jest_config",
+    data = [
+        ":leaderboard_page_test_lib",
+        "//:node_modules/ts-jest",
+        "//:tsconfig",
+        "//client:file_mock",
+    ],
+    node_modules = "//:node_modules",
+)
+
+ts_library(
+    name = "profile_page_test_lib",
+    srcs = ["ProfilePage.test.ts"],
+    tsconfig = "//:tsconfig_test",
+    deps = [
+        ":profile_page",
+        "//:node_modules/@types/jest",
+    ],
+)
+
+jest_test(
+    name = "profile_page_test",
+    config = "//:jest_config",
+    data = [
+        ":profile_page_test_lib",
+        "//:node_modules/ts-jest",
+        "//:tsconfig",
+        "//client:file_mock",
+    ],
+    node_modules = "//:node_modules",
+)
+
+ts_library(
+    name = "skill_group",
+    srcs = ["skill_group.ts"],
+    visibility = ["//client:__subpackages__"],
+    deps = [
+        "//truescrub/proto:profile_js",
+    ],
+)
+
+ts_library(
+    name = "skill_group_test_lib",
+    srcs = ["skill_group.test.ts"],
+    tsconfig = "//:tsconfig_test",
+    deps = [
+        ":skill_group",
+        "//:node_modules/@types/jest",
+        "//truescrub/proto:profile_js",
+    ],
+)
+
+jest_test(
+    name = "skill_group_test",
+    config = "//:jest_config",
+    data = [
+        ":skill_group_test_lib",
+        "//:node_modules/ts-jest",
+        "//:tsconfig",
+        "//client:file_mock",
+    ],
+    node_modules = "//:node_modules",
 )

@@ -39,6 +39,9 @@ ts_proto_library(
     copy_files = False,
     node_modules = "//:node_modules",
     proto = ":profile_proto",
+    protoc_gen_options = {
+        "js_import_style": "legacy_commonjs",
+    },
     visibility = ["//client:__subpackages__"],
 )
 

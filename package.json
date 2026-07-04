@@ -17,10 +17,15 @@
     "@bufbuild/protoc-gen-es": "2.12.0",
     "@connectrpc/protoc-gen-connect-query": "2.2.0",
     "@tailwindcss/cli": "^4.0.0",
+    "@types/jest": "^30.0.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@types/react-router-dom": "^5.3.3",
+    "jest": "^30.4.2",
+    "jest-cli": "^30.4.2",
+    "jest-junit": "^17.0.0",
     "tailwindcss": "^4.0.0",
+    "ts-jest": "^29.4.11",
     "typescript": "5.5.4"
   },
   "pnpm": {

@@ -21,7 +21,7 @@ import {TeamRecordsTab} from 'client/pages/TeamRecordsTab.js';
 import {fromJson} from '@bufbuild/protobuf';
 import {SkillGroupConfigurationSchema} from 'truescrub/proto/profile_pb.js';
 import skillGroupsJson from 'truescrub/proto/skill_groups.json';
-import {skillGroupName} from 'client/utils/skill_group.js';
+import {skillGroupName} from 'client/pages/skill_group.js';
 
 import achievementsJson from 'truescrub/proto/achievements.json';
 import {AchievementConfigurationSchema} from 'truescrub/proto/profile_pb.js';
@@ -83,8 +83,75 @@ const ACH_IMAGES: Record<string, string> = {
 
 const config = fromJson(AchievementConfigurationSchema, achievementsJson);
 
-function getLocalTimezoneOffset() {
-  const offsetMinutes = -new Date().getTimezoneOffset();
+export interface TierConfig {
+  name: string;
+  threshold: number;
+}
+
+export interface AchievementConfig {
+  id: string;
+  name: string;
+  tiers: TierConfig[];
+}
+
+export interface AchievementProgress {
+  achievementId: string;
+  currentValue: number;
+}
+
+export interface EnrichedTier extends TierConfig {
+  earned: boolean;
+}
+
+export interface EnrichedAchievement extends AchievementConfig {
+  currentValue: number;
+  tiers: EnrichedTier[];
+  highestEarnedTier?: EnrichedTier;
+}
+
+export interface AchievementCalculationResult {
+  enrichedAchievements: EnrichedAchievement[];
+  earnedCount: number;
+  totalTiers: number;
+}
+
+export function calculateAchievements(
+    configAchievements: AchievementConfig[],
+    playerProgress: AchievementProgress[]
+): AchievementCalculationResult {
+  let earnedCount = 0;
+  let totalTiers = 0;
+
+  const enrichedAchievements = configAchievements.map(def => {
+    const progress = playerProgress.find(a => a.achievementId === def.id);
+    const currentValue = progress ? progress.currentValue : 0;
+
+    const tiers = def.tiers.map(tier => {
+      totalTiers++;
+      const earned = currentValue >= tier.threshold;
+      if (earned) earnedCount++;
+      return {...tier, earned};
+    });
+
+    const highestEarnedTier = [...tiers].reverse().find(t => t.earned);
+
+    return {
+      ...def,
+      currentValue,
+      tiers,
+      highestEarnedTier
+    };
+  });
+
+  return {
+    enrichedAchievements,
+    earnedCount,
+    totalTiers
+  };
+}
+
+export function getLocalTimezoneOffset(date: Date = new Date()) {
+  const offsetMinutes = -date.getTimezoneOffset();
   const sign = offsetMinutes >= 0 ? '+' : '-';
   const absMinutes = Math.abs(offsetMinutes);
   const hours = String(Math.floor(absMinutes / 60)).padStart(2, '0');
@@ -162,29 +229,11 @@ export function ProfilePage() {
       .map(Number)
       .sort((a: any, b: any) => b - a);
 
-  let earnedCount = 0;
-  let totalTiers = 0;
-
-  const enrichedAchievements = config.achievements.map((def: any) => {
-    const progress = achievements.find(a => a.achievementId === def.id);
-    const currentValue = progress ? progress.currentValue : 0;
-
-    const tiers = def.tiers.map((tier: any) => {
-      totalTiers++;
-      const earned = currentValue >= tier.threshold;
-      if (earned) earnedCount++;
-      return {...tier, earned};
-    });
-
-    const highestEarnedTier = [...tiers].reverse().find(t => t.earned);
-
-    return {
-      ...def,
-      currentValue,
-      tiers,
-      highestEarnedTier
-    };
-  });
+  const {
+    enrichedAchievements,
+    earnedCount,
+    totalTiers
+  } = calculateAchievements(config.achievements as any[], achievements as any[]);
 
   const CustomTooltip = ({active, payload, label}: any) => {
     if (active && payload && payload.length) {

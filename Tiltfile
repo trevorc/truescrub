@@ -22,7 +22,7 @@ def bazel_build(bazel_target, image_ref, registry):
 
 REGISTRY = "k3d-registry.localhost:5000"
 
-bazel_build("//container:push", "truescrub", REGISTRY)
+bazel_build("//truescrub:push", "truescrub", REGISTRY)
 bazel_build("//client:push", "truescrub-client", REGISTRY)
 
 # Generate local dev certificates if they don't exist
