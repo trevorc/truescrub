@@ -289,3 +289,47 @@ jest_test(
     ],
     node_modules = "//:node_modules",
 )
+
+ts_library(
+    name = "accolades_page_test_lib",
+    srcs = ["AccoladesPage.test.ts"],
+    tsconfig = "//:tsconfig_test",
+    deps = [
+        ":accolades_page",
+        "//:node_modules/@types/jest",
+    ],
+)
+
+jest_test(
+    name = "accolades_page_test",
+    config = "//:jest_config",
+    data = [
+        ":accolades_page_test_lib",
+        "//:node_modules/ts-jest",
+        "//:tsconfig",
+        "//client:file_mock",
+    ],
+    node_modules = "//:node_modules",
+)
+
+ts_library(
+    name = "skill_groups_page_test_lib",
+    srcs = ["SkillGroupsPage.test.ts"],
+    tsconfig = "//:tsconfig_test",
+    deps = [
+        ":skill_groups_page",
+        "//:node_modules/@types/jest",
+    ],
+)
+
+jest_test(
+    name = "skill_groups_page_test",
+    config = "//:jest_config",
+    data = [
+        ":skill_groups_page_test_lib",
+        "//:node_modules/ts-jest",
+        "//:tsconfig",
+        "//client:file_mock",
+    ],
+    node_modules = "//:node_modules",
+)

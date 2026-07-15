@@ -12,16 +12,27 @@ import {LoadingState} from "client/components/LoadingState.js";
 
 type AccoladeWithPlayer = { accolade: Accolade; playerName: string };
 
+export function formatMatchDayString(year: number, month: number, day: number): string {
+  const m = String(month).padStart(2, '0');
+  const d = String(day).padStart(2, '0');
+  return `${year}-${m}-${d}`;
+}
+
+export function parseMatchDayString(dateStr: string | null | undefined): {year: number, month: number, day: number} | undefined {
+  if (!dateStr) return undefined;
+  const parts = dateStr.split('-');
+  if (parts.length !== 3) return undefined;
+  const [year, month, day] = parts.map(Number);
+  if (isNaN(year) || isNaN(month) || isNaN(day)) return undefined;
+  return {year, month, day};
+}
+
 export function AccoladesPage() {
   const location = useLocation();
   const navigate = useNavigate();
 
   const matchDaysQuery = useQuery(listMatchDays, {timezone: "-05:00"}, {
-    select: (data) => data.matchDays.map(d => {
-      const m = String(d.month).padStart(2, '0');
-      const day = String(d.day).padStart(2, '0');
-      return `${d.year}-${m}-${day}`;
-    })
+    select: (data) => data.matchDays.map(d => formatMatchDayString(d.year, d.month, d.day))
   });
 
   const matchDays = matchDaysQuery.data ?? [];
@@ -38,11 +49,7 @@ export function AccoladesPage() {
     }
   }, [currentDayString, hash, navigate]);
 
-  const dateInput = useMemo(() => {
-    if (!currentDayString) return undefined;
-    const [year, month, day] = currentDayString.split('-').map(Number);
-    return {year, month, day};
-  }, [currentDayString]);
+  const dateInput = useMemo(() => parseMatchDayString(currentDayString), [currentDayString]);
 
   const highlightsQuery = useQuery(
       getDailyHighlights,

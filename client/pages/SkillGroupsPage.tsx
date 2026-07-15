@@ -33,6 +33,15 @@ const RANKS: Record<string, string> = {
   "Plastic III": rank_plastic_iii,
 };
 
+export function getSkillGroupDisplayBounds(
+    group: { lowerBound: number },
+    nextGroup?: { lowerBound: number }
+): { lowerBound: string; upperBound: string } {
+  const lowerBound = group.lowerBound === Number.NEGATIVE_INFINITY ? '-∞' : String(group.lowerBound);
+  const upperBound = nextGroup ? String(nextGroup.lowerBound) : '∞';
+  return {lowerBound, upperBound};
+}
+
 export function SkillGroupsPage() {
   const config = React.useMemo(() => fromJson(SkillGroupConfigurationSchema, skillGroupsJson), []);
 
@@ -55,8 +64,7 @@ export function SkillGroupsPage() {
               <tbody className="divide-y divide-dark-border/50 bg-dark-bg/30">
               {config.skillGroups.map((group, index) => {
                 const nextGroup = config.skillGroups[index + 1];
-                const lowerBound = group.lowerBound === Number.NEGATIVE_INFINITY ? '-∞' : group.lowerBound;
-                const upperBound = nextGroup ? nextGroup.lowerBound : '∞';
+                const {lowerBound, upperBound} = getSkillGroupDisplayBounds(group, nextGroup);
                 
                 return (
                     <tr key={group.name} className="hover:bg-slate-800/50 transition-colors group">

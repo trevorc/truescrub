@@ -49,7 +49,7 @@ def create_test_db(
 
   for i in range(1, num_rounds + 1):
     map_index = i
-    current_map = None
+    current_map = ''
     for map_name, count in map_distribution.items():
       if map_index <= count:
         current_map = map_name

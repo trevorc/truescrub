@@ -102,7 +102,7 @@ def test_roundtrip(sqlite_db_path, tmp_path):
       normalize_proto(orig_proto)
       normalize_proto(roundtrip_proto)
 
-      assert orig_proto == roundtrip_proto  # Compare protobufs to ignore missing optional JSON fields
+      assert orig_proto == roundtrip_proto
 
 
 def verify_file_roundtrip(input_path: pathlib.Path, is_db: bool):

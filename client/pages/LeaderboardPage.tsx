@@ -158,7 +158,7 @@ export function LeaderboardPage() {
         </div>
 
         {loading && (
-            <LoadingState message="Loading leaderboard..." />
+            <LoadingState message="Loading leaderboard..."/>
         )}
 
         {error && !loading && (

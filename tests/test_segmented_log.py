@@ -8,7 +8,6 @@ from unittest import mock
 
 from truescrub.statewriter import GameStateLog
 from truescrub.statewriter.segmented_log import NoSuchRecordException
-from truescrub.statewriter.segmented_log import Segment
 
 SAMPLE_GAME_STATE_ENTRY = text_format.Parse('''
 game_state_id: 1
@@ -181,8 +180,6 @@ class TestStateLogInteraction(unittest.TestCase):
 
     self.assertGreater(mock_flock.call_count, 1)
 
-
-
   def test_lock_released_on_exception(self):
     """Writer must release both threading and fcntl locks when an exception
     is raised inside the context manager, so the next writer can proceed."""
@@ -207,5 +204,3 @@ class TestStateLogInteraction(unittest.TestCase):
 
 if __name__ == '__main__':
   raise SystemExit(pytest.main(["-xv", __file__]))
-
-

@@ -264,6 +264,19 @@ py_test(
 )
 
 py_test(
+    name = "test_profile_service",
+    srcs = ["test_profile_service.py"],
+    deps = [
+        ":db_test_utils",
+        "//proto:common_py_pb2",
+        "//proto:profile_service_py_pb2_grpc",
+        "//truescrub:rpc",
+        "@pypi//grpcio",
+        "@pypi//pytest",
+    ],
+)
+
+py_test(
     name = "test_match_days",
     srcs = ["test_match_days.py"],
     deps = [
@@ -288,6 +301,7 @@ test_suite(
         "test_matchmaking",
         "test_matchmaking_service",
         "test_models",
+        "test_profile_service",
         "test_recalculate",
         "test_riegeli_loader",
         "test_rpc",

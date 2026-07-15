@@ -294,16 +294,14 @@ def get_player_round_stat_averages(skill_db, player_id) -> dict:
         average_damage,
         average_kas,
     ) = execute_one(skill_db, '''
-    SELECT AVG((r.mvp = rs.player_id) * 1.0)
-         , AVG(rs.kills)
-         , -AVG(rs.survived - 1.0)
-         , AVG(rs.damage)
-         , AVG((rs.kills OR rs.survived OR rs.assists) * 1.0)
-    FROM round_stats rs
-    JOIN rounds r
-      ON rs.round_id = r.round_id
-    WHERE rs.player_id = ?
-    GROUP BY rs.player_id
+    SELECT AVG(mvp_rating)
+         , AVG(kill_rating)
+         , -AVG(death_rating)
+         , AVG(damage_rating)
+         , AVG(kas_rating)
+    FROM rating_components
+    WHERE player_id = ?
+    GROUP BY player_id
     ''', (player_id,))
 
     return {
@@ -320,17 +318,17 @@ def get_player_round_stat_averages_by_season(
     # Call me when SQLite supports WITH ROLLUP
     stat_rows = execute(skill_db, '''
     SELECT r.season_id
-         , AVG((r.mvp = rs.player_id) * 1.0)
-         , AVG(rs.kills)
-         , -AVG(rs.survived - 1.0)
-         , AVG(rs.damage)
-         , AVG((rs.kills OR rs.survived OR rs.assists) * 1.0)
-    FROM round_stats rs
+         , AVG(rc.mvp_rating)
+         , AVG(rc.kill_rating)
+         , -AVG(rc.death_rating)
+         , AVG(rc.damage_rating)
+         , AVG(rc.kas_rating)
+    FROM rating_components rc
     JOIN rounds r
-      ON rs.round_id = r.round_id
-    WHERE rs.player_id = ?
+      ON rc.round_id = r.round_id
+    WHERE rc.player_id = ?
     GROUP BY r.season_id
-           , rs.player_id
+           , rc.player_id
     ORDER BY season_id
     ''', (player_id,))
 

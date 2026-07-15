@@ -67,8 +67,12 @@ def _get_day(request, context: grpc.ServicerContext) -> datetime.datetime:
     return context.abort(grpc.StatusCode.INVALID_ARGUMENT, "Invalid date")
 
 
-def make_date(year: int, month: int, day: int) -> common_pb2.Date:
+def _make_date(year: int, month: int, day: int) -> common_pb2.Date:
   return common_pb2.Date(year=year, month=month, day=day)
+
+
+def _date_to_pb2(dt: datetime.date) -> common_pb2.Date:
+  return common_pb2.Date(year=dt.year, month=dt.month, day=dt.day)
 
 
 class HighlightsServiceServicer(
@@ -77,8 +81,7 @@ class HighlightsServiceServicer(
   def ListMatchDays(self, request, context: grpc.ServicerContext):
     return highlights_service_pb2.ListMatchDaysResponse(
       match_days=[
-        make_date(day.year, day.month, day.day)
-        for day in db.get_match_days(
+        _date_to_pb2(day) for day in db.get_match_days(
           grpc_db_conn.get(), _get_timezone(request, context))
       ])
 
@@ -220,7 +223,7 @@ class ProfileServiceServicer(profile_service_pb2_grpc.ProfileServiceServicer):
         death_rating=components['average_deaths'],
         damage_rating=components['average_damage'],
         kas_rating=components['average_kas'],
-        impact_rating=(skills_by_season[season_id].impact_rating),
+        impact_rating=skills_by_season[season_id].impact_rating,
       )
 
     player_achievements = achievements.get_achievements(conn, request.player_id)
@@ -263,7 +266,7 @@ class ProfileServiceServicer(profile_service_pb2_grpc.ProfileServiceServicer):
     for date_str, player_history in skill_history.items():
       year, month, day = map(int, date_str.split('-'))
       history_points.append(profile_service_pb2.SkillHistoryPoint(
-        date=make_date(year, month, day),
+        date=_make_date(year, month, day),
         skill=common_pb2.SkillInfo(
           mmr=player_history.mmr,
           mu=player_history.skill.mu,
@@ -276,30 +279,27 @@ class ProfileServiceServicer(profile_service_pb2_grpc.ProfileServiceServicer):
 
   def GetPlayerRounds(self, request, context: grpc.ServicerContext):
     conn = grpc_db_conn.get()
-
     rounds = db.get_player_rounds(conn, request.player_id)
-
-    round_records = []
-    for rnd in rounds:
-      dt = datetime.datetime.fromisoformat(rnd['created_at'])
-      round_records.append(profile_service_pb2.RoundRecord(
-        created_at=make_date(dt.year, dt.month, dt.day),
+    return profile_service_pb2.GetPlayerRoundsResponse(rounds=[
+      profile_service_pb2.RoundRecord(
+        created_at=_date_to_pb2(
+          datetime.datetime.fromisoformat(rnd['created_at']).date()),
         winning_team_names=rnd['winning_team'],
-        losing_team_names=rnd['losing_team']
-      ))
-
-    return profile_service_pb2.GetPlayerRoundsResponse(rounds=round_records)
+        losing_team_names=rnd['losing_team'])
+      for rnd in rounds
+    ])
 
   def GetPlayerTeamRecords(self, request, context: grpc.ServicerContext):
     records = db.get_player_team_records(grpc_db_conn.get(), request.player_id)
 
-    team_records = []
-    for rec in records:
-      team_records.append(profile_service_pb2.TeamRecord(
+    team_records = [
+      profile_service_pb2.TeamRecord(
         team_members=rec['team_members'],
         rounds_won=rec['rounds_won'],
         rounds_lost=rec['rounds_lost']
-      ))
+      )
+      for rec in records
+    ]
 
     team_records.sort(
       key=lambda r: r.rounds_won + r.rounds_lost,
