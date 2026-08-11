@@ -59,7 +59,7 @@ use_repo(uv, "pypi")
 oci = use_extension("@rules_oci//oci:extensions.bzl", "oci")
 oci.pull(
     name = "distroless_cc",
-    digest = "sha256:7ee09f36862efbdbf70422db263e411c2618409ca46faa555bd5b636155307df",
+    digest = "sha256:6e1871c34683dc9ee996d13084497783fd98ac0200213d0826625f4e9d4be1d0",
     image = "gcr.io/distroless/cc-debian12",
     platforms = [
         "linux/amd64",
@@ -68,7 +68,7 @@ oci.pull(
 )
 oci.pull(
     name = "sws_base",
-    digest = "sha256:6acea6260b14e08dda986361e42640082fbfaab8d88c327de532bb13a3b22994",
+    digest = "sha256:2c1a7c3e0feaea5859307403b74e1c575f3ec1499094fc077344173d11abaae2",
     image = "docker.io/joseluisq/static-web-server",
     platforms = [
         "linux/amd64",
