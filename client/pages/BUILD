@@ -119,6 +119,7 @@ ts_library(
     ],
     visibility = ["//client:__subpackages__"],
     deps = [
+        ":skill_group",
         "//:node_modules/@bufbuild/protobuf",
         "//:node_modules/@connectrpc/connect-query",
         "//:node_modules/@tanstack/react-query",
@@ -130,7 +131,6 @@ ts_library(
         "//client/components:error_state",
         "//client/components:globals",
         "//client/components:loading_state",
-        ":skill_group",
         "//proto:common_js",
         "//proto:leaderboard_service_js",
         "//proto:season_service_js",
@@ -173,6 +173,7 @@ ts_library(
     ],
     visibility = ["//client:__subpackages__"],
     deps = [
+        ":skill_group",
         "//:node_modules/@connectrpc/connect-query",
         "//:node_modules/@tanstack/react-query",
         "//:node_modules/@types/react",
@@ -184,7 +185,6 @@ ts_library(
         "//:node_modules/redux",
         "//client/components:error_state",
         "//client/components:loading_state",
-        ":skill_group",
         "//proto:common_js",
         "//proto:profile_service_js",
         "//proto:season_service_js",

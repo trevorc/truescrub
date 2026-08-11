@@ -41,15 +41,11 @@ single_version_override(
     version = "0.0.0-20240305-5ad3bf8.bcr.1",
 )
 
-register_toolchains("@llvm//toolchain:all")
-
 interpreters = use_extension("@aspect_rules_py//py:extensions.bzl", "python_interpreters")
 interpreters.toolchain(
     python_version = "3.12",
 )
 use_repo(interpreters, "python_interpreters")
-
-register_toolchains("@python_interpreters//:all")
 
 uv = use_extension("@aspect_rules_py//uv:extensions.bzl", "uv")
 uv.declare_hub(hub_name = "pypi")
@@ -113,3 +109,12 @@ rules_ts_ext = use_extension(
 )
 rules_ts_ext.deps()
 use_repo(rules_ts_ext, "npm_typescript")
+
+##############
+# Toolchains #
+##############
+
+register_toolchains(
+    "@llvm//toolchain:all",
+    "@python_interpreters//:all",
+)

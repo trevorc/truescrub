@@ -1,14 +1,11 @@
 load("@aspect_rules_esbuild//esbuild:defs.bzl", "esbuild")
 load("@aspect_rules_js//js:defs.bzl", "js_binary", "js_library")
-load("@aspect_rules_py//py:defs.bzl", "py_binary", "py_library", "py_test")
 load("@bazel_lib//lib:directory_path.bzl", "directory_path")
-load("@bazel_skylib//rules:run_binary.bzl", "run_binary")
 load("@rules_oci//oci:defs.bzl", "oci_image", "oci_image_index", "oci_push")
 load("@rules_pkg//pkg:tar.bzl", "pkg_tar")
 load("//client:rules/esbuild.bzl", "esbuild_metadata")
 load("//client:rules/tailwind.bzl", "tailwind_css")
 load("//client:ts_library.bzl", "ts_library")
-
 
 js_library(
     name = "file_mock",
