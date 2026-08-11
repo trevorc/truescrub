@@ -331,6 +331,5 @@ py_test(
         "//proto:season_service_py_pb2_grpc",
         "//truescrub:rpc",
         "@pypi//pytest",
-        "@rules_python//python/runfiles",
     ],
 )
