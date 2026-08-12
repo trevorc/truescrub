@@ -14,7 +14,10 @@ package(
 py_library(
     name = "envconfig",
     srcs = ["envconfig.py"],
-    visibility = ["//truescrub:__subpackages__"],
+    visibility = [
+        "//tests:__pkg__",
+        "//truescrub:__subpackages__",
+    ],
 )
 
 py_library(
@@ -108,6 +111,7 @@ py_library(
         ":matchmaking",
         ":models",
         "//proto:common_py_pb2",
+        "//proto:config_service_py_pb2_grpc",
         "//proto:highlights_service_py_pb2_grpc",
         "//proto:leaderboard_service_py_pb2_grpc",
         "//proto:matchmaking_service_py_pb2_grpc",
@@ -128,6 +132,7 @@ py_library(
         ":interceptors",
         ":queue_consumer",
         ":rpc",
+        "//proto:config_service_py_pb2_grpc",
         "//proto:highlights_service_py_pb2_grpc",
         "//proto:leaderboard_service_py_pb2_grpc",
         "//proto:matchmaking_service_py_pb2_grpc",

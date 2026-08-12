@@ -21,6 +21,7 @@ from proto import leaderboard_service_pb2_grpc
 from proto import matchmaking_service_pb2_grpc
 from proto import profile_service_pb2_grpc
 from proto import season_service_pb2_grpc
+from proto import config_service_pb2_grpc
 from truescrub import db
 from truescrub.envconfig import LOG_LEVEL, SHARED_KEY
 from truescrub.interceptors import TimerInterceptor, DatabaseInterceptor
@@ -30,7 +31,8 @@ from truescrub.rpc import (
   MatchmakingServiceServicer,
   HighlightsServiceServicer,
   LeaderboardServiceServicer,
-  ProfileServiceServicer
+  ProfileServiceServicer,
+  ConfigServiceServicer
 )
 from truescrub.statewriter.state_writer import GameStateWriter, \
   RiegeliGameStateWriter
@@ -260,6 +262,8 @@ def main(args: List[str]):
       LeaderboardServiceServicer(), grpc_service.server)
     profile_service_pb2_grpc.add_ProfileServiceServicer_to_server(
       ProfileServiceServicer(), grpc_service.server)
+    config_service_pb2_grpc.add_ConfigServiceServicer_to_server(
+      ConfigServiceServicer(), grpc_service.server)
 
     futures[executor.submit(updater_service)] = updater_service
     futures[executor.submit(state_writer_service)] = state_writer_service

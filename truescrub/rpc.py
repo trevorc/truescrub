@@ -16,7 +16,9 @@ from proto import profile_service_pb2
 from proto import profile_service_pb2_grpc
 from proto import season_service_pb2
 from proto import season_service_pb2_grpc
-from truescrub import achievements, db, highlights, models
+from proto import config_service_pb2
+from proto import config_service_pb2_grpc
+from truescrub import achievements, db, envconfig, highlights, models
 from truescrub.interceptors import grpc_db_conn
 from truescrub.matchmaking import compute_matches, estimated_skill_range, \
   MAX_PLAYERS_PER_TEAM
@@ -37,6 +39,13 @@ def parse_timezone(tz: str) -> datetime.timezone:
     minutes=offset_signum * int(minutes)
   )
   return datetime.timezone(offset=offset)
+
+
+class ConfigServiceServicer(config_service_pb2_grpc.ConfigServiceServicer):
+  def GetBrandConfig(self, request, context: grpc.ServicerContext):
+    return config_service_pb2.BrandConfig(
+      site_name=envconfig.SITE_NAME
+    )
 
 
 class SeasonServiceServicer(season_service_pb2_grpc.SeasonServiceServicer):

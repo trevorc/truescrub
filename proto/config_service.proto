@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package truescrub;
+
+message GetBrandConfigRequest {}
+
+message BrandConfig {
+    string site_name = 1;
+}
+
+service ConfigService {
+    rpc GetBrandConfig(GetBrandConfigRequest) returns (BrandConfig);
+}

@@ -155,3 +155,13 @@ ts_proto_library(
     },
     deps = [":common_js"],
 )
+
+proto_library(
+    name = "config_service_proto",
+    srcs = ["config_service.proto"],
+)
+
+python_grpc_library(
+    name = "config_service_py_pb2_grpc",
+    protos = [":config_service_proto"],
+)

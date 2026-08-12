@@ -237,6 +237,17 @@ py_test(
 )
 
 py_test(
+    name = "test_config_service",
+    srcs = ["test_config_service.py"],
+    deps = [
+        "//proto:config_service_py_pb2_grpc",
+        "//truescrub:envconfig",
+        "//truescrub:rpc",
+        "@pypi//pytest",
+    ],
+)
+
+py_test(
     name = "test_matchmaking_service",
     srcs = ["test_matchmaking_service.py"],
     deps = [
@@ -290,6 +301,7 @@ test_suite(
     name = "tests",
     tests = [
         "test_accolades",
+        "test_config_service",
         "test_gsi_http_service",
         "test_highlights",
         "test_highlights_service",
