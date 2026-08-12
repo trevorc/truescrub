@@ -1,5 +1,9 @@
 import React, {useState} from 'react';
-import {useQuery} from '@connectrpc/connect-query';
+import type {QueryClient} from '@tanstack/react-query';
+import {useQuery} from '@tanstack/react-query';
+import {createQueryOptions} from '@connectrpc/connect-query';
+import {transport} from 'client/api/truescrub.js';
+import type {LoaderFunctionArgs} from 'react-router-dom';
 import {Link, useParams} from 'react-router-dom';
 import {getLeaderboard} from 'proto/leaderboard_service-LeaderboardService_connectquery.js';
 import {getAvailableSeasons} from 'proto/season_service-SeasonService_connectquery.js';
@@ -83,6 +87,18 @@ function PercentileEstimate({mu, sigma, zScore}: {
   );
 }
 
+export const leaderboardQueryOptions = (seasonId?: number) => createQueryOptions(getLeaderboard, {seasonId}, {transport});
+export const availableSeasonsQueryOptions = () => createQueryOptions(getAvailableSeasons, {}, {transport});
+
+export const leaderboardLoader = (queryClient: QueryClient) => async ({params}: LoaderFunctionArgs) => {
+  const seasonId = params.seasonId ? parseInt(params.seasonId, 10) : undefined;
+  await Promise.all([
+    queryClient.ensureQueryData(leaderboardQueryOptions(seasonId)),
+    queryClient.ensureQueryData(availableSeasonsQueryOptions())
+  ]);
+  return null;
+};
+
 export function LeaderboardPage() {
   const {seasonId} = useParams();
   const parsedSeasonId = seasonId ? parseInt(seasonId, 10) : undefined;
@@ -90,11 +106,8 @@ export function LeaderboardPage() {
   const [zScore, setZScore] = useState(2.0);
   const skillGroupsConfig = React.useMemo(() => fromJson(SkillGroupConfigurationSchema, skillGroupsJson), []);
 
-  const leaderboardQuery = useQuery(getLeaderboard, {
-    seasonId: parsedSeasonId,
-  });
-
-  const seasonsQuery = useQuery(getAvailableSeasons, {});
+  const leaderboardQuery = useQuery(leaderboardQueryOptions(parsedSeasonId));
+  const seasonsQuery = useQuery(availableSeasonsQueryOptions());
   const rawPlayers = leaderboardQuery.data?.leaderboard || [];
   const seasons = seasonsQuery.data?.availableSeasons || [];
   const loading = leaderboardQuery.isLoading;

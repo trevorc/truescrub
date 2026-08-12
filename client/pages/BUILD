@@ -12,6 +12,8 @@ ts_library(
     visibility = ["//client:__subpackages__"],
     deps = [
         "//:node_modules/@connectrpc/connect-query",
+        "//:node_modules/@tanstack/react-query",
+        "//client/api:api",
         "//:node_modules/@types/react",
         "//:node_modules/@types/react-dom",
         "//:node_modules/react",
@@ -31,6 +33,8 @@ ts_library(
     visibility = ["//client:__subpackages__"],
     deps = [
         "//:node_modules/@connectrpc/connect-query",
+        "//:node_modules/@tanstack/react-query",
+        "//client/api:api",
         "//:node_modules/@types/react",
         "//:node_modules/@types/react-dom",
         "//:node_modules/react",
@@ -49,6 +53,8 @@ ts_library(
     visibility = ["//client:__subpackages__"],
     deps = [
         "//:node_modules/@connectrpc/connect-query",
+        "//:node_modules/@tanstack/react-query",
+        "//client/api:api",
         "//:node_modules/@types/react",
         "//:node_modules/@types/react-dom",
         "//:node_modules/react",
@@ -116,6 +122,8 @@ ts_library(
         ":skill_group",
         "//:node_modules/@bufbuild/protobuf",
         "//:node_modules/@connectrpc/connect-query",
+        "//:node_modules/@tanstack/react-query",
+        "//client/api:api",
         "//:node_modules/@types/react",
         "//:node_modules/@types/react-dom",
         "//:node_modules/react",
@@ -168,6 +176,8 @@ ts_library(
     deps = [
         ":skill_group",
         "//:node_modules/@connectrpc/connect-query",
+        "//:node_modules/@tanstack/react-query",
+        "//client/api:api",
         "//:node_modules/@types/react",
         "//:node_modules/@types/react-dom",
         "//:node_modules/react",

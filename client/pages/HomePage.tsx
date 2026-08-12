@@ -1,13 +1,23 @@
 import {Link} from "react-router-dom";
-import {useQuery} from "@connectrpc/connect-query";
+import type {QueryClient} from "@tanstack/react-query";
+import {useQuery} from "@tanstack/react-query";
+import {createQueryOptions} from "@connectrpc/connect-query";
 import {getAvailableSeasons} from "proto/season_service-SeasonService_connectquery.js";
+import {transport} from "client/api/truescrub.js";
 import chicken_png from "client/components/img/chicken.png";
 import karambit_png from "client/pages/img/karambit.png";
 import c4_png from "client/pages/img/c4.png";
 import accolades_icon_png from "client/pages/img/accolades_icon.png";
 
+export const seasonsQueryOptions = () => createQueryOptions(getAvailableSeasons, {}, {transport});
+
+export const homeLoader = (queryClient: QueryClient) => async () => {
+  await queryClient.ensureQueryData(seasonsQueryOptions());
+  return null;
+};
+
 export function HomePage() {
-  const seasonsQuery = useQuery(getAvailableSeasons);
+  const seasonsQuery = useQuery(seasonsQueryOptions());
   const seasons = seasonsQuery.data?.availableSeasons ?? [];
   const seasonPath = seasons.length > 1 ? `/season/${seasons.length}` : "";
 
@@ -32,7 +42,7 @@ export function HomePage() {
 
         <div className="grid md:grid-cols-3 gap-6 w-full max-w-6xl mt-12">
           <Link to={`/leaderboard${seasonPath}`}
-             className="block p-8 glass-panel rounded-2xl interactive-card relative overflow-hidden group border-brand-500/20 hover:border-brand-500/50">
+                className="block p-8 glass-panel rounded-2xl interactive-card relative overflow-hidden group border-brand-500/20 hover:border-brand-500/50">
             <div
                 className="absolute inset-0 bg-gradient-to-br from-brand-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
             <div className="relative z-10 flex flex-col items-center text-center">

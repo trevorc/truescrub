@@ -1,11 +1,15 @@
 import React from 'react';
-import {useQuery} from '@connectrpc/connect-query';
+import {useQuery} from '@tanstack/react-query';
+import {createQueryOptions} from '@connectrpc/connect-query';
+import {transport} from 'client/api/truescrub.js';
 import {getPlayerRounds} from 'proto/profile_service-ProfileService_connectquery.js';
 import {LoadingState} from 'client/components/LoadingState.js';
 import {ErrorState} from 'client/components/ErrorState.js';
 
+export const playerRoundsQueryOptions = (playerId: bigint) => createQueryOptions(getPlayerRounds, {playerId}, {transport});
+
 export function MatchesTab({playerId}: { playerId: bigint }) {
-  const {data, isLoading, error} = useQuery(getPlayerRounds, {playerId});
+  const {data, isLoading, error} = useQuery(playerRoundsQueryOptions(playerId));
 
   if (isLoading) return <LoadingState message="Loading match history..."/>;
   if (error) return <ErrorState message={error.message}/>;

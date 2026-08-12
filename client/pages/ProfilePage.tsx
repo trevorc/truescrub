@@ -1,6 +1,10 @@
 import React, {useMemo, useState} from 'react';
+import type {LoaderFunctionArgs} from 'react-router-dom';
 import {NavLink, Route, Routes, useParams} from 'react-router-dom';
-import {useQuery} from '@connectrpc/connect-query';
+import type {QueryClient} from '@tanstack/react-query';
+import {useQuery} from '@tanstack/react-query';
+import {createQueryOptions} from '@connectrpc/connect-query';
+import {transport} from 'client/api/truescrub.js';
 import {getProfile, getSkillHistory} from 'proto/profile_service-ProfileService_connectquery.js';
 import {getAvailableSeasons} from 'proto/season_service-SeasonService_connectquery.js';
 import {ErrorState} from 'client/components/ErrorState.js';
@@ -12,6 +16,7 @@ import {
   ResponsiveContainer,
   Scatter,
   Tooltip,
+  TooltipProps,
   XAxis,
   YAxis
 } from 'recharts';
@@ -19,12 +24,14 @@ import {
 import {MatchesTab} from 'client/pages/MatchesTab.js';
 import {TeamRecordsTab} from 'client/pages/TeamRecordsTab.js';
 import {fromJson} from '@bufbuild/protobuf';
-import {SkillGroupConfigurationSchema} from 'truescrub/proto/profile_pb.js';
+import {
+  AchievementConfigurationSchema,
+  SkillGroupConfigurationSchema
+} from 'truescrub/proto/profile_pb.js';
 import skillGroupsJson from 'truescrub/proto/skill_groups.json';
 import {skillGroupName} from 'client/pages/skill_group.js';
 
 import achievementsJson from 'truescrub/proto/achievements.json';
-import {AchievementConfigurationSchema} from 'truescrub/proto/profile_pb.js';
 
 
 import rank_cardboard_i from "client/pages/ranks/cardboard_i.png";
@@ -159,6 +166,30 @@ export function getLocalTimezoneOffset(date: Date = new Date()) {
   return `${sign}${hours}:${minutes}`;
 }
 
+export const profileQueryOptions = (playerId: bigint) =>
+    createQueryOptions(getProfile, {playerId}, {transport});
+export const availableSeasonsQueryOptions = () =>
+    createQueryOptions(getAvailableSeasons, {}, {transport});
+export const skillHistoryQueryOptions = (
+    playerId: bigint,
+    seasonId: number,
+    timezone: string
+) => createQueryOptions(getSkillHistory, {
+  playerId,
+  seasonId,
+  timezone
+}, {transport});
+
+export const profileLoader = (queryClient: QueryClient) => async ({params}: LoaderFunctionArgs) => {
+  const playerId = BigInt(params.playerId || '0');
+  await Promise.all([
+    queryClient.ensureQueryData(profileQueryOptions(playerId)),
+    queryClient.ensureQueryData(availableSeasonsQueryOptions()),
+    queryClient.ensureQueryData(skillHistoryQueryOptions(playerId, 0, getLocalTimezoneOffset()))
+  ]);
+  return null;
+};
+
 export function ProfilePage() {
   const {playerId} = useParams();
   const id = BigInt(playerId || '0');
@@ -171,23 +202,19 @@ export function ProfilePage() {
     data: profileData,
     isLoading: profileLoading,
     error: profileError
-  } = useQuery(getProfile, {playerId: id});
+  } = useQuery(profileQueryOptions(id));
   const {
     data: seasonsData,
     isLoading: seasonsLoading
-  } = useQuery(getAvailableSeasons, {});
+  } = useQuery(availableSeasonsQueryOptions());
   const {
     data: historyData,
     isLoading: historyLoading
-  } = useQuery(getSkillHistory, {
-    playerId: id,
-    seasonId: selectedSeason,
-    timezone: getLocalTimezoneOffset()
-  });
+  } = useQuery(skillHistoryQueryOptions(id, selectedSeason, getLocalTimezoneOffset()));
 
   const chartData = useMemo(() => {
     if (!historyData?.history) return [];
-    return historyData.history.map((point: any) => {
+    return historyData.history.map(point => {
       const date = new Date(
           point.date!.year,
           point.date!.month - 1,
@@ -202,7 +229,7 @@ export function ProfilePage() {
         impact: point.impactRating !== undefined ? point.impactRating : null,
         skillGroup: skillGroupName(point.skill!.mmr, skillGroupsConfig)
       };
-    }).sort((a: any, b: any) => a.date - b.date);
+    }).sort((a, b) => a.date - b.date);
   }, [historyData, skillGroupsConfig]);
 
   if (profileLoading || seasonsLoading) {
@@ -227,16 +254,24 @@ export function ProfilePage() {
 
   const allSeasonIds = Object.keys(seasonSkills)
       .map(Number)
-      .sort((a: any, b: any) => b - a);
+      .sort((a, b) => b - a);
 
   const {
     enrichedAchievements,
     earnedCount,
     totalTiers
-  } = calculateAchievements(config.achievements as any[], achievements as any[]);
+  } = calculateAchievements(config.achievements, achievements);
 
-  const CustomTooltip = ({active, payload, label}: any) => {
-    if (active && payload && payload.length) {
+  // TODO: Remove this once Recharts PR #7136 is released
+  // (https://github.com/recharts/recharts/pull/7136) The base TooltipProps
+  // does not include the payload property injected at runtime.
+  interface CustomTooltipProps extends TooltipProps<number, string> {
+    payload?: any[];
+    label?: string;
+  }
+
+  const CustomTooltip = ({active, payload, label}: CustomTooltipProps) => {
+    if (active && payload && payload.length && label) {
       const data = payload[0].payload;
       return (
           <div
@@ -634,7 +669,7 @@ export function ProfilePage() {
                     </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5">
-                    {enrichedAchievements.map((achievement: any) => (
+                    {enrichedAchievements.map(achievement => (
                         <tr key={achievement.id}
                             className="hover:bg-slate-800/30 transition-colors">
                           <td className="py-3 px-4 sm:px-6">
@@ -652,7 +687,7 @@ export function ProfilePage() {
                           </td>
                           <td className="py-4 px-4 sm:px-6">
                             <div className="flex gap-1.5 flex-wrap">
-                              {achievement.tiers.map((tier: any, i: number) => (
+                              {achievement.tiers.map((tier, i: number) => (
                                   <span
                                       key={i}
                                       className={`inline-flex items-center px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap ${tier.earned ? 'bg-brand-500/20 text-brand-400 border border-brand-500/30' : 'bg-slate-800/50 text-slate-600 border border-white/5'}`}>

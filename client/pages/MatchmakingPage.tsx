@@ -1,6 +1,10 @@
 import {useState} from "react";
 import {Link, useParams, useSearchParams} from "react-router-dom";
-import {useQuery} from "@connectrpc/connect-query";
+import type {LoaderFunctionArgs} from "react-router-dom";
+import {useQuery} from "@tanstack/react-query";
+import {createQueryOptions} from "@connectrpc/connect-query";
+import type {QueryClient} from "@tanstack/react-query";
+import {transport} from "client/api/truescrub.js";
 import {getAvailableSeasons} from "proto/season_service-SeasonService_connectquery.js";
 import {computeMatchmaking} from "proto/matchmaking_service-MatchmakingService_connectquery.js";
 import {ErrorState} from "client/components/ErrorState.js";
@@ -263,6 +267,37 @@ const MatchCard = ({match, index}: { match: Match, index: number }) => (
     </div>
 );
 
+export const availableSeasonsQueryOptions = () => createQueryOptions(getAvailableSeasons, {}, {transport});
+export const computeMatchmakingQueryOptions = (seasonId: number | undefined, selection: ComputeMatchmakingRequest["selection"]) => createQueryOptions(computeMatchmaking, {
+  seasonId,
+  selection
+}, {transport});
+
+export const matchmakingLoader = (queryClient: QueryClient, isLatest: boolean = false) => async ({
+  request,
+  params
+}: LoaderFunctionArgs) => {
+  const url = new URL(request.url);
+  const routeSeasonId = params.seasonId;
+  const seasonId = routeSeasonId ? (isNaN(parseInt(routeSeasonId, 10)) ? undefined : parseInt(routeSeasonId, 10)) : undefined;
+
+  const urlPlayerRaw = url.searchParams.getAll("player");
+  const urlPlayerIds = new Set(urlPlayerRaw.filter(Boolean).map(id => BigInt(id)));
+
+  const selection: ComputeMatchmakingRequest["selection"] = isLatest
+      ? {case: 'roundSelection', value: {} as RoundSelection}
+      : {
+        case: 'playerSelection',
+        value: {playerIds: Array.from(urlPlayerIds)} as PlayerSelection
+      };
+
+  await Promise.all([
+    queryClient.ensureQueryData(computeMatchmakingQueryOptions(seasonId, selection)),
+    queryClient.ensureQueryData(availableSeasonsQueryOptions())
+  ]);
+  return null;
+};
+
 export function MatchmakingPage({isLatest = false}: { isLatest?: boolean }) {
   const [searchParams] = useSearchParams();
   const {seasonId: routeSeasonId} = useParams();
@@ -280,7 +315,7 @@ export function MatchmakingPage({isLatest = false}: { isLatest?: boolean }) {
     setSelectedPlayerIds(urlPlayerIds);
   }
 
-  const seasonsQuery = useQuery(getAvailableSeasons);
+  const seasonsQuery = useQuery(availableSeasonsQueryOptions());
   const seasons = seasonsQuery.data?.availableSeasons ?? [];
 
   const selection: ComputeMatchmakingRequest["selection"] = isLatest
@@ -290,7 +325,7 @@ export function MatchmakingPage({isLatest = false}: { isLatest?: boolean }) {
         value: {playerIds: Array.from(urlPlayerIds)} as PlayerSelection
       };
 
-  const matchmakingQuery = useQuery(computeMatchmaking, {seasonId, selection});
+  const matchmakingQuery = useQuery(computeMatchmakingQueryOptions(seasonId, selection));
   const availablePlayers = matchmakingQuery.data?.availablePlayers ?? [];
   const proposedMatches = matchmakingQuery.data?.proposedMatches ?? [];
 
@@ -375,7 +410,7 @@ export function MatchmakingPage({isLatest = false}: { isLatest?: boolean }) {
                   ))}
                 </div>
             ) : loading ? (
-                <LoadingState message="Computing matches..." />
+                <LoadingState message="Computing matches..."/>
             ) : error ? (
                 <ErrorState message="Failed to compute matches."/>
             ) : proposedMatches.length > 0 ? (
