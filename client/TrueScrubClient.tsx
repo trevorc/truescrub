@@ -1,42 +1,93 @@
-import {createElement} from "react";
-
-import {BrowserRouter, Route, Routes} from "react-router-dom";
+import {createBrowserRouter, RouterProvider} from "react-router-dom";
 import {TransportProvider} from "@connectrpc/connect-query";
 import {QueryClientProvider} from "@tanstack/react-query";
 import {queryClient, transport} from "client/api/truescrub.js";
-import {MatchmakingPage} from "client/pages/MatchmakingPage.js";
-import {AccoladesPage} from "client/pages/AccoladesPage.js";
-import {HomePage} from "client/pages/HomePage.js";
-import {LeaderboardPage} from "client/pages/LeaderboardPage.js";
-import {ProfilePage} from "client/pages/ProfilePage.js";
+import {matchmakingLoader, MatchmakingPage} from "client/pages/MatchmakingPage.js";
+import {accoladesLoader, AccoladesPage} from "client/pages/AccoladesPage.js";
+import {homeLoader, HomePage} from "client/pages/HomePage.js";
+import {leaderboardLoader, LeaderboardPage} from "client/pages/LeaderboardPage.js";
+import {profileLoader, ProfilePage} from "client/pages/ProfilePage.js";
 import {SkillGroupsPage} from "client/pages/SkillGroupsPage.js";
 import {NotFoundPage} from "client/pages/NotFoundPage.js";
 import {RootLayout} from "client/layouts/RootLayout.js";
+
+import {QueryClient} from "@tanstack/react-query";
+import {RouteObject} from "react-router-dom";
+import type {Transport} from "@connectrpc/connect";
+
+export const getRoutes = (queryClient: QueryClient, transport: Transport): RouteObject[] => [
+  {
+    element: <RootLayout/>,
+    children: [
+      {
+        path: "/",
+        element: <HomePage/>,
+        loader: homeLoader(queryClient, transport),
+      },
+      {
+        path: "/matchmaking",
+        children: [
+          {
+            index: true,
+            element: <MatchmakingPage/>,
+            loader: matchmakingLoader(queryClient, transport),
+          },
+          {
+            path: "latest",
+            element: <MatchmakingPage isLatest={true}/>,
+            loader: matchmakingLoader(queryClient, transport, true),
+          },
+          {
+            path: "season/:seasonId",
+            element: <MatchmakingPage/>,
+            loader: matchmakingLoader(queryClient, transport),
+          }
+        ]
+      },
+      {
+        path: "/accolades",
+        element: <AccoladesPage/>,
+        loader: accoladesLoader(queryClient, transport),
+      },
+      {
+        path: "/leaderboard",
+        children: [
+          {
+            index: true,
+            element: <LeaderboardPage/>,
+            loader: leaderboardLoader(queryClient, transport),
+          },
+          {
+            path: "season/:seasonId",
+            element: <LeaderboardPage/>,
+            loader: leaderboardLoader(queryClient, transport),
+          }
+        ]
+      },
+      {
+        path: "/profiles/:playerId/*",
+        element: <ProfilePage/>,
+        loader: profileLoader(queryClient, transport),
+      },
+      {
+        path: "/skill_groups",
+        element: <SkillGroupsPage/>,
+      },
+      {
+        path: "*",
+        element: <NotFoundPage/>,
+      }
+    ]
+  }
+];
+
+const router = createBrowserRouter(getRoutes(queryClient, transport));
 
 export function TrueScrubClient() {
   return (
       <TransportProvider transport={transport}>
         <QueryClientProvider client={queryClient}>
-          <BrowserRouter>
-            <Routes>
-              <Route element={<RootLayout/>}>
-                <Route path="/" element={<HomePage/>}/>
-                <Route path="/matchmaking">
-                  <Route index element={<MatchmakingPage/>}/>
-                  <Route path="latest" element={<MatchmakingPage isLatest={true}/>}/>
-                  <Route path="season/:seasonId" element={<MatchmakingPage/>}/>
-                </Route>
-                <Route path="/accolades" element={<AccoladesPage/>}/>
-                <Route path="/leaderboard">
-                  <Route index element={<LeaderboardPage/>}/>
-                  <Route path="season/:seasonId" element={<LeaderboardPage/>}/>
-                </Route>
-                <Route path="/profiles/:playerId/*" element={<ProfilePage/>}/>
-                <Route path="/skill_groups" element={<SkillGroupsPage/>}/>
-                <Route path="*" element={<NotFoundPage/>}/>
-              </Route>
-            </Routes>
-          </BrowserRouter>
+          <RouterProvider router={router}/>
         </QueryClientProvider>
       </TransportProvider>
   );

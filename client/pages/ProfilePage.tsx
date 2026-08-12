@@ -3,8 +3,9 @@ import type {LoaderFunctionArgs} from 'react-router-dom';
 import {NavLink, Route, Routes, useParams} from 'react-router-dom';
 import type {QueryClient} from '@tanstack/react-query';
 import {useQuery} from '@tanstack/react-query';
-import {createQueryOptions} from '@connectrpc/connect-query';
-import {transport} from 'client/api/truescrub.js';
+import {createQueryOptions, useTransport} from "@connectrpc/connect-query";
+import type {Transport} from "@connectrpc/connect";
+
 import {getProfile, getSkillHistory} from 'proto/profile_service-ProfileService_connectquery.js';
 import {getAvailableSeasons} from 'proto/season_service-SeasonService_connectquery.js';
 import {ErrorState} from 'client/components/ErrorState.js';
@@ -166,31 +167,33 @@ export function getLocalTimezoneOffset(date: Date = new Date()) {
   return `${sign}${hours}:${minutes}`;
 }
 
-export const profileQueryOptions = (playerId: bigint) =>
+export const profileQueryOptions = (playerId: bigint, transport: Transport) =>
     createQueryOptions(getProfile, {playerId}, {transport});
-export const availableSeasonsQueryOptions = () =>
+export const availableSeasonsQueryOptions = (transport: Transport) =>
     createQueryOptions(getAvailableSeasons, {}, {transport});
 export const skillHistoryQueryOptions = (
     playerId: bigint,
     seasonId: number,
-    timezone: string
+    timezone: string,
+    transport: Transport
 ) => createQueryOptions(getSkillHistory, {
   playerId,
   seasonId,
   timezone
 }, {transport});
 
-export const profileLoader = (queryClient: QueryClient) => async ({params}: LoaderFunctionArgs) => {
+export const profileLoader = (queryClient: QueryClient, transport: Transport) => async ({params}: LoaderFunctionArgs) => {
   const playerId = BigInt(params.playerId || '0');
   await Promise.all([
-    queryClient.ensureQueryData(profileQueryOptions(playerId)),
-    queryClient.ensureQueryData(availableSeasonsQueryOptions()),
-    queryClient.ensureQueryData(skillHistoryQueryOptions(playerId, 0, getLocalTimezoneOffset()))
+    queryClient.ensureQueryData(profileQueryOptions(playerId, transport)),
+    queryClient.ensureQueryData(availableSeasonsQueryOptions(transport)),
+    queryClient.ensureQueryData(skillHistoryQueryOptions(playerId, 0, getLocalTimezoneOffset(), transport))
   ]);
   return null;
 };
 
 export function ProfilePage() {
+  const transport = useTransport();
   const {playerId} = useParams();
   const id = BigInt(playerId || '0');
   const skillGroupsConfig = React.useMemo(() => fromJson(SkillGroupConfigurationSchema, skillGroupsJson), []);
@@ -202,15 +205,15 @@ export function ProfilePage() {
     data: profileData,
     isLoading: profileLoading,
     error: profileError
-  } = useQuery(profileQueryOptions(id));
+  } = useQuery(profileQueryOptions(id, transport));
   const {
     data: seasonsData,
     isLoading: seasonsLoading
-  } = useQuery(availableSeasonsQueryOptions());
+  } = useQuery(availableSeasonsQueryOptions(transport));
   const {
     data: historyData,
     isLoading: historyLoading
-  } = useQuery(skillHistoryQueryOptions(id, selectedSeason, getLocalTimezoneOffset()));
+  } = useQuery(skillHistoryQueryOptions(id, selectedSeason, getLocalTimezoneOffset(), transport));
 
   const chartData = useMemo(() => {
     if (!historyData?.history) return [];

@@ -1,8 +1,9 @@
 import React, {useState} from 'react';
 import type {QueryClient} from '@tanstack/react-query';
 import {useQuery} from '@tanstack/react-query';
-import {createQueryOptions} from '@connectrpc/connect-query';
-import {transport} from 'client/api/truescrub.js';
+import {createQueryOptions, useTransport} from '@connectrpc/connect-query';
+import type {Transport} from '@connectrpc/connect';
+
 import type {LoaderFunctionArgs} from 'react-router-dom';
 import {Link, useParams} from 'react-router-dom';
 import {getLeaderboard} from 'proto/leaderboard_service-LeaderboardService_connectquery.js';
@@ -87,27 +88,28 @@ function PercentileEstimate({mu, sigma, zScore}: {
   );
 }
 
-export const leaderboardQueryOptions = (seasonId?: number) => createQueryOptions(getLeaderboard, {seasonId}, {transport});
-export const availableSeasonsQueryOptions = () => createQueryOptions(getAvailableSeasons, {}, {transport});
+export const availableSeasonsQueryOptions = (transport: Transport) => createQueryOptions(getAvailableSeasons, {}, {transport});
+export const leaderboardQueryOptions = (seasonId: number | undefined, transport: Transport) => createQueryOptions(getLeaderboard, {seasonId}, {transport});
 
-export const leaderboardLoader = (queryClient: QueryClient) => async ({params}: LoaderFunctionArgs) => {
+export const leaderboardLoader = (queryClient: QueryClient, transport: Transport) => async ({params}: LoaderFunctionArgs) => {
   const seasonId = params.seasonId ? parseInt(params.seasonId, 10) : undefined;
   await Promise.all([
-    queryClient.ensureQueryData(leaderboardQueryOptions(seasonId)),
-    queryClient.ensureQueryData(availableSeasonsQueryOptions())
+    queryClient.ensureQueryData(leaderboardQueryOptions(seasonId, transport)),
+    queryClient.ensureQueryData(availableSeasonsQueryOptions(transport))
   ]);
   return null;
 };
 
 export function LeaderboardPage() {
+  const transport = useTransport();
   const {seasonId} = useParams();
   const parsedSeasonId = seasonId ? parseInt(seasonId, 10) : undefined;
   const [showSpecialSkillGroups, setShowSpecialSkillGroups] = useState(false);
   const [zScore, setZScore] = useState(2.0);
   const skillGroupsConfig = React.useMemo(() => fromJson(SkillGroupConfigurationSchema, skillGroupsJson), []);
 
-  const leaderboardQuery = useQuery(leaderboardQueryOptions(parsedSeasonId));
-  const seasonsQuery = useQuery(availableSeasonsQueryOptions());
+  const leaderboardQuery = useQuery(leaderboardQueryOptions(parsedSeasonId, transport));
+  const seasonsQuery = useQuery(availableSeasonsQueryOptions(transport));
   const rawPlayers = leaderboardQuery.data?.leaderboard || [];
   const seasons = seasonsQuery.data?.availableSeasons || [];
   const loading = leaderboardQuery.isLoading;

@@ -1,16 +1,17 @@
 import React, {useMemo, useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
-import {createQueryOptions} from '@connectrpc/connect-query';
-import {transport} from 'client/api/truescrub.js';
+import {createQueryOptions, useTransport} from '@connectrpc/connect-query';
+import type {Transport} from '@connectrpc/connect';
 import {getPlayerTeamRecords} from 'proto/profile_service-ProfileService_connectquery.js';
 import {LoadingState} from 'client/components/LoadingState.js';
 import {ErrorState} from 'client/components/ErrorState.js';
 
-export const playerTeamRecordsQueryOptions = (playerId: bigint) =>
+export const playerTeamRecordsQueryOptions = (playerId: bigint, transport: Transport) =>
     createQueryOptions(getPlayerTeamRecords, {playerId}, {transport});
 
 export function TeamRecordsTab({playerId}: { playerId: bigint }) {
-  const {data, isLoading, error} = useQuery(playerTeamRecordsQueryOptions(playerId));
+  const transport = useTransport();
+  const {data, isLoading, error} = useQuery(playerTeamRecordsQueryOptions(playerId, transport));
   const [sortField, setSortField] = useState<'played' | 'won' | 'winrate'>('played');
 
   const sortedRecords = useMemo(() => {

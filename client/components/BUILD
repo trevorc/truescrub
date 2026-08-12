@@ -1,4 +1,4 @@
-load("//client:ts_library.bzl", "ts_library")
+load("//client:rules/ts_library.bzl", "ts_library")
 
 ts_library(
     name = "accolade_card",

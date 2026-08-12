@@ -1,23 +1,25 @@
 import {Link} from "react-router-dom";
 import type {QueryClient} from "@tanstack/react-query";
 import {useQuery} from "@tanstack/react-query";
-import {createQueryOptions} from "@connectrpc/connect-query";
-import {getAvailableSeasons} from "proto/season_service-SeasonService_connectquery.js";
-import {transport} from "client/api/truescrub.js";
+import {createQueryOptions, useTransport} from "@connectrpc/connect-query";
+import type {Transport} from "@connectrpc/connect";
 import chicken_png from "client/components/img/chicken.png";
 import karambit_png from "client/pages/img/karambit.png";
 import c4_png from "client/pages/img/c4.png";
 import accolades_icon_png from "client/pages/img/accolades_icon.png";
 
-export const seasonsQueryOptions = () => createQueryOptions(getAvailableSeasons, {}, {transport});
+import {getAvailableSeasons} from "proto/season_service-SeasonService_connectquery.js";
 
-export const homeLoader = (queryClient: QueryClient) => async () => {
-  await queryClient.ensureQueryData(seasonsQueryOptions());
+export const seasonsQueryOptions = (transport: Transport) => createQueryOptions(getAvailableSeasons, {}, {transport});
+
+export const homeLoader = (queryClient: QueryClient, transport: Transport) => async () => {
+  await queryClient.ensureQueryData(seasonsQueryOptions(transport));
   return null;
 };
 
 export function HomePage() {
-  const seasonsQuery = useQuery(seasonsQueryOptions());
+  const transport = useTransport();
+  const seasonsQuery = useQuery(seasonsQueryOptions(transport));
   const seasons = seasonsQuery.data?.availableSeasons ?? [];
   const seasonPath = seasons.length > 1 ? `/season/${seasons.length}` : "";
 

@@ -2,9 +2,10 @@ import {useState} from "react";
 import {Link, useParams, useSearchParams} from "react-router-dom";
 import type {LoaderFunctionArgs} from "react-router-dom";
 import {useQuery} from "@tanstack/react-query";
-import {createQueryOptions} from "@connectrpc/connect-query";
+import {createQueryOptions, useTransport} from "@connectrpc/connect-query";
 import type {QueryClient} from "@tanstack/react-query";
-import {transport} from "client/api/truescrub.js";
+import type {Transport} from "@connectrpc/connect";
+
 import {getAvailableSeasons} from "proto/season_service-SeasonService_connectquery.js";
 import {computeMatchmaking} from "proto/matchmaking_service-MatchmakingService_connectquery.js";
 import {ErrorState} from "client/components/ErrorState.js";
@@ -267,22 +268,27 @@ const MatchCard = ({match, index}: { match: Match, index: number }) => (
     </div>
 );
 
-export const availableSeasonsQueryOptions = () => createQueryOptions(getAvailableSeasons, {}, {transport});
-export const computeMatchmakingQueryOptions = (seasonId: number | undefined, selection: ComputeMatchmakingRequest["selection"]) => createQueryOptions(computeMatchmaking, {
+export const availableSeasonsQueryOptions = (transport: Transport) => createQueryOptions(getAvailableSeasons, {}, {transport});
+export const computeMatchmakingQueryOptions = (seasonId: number | undefined, selection: ComputeMatchmakingRequest["selection"], transport: Transport) => createQueryOptions(computeMatchmaking, {
   seasonId,
   selection
 }, {transport});
 
-export const matchmakingLoader = (queryClient: QueryClient, isLatest: boolean = false) => async ({
+export const matchmakingLoader = (queryClient: QueryClient, transport: Transport, isLatest: boolean = false) => async ({
   request,
   params
 }: LoaderFunctionArgs) => {
   const url = new URL(request.url);
   const routeSeasonId = params.seasonId;
-  const seasonId = routeSeasonId ? (isNaN(parseInt(routeSeasonId, 10)) ? undefined : parseInt(routeSeasonId, 10)) : undefined;
+  let resolvedSeasonId = routeSeasonId ? (isNaN(parseInt(routeSeasonId, 10)) ? undefined : parseInt(routeSeasonId, 10)) : undefined;
 
   const urlPlayerRaw = url.searchParams.getAll("player");
   const urlPlayerIds = new Set(urlPlayerRaw.filter(Boolean).map(id => BigInt(id)));
+
+  if (isLatest) {
+    const seasons = await queryClient.ensureQueryData(availableSeasonsQueryOptions(transport));
+    resolvedSeasonId = seasons.availableSeasons[seasons.availableSeasons.length - 1];
+  }
 
   const selection: ComputeMatchmakingRequest["selection"] = isLatest
       ? {case: 'roundSelection', value: {} as RoundSelection}
@@ -292,13 +298,14 @@ export const matchmakingLoader = (queryClient: QueryClient, isLatest: boolean = 
       };
 
   await Promise.all([
-    queryClient.ensureQueryData(computeMatchmakingQueryOptions(seasonId, selection)),
-    queryClient.ensureQueryData(availableSeasonsQueryOptions())
+    queryClient.ensureQueryData(computeMatchmakingQueryOptions(resolvedSeasonId, selection, transport)),
+    queryClient.ensureQueryData(availableSeasonsQueryOptions(transport))
   ]);
   return null;
 };
 
 export function MatchmakingPage({isLatest = false}: { isLatest?: boolean }) {
+  const transport = useTransport();
   const [searchParams] = useSearchParams();
   const {seasonId: routeSeasonId} = useParams();
   const seasonId = routeSeasonId ? (isNaN(parseInt(routeSeasonId, 10))
@@ -315,7 +322,7 @@ export function MatchmakingPage({isLatest = false}: { isLatest?: boolean }) {
     setSelectedPlayerIds(urlPlayerIds);
   }
 
-  const seasonsQuery = useQuery(availableSeasonsQueryOptions());
+  const seasonsQuery = useQuery(availableSeasonsQueryOptions(transport));
   const seasons = seasonsQuery.data?.availableSeasons ?? [];
 
   const selection: ComputeMatchmakingRequest["selection"] = isLatest
@@ -325,7 +332,7 @@ export function MatchmakingPage({isLatest = false}: { isLatest?: boolean }) {
         value: {playerIds: Array.from(urlPlayerIds)} as PlayerSelection
       };
 
-  const matchmakingQuery = useQuery(computeMatchmakingQueryOptions(seasonId, selection));
+  const matchmakingQuery = useQuery(computeMatchmakingQueryOptions(seasonId, selection, transport));
   const availablePlayers = matchmakingQuery.data?.availablePlayers ?? [];
   const proposedMatches = matchmakingQuery.data?.proposedMatches ?? [];
 

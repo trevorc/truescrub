@@ -1,5 +1,5 @@
 load("@aspect_rules_jest//jest:defs.bzl", "jest_test")
-load("//client:ts_library.bzl", "ts_library")
+load("//client:rules/ts_library.bzl", "ts_library")
 
 ts_library(
     name = "home_page",
@@ -13,12 +13,12 @@ ts_library(
     deps = [
         "//:node_modules/@connectrpc/connect-query",
         "//:node_modules/@tanstack/react-query",
-        "//client/api:api",
         "//:node_modules/@types/react",
         "//:node_modules/@types/react-dom",
         "//:node_modules/react",
         "//:node_modules/react-dom",
         "//:node_modules/react-router-dom",
+        "//client/api",
         "//client/components:globals",
         "//proto:season_service_js",
     ],
@@ -27,19 +27,17 @@ ts_library(
 ts_library(
     name = "matchmaking_page",
     srcs = ["MatchmakingPage.tsx"],
-    assets = [
-        "img/chicken_war.png",
-    ],
+    assets = ["img/chicken_war.png"],
     visibility = ["//client:__subpackages__"],
     deps = [
         "//:node_modules/@connectrpc/connect-query",
         "//:node_modules/@tanstack/react-query",
-        "//client/api:api",
         "//:node_modules/@types/react",
         "//:node_modules/@types/react-dom",
         "//:node_modules/react",
         "//:node_modules/react-dom",
         "//:node_modules/react-router-dom",
+        "//client/api",
         "//client/components:error_state",
         "//client/components:loading_state",
         "//proto:matchmaking_service_js",
@@ -54,12 +52,12 @@ ts_library(
     deps = [
         "//:node_modules/@connectrpc/connect-query",
         "//:node_modules/@tanstack/react-query",
-        "//client/api:api",
         "//:node_modules/@types/react",
         "//:node_modules/@types/react-dom",
         "//:node_modules/react",
         "//:node_modules/react-dom",
         "//:node_modules/react-router-dom",
+        "//client/api",
         "//client/components:accolade_card",
         "//client/components:error_state",
         "//client/components:globals",
@@ -123,12 +121,12 @@ ts_library(
         "//:node_modules/@bufbuild/protobuf",
         "//:node_modules/@connectrpc/connect-query",
         "//:node_modules/@tanstack/react-query",
-        "//client/api:api",
         "//:node_modules/@types/react",
         "//:node_modules/@types/react-dom",
         "//:node_modules/react",
         "//:node_modules/react-dom",
         "//:node_modules/react-router-dom",
+        "//client/api",
         "//client/components:error_state",
         "//client/components:globals",
         "//client/components:loading_state",
@@ -141,12 +139,44 @@ ts_library(
 )
 
 ts_library(
-    name = "profile_page",
-    srcs = [
-        "MatchesTab.tsx",
-        "ProfilePage.tsx",
-        "TeamRecordsTab.tsx",
+    name = "matches_tab",
+    srcs = ["MatchesTab.tsx"],
+    visibility = ["//client:__subpackages__"],
+    deps = [
+        "//:node_modules/@connectrpc/connect-query",
+        "//:node_modules/@tanstack/react-query",
+        "//:node_modules/@types/react",
+        "//:node_modules/@types/react-dom",
+        "//:node_modules/react",
+        "//:node_modules/react-dom",
+        "//client/api",
+        "//client/components:error_state",
+        "//client/components:loading_state",
+        "//proto:profile_service_js",
     ],
+)
+
+ts_library(
+    name = "team_records_tab",
+    srcs = ["TeamRecordsTab.tsx"],
+    visibility = ["//client:__subpackages__"],
+    deps = [
+        "//:node_modules/@connectrpc/connect-query",
+        "//:node_modules/@tanstack/react-query",
+        "//:node_modules/@types/react",
+        "//:node_modules/@types/react-dom",
+        "//:node_modules/react",
+        "//:node_modules/react-dom",
+        "//client/api",
+        "//client/components:error_state",
+        "//client/components:loading_state",
+        "//proto:profile_service_js",
+    ],
+)
+
+ts_library(
+    name = "profile_page",
+    srcs = ["ProfilePage.tsx"],
     assets = [
         "ranks/cardboard_i.png",
         "ranks/cardboard_ii.png",
@@ -174,10 +204,12 @@ ts_library(
     ],
     visibility = ["//client:__subpackages__"],
     deps = [
+        ":matches_tab",
         ":skill_group",
+        ":team_records_tab",
+        "//:node_modules/@bufbuild/protobuf",
         "//:node_modules/@connectrpc/connect-query",
         "//:node_modules/@tanstack/react-query",
-        "//client/api:api",
         "//:node_modules/@types/react",
         "//:node_modules/@types/react-dom",
         "//:node_modules/react",
@@ -185,6 +217,7 @@ ts_library(
         "//:node_modules/react-router-dom",
         "//:node_modules/recharts",
         "//:node_modules/redux",
+        "//client/api",
         "//client/components:error_state",
         "//client/components:loading_state",
         "//proto:common_js",
@@ -223,6 +256,7 @@ ts_library(
     deps = [
         ":leaderboard_page",
         "//:node_modules/@types/jest",
+        "//:node_modules/@types/node",
     ],
 )
 
@@ -231,11 +265,11 @@ jest_test(
     config = "//:jest_config",
     data = [
         ":leaderboard_page_test_lib",
+        "//:node_modules/jest-environment-jsdom",
         "//:node_modules/ts-jest",
         "//:tsconfig",
         "//client:file_mock",
         "//client:test_setup",
-        "//:node_modules/jest-environment-jsdom",
     ],
     node_modules = "//:node_modules",
 )
@@ -247,6 +281,7 @@ ts_library(
     deps = [
         ":profile_page",
         "//:node_modules/@types/jest",
+        "//:node_modules/@types/node",
     ],
 )
 
@@ -255,11 +290,11 @@ jest_test(
     config = "//:jest_config",
     data = [
         ":profile_page_test_lib",
+        "//:node_modules/jest-environment-jsdom",
         "//:node_modules/ts-jest",
         "//:tsconfig",
         "//client:file_mock",
         "//client:test_setup",
-        "//:node_modules/jest-environment-jsdom",
     ],
     node_modules = "//:node_modules",
 )
@@ -280,6 +315,7 @@ ts_library(
     deps = [
         ":skill_group",
         "//:node_modules/@types/jest",
+        "//:node_modules/@types/node",
         "//truescrub/proto:profile_js",
     ],
 )
@@ -289,11 +325,11 @@ jest_test(
     config = "//:jest_config",
     data = [
         ":skill_group_test_lib",
+        "//:node_modules/jest-environment-jsdom",
         "//:node_modules/ts-jest",
         "//:tsconfig",
         "//client:file_mock",
         "//client:test_setup",
-        "//:node_modules/jest-environment-jsdom",
     ],
     node_modules = "//:node_modules",
 )
@@ -305,6 +341,7 @@ ts_library(
     deps = [
         ":accolades_page",
         "//:node_modules/@types/jest",
+        "//:node_modules/@types/node",
     ],
 )
 
@@ -313,11 +350,11 @@ jest_test(
     config = "//:jest_config",
     data = [
         ":accolades_page_test_lib",
+        "//:node_modules/jest-environment-jsdom",
         "//:node_modules/ts-jest",
         "//:tsconfig",
         "//client:file_mock",
         "//client:test_setup",
-        "//:node_modules/jest-environment-jsdom",
     ],
     node_modules = "//:node_modules",
 )
@@ -329,6 +366,7 @@ ts_library(
     deps = [
         ":skill_groups_page",
         "//:node_modules/@types/jest",
+        "//:node_modules/@types/node",
     ],
 )
 
@@ -337,11 +375,11 @@ jest_test(
     config = "//:jest_config",
     data = [
         ":skill_groups_page_test_lib",
+        "//:node_modules/jest-environment-jsdom",
         "//:node_modules/ts-jest",
         "//:tsconfig",
         "//client:file_mock",
         "//client:test_setup",
-        "//:node_modules/jest-environment-jsdom",
     ],
     node_modules = "//:node_modules",
 )

@@ -1,5 +1,5 @@
 load("@aspect_rules_jest//jest:defs.bzl", "jest_test")
-load("//client:ts_library.bzl", "ts_library")
+load("//client:rules/ts_library.bzl", "ts_library")
 
 ts_library(
     name = "root_layout",
@@ -20,6 +20,7 @@ ts_library(
     deps = [
         ":root_layout",
         "//:node_modules/@types/jest",
+        "//:node_modules/@types/node",
         "//:node_modules/@types/react",
         "//:node_modules/@types/react-dom",
         "//:node_modules/react",
@@ -33,11 +34,11 @@ jest_test(
     config = "//:jest_config",
     data = [
         ":root_layout_test_lib",
+        "//:node_modules/jest-environment-jsdom",
         "//:node_modules/ts-jest",
         "//:tsconfig",
         "//client:file_mock",
         "//client:test_setup",
-        "//:node_modules/jest-environment-jsdom",
     ],
     node_modules = "//:node_modules",
 )

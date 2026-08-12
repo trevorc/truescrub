@@ -6,14 +6,19 @@ load("@rules_oci//oci:defs.bzl", "oci_image", "oci_image_index", "oci_push")
 load("@rules_pkg//pkg:tar.bzl", "pkg_tar")
 load("//client:rules/esbuild.bzl", "esbuild_metadata")
 load("//client:rules/tailwind.bzl", "tailwind_css")
-load("//client:ts_library.bzl", "ts_library")
+load("//client:rules/ts_library.bzl", "ts_library")
 
-js_library(
+ts_library(
     name = "test_setup",
-    srcs = ["testSetup.js"],
+    srcs = ["testSetup.ts"],
+    tsconfig = "//:tsconfig_test",
     visibility = ["//client:__subpackages__"],
+    deps = [
+        "//:node_modules/@types/jest",
+        "//:node_modules/@types/node",
+        "//:node_modules/whatwg-fetch",
+    ],
 )
-
 
 js_library(
     name = "file_mock",
@@ -167,12 +172,19 @@ ts_library(
     tsconfig = "//:tsconfig_test",
     deps = [
         ":client_ts",
+        "//:node_modules/@connectrpc/connect",
+        "//:node_modules/@connectrpc/connect-query",
+        "//:node_modules/@tanstack/react-query",
+        "//:node_modules/@testing-library/react",
         "//:node_modules/@types/jest",
+        "//:node_modules/@types/node",
         "//:node_modules/@types/react",
         "//:node_modules/@types/react-dom",
         "//:node_modules/react",
         "//:node_modules/react-dom",
         "//:node_modules/react-router-dom",
+        "//client/api",
+        "//proto:season_service_js",
     ],
 )
 
@@ -181,12 +193,11 @@ jest_test(
     config = "//:jest_config",
     data = [
         ":client_ts_test_lib",
+        "//:node_modules/jest-environment-jsdom",
         "//:node_modules/ts-jest",
         "//:tsconfig",
         "//client:file_mock",
         "//client:test_setup",
-        "//:node_modules/jest-environment-jsdom",
     ],
     node_modules = "//:node_modules",
 )
-

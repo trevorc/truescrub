@@ -1,18 +1,19 @@
 import {useEffect, useMemo} from "react";
-import {useLocation, useNavigate} from "react-router-dom";
 import type {LoaderFunctionArgs} from "react-router-dom";
+import {useLocation, useNavigate} from "react-router-dom";
 import type {QueryClient} from "@tanstack/react-query";
-import {useQuery, skipToken} from "@tanstack/react-query";
-import {createQueryOptions} from "@connectrpc/connect-query";
-import {transport} from "client/api/truescrub.js";
+import {skipToken, useQuery} from "@tanstack/react-query";
+import type {Transport} from "@connectrpc/connect";
+import {createQueryOptions, useTransport} from "@connectrpc/connect-query";
+
 import {
   getDailyHighlights,
   listMatchDays
 } from "proto/highlights_service-HighlightsService_connectquery.js";
 import {
   Accolade,
-  ListMatchDaysResponse,
-  GetDailyHighlightsResponse
+  GetDailyHighlightsResponse,
+  ListMatchDaysResponse
 } from "proto/highlights_service_pb.js";
 import {AccoladeCard} from "client/components/AccoladeCard.js";
 import {ErrorState} from "client/components/ErrorState.js";
@@ -39,40 +40,41 @@ export function parseMatchDayString(dateStr: string | null | undefined): {
   return {year, month, day};
 }
 
-export const matchDaysQueryOptions = () => ({
-  ...createQueryOptions(listMatchDays, {timezone: "-05:00"}, { transport }),
-  select: (data: ListMatchDaysResponse) => data.matchDays.map(d => formatMatchDayString(d.year, d.month, d.day))
+export const matchDaysQueryOptions = (transport: Transport) => ({
+  ...createQueryOptions(listMatchDays, {timezone: "-05:00"}, {transport}),
+  select: (data: ListMatchDaysResponse) =>
+      data.matchDays.map(d => formatMatchDayString(d.year, d.month, d.day))
 });
 
 export const highlightsQueryOptions = (dateInput: {
   year: number,
   month: number,
   day: number
-} | undefined) => ({
-    ...createQueryOptions(
-        getDailyHighlights,
-        dateInput ? {
-          date: dateInput,
-          timezone: "-05:00",
-          readMask: {
-            paths: ["players.accolades", "players.player.steam_name"]
-          },
-        } : skipToken,
-        { transport }
-    ),
-    enabled: dateInput !== undefined,
-    select: (data: GetDailyHighlightsResponse) => data.players.flatMap(p =>
-        p.accolades.map(accolade => ({
-          accolade, playerName: p.player?.steamName ?? "Unknown"
-        }))
-    )
+} | undefined, transport: Transport) => ({
+  ...createQueryOptions(
+      getDailyHighlights,
+      dateInput ? {
+        date: dateInput,
+        timezone: "-05:00",
+        readMask: {
+          paths: ["players.accolades", "players.player.steam_name"]
+        },
+      } : skipToken,
+      {transport}
+  ),
+  enabled: dateInput !== undefined,
+  select: (data: GetDailyHighlightsResponse) => data.players.flatMap(p =>
+      p.accolades.map(accolade => ({
+        accolade, playerName: p.player?.steamName ?? "Unknown"
+      }))
+  )
 });
 
-export const accoladesLoader = (queryClient: QueryClient) => async ({request}: LoaderFunctionArgs) => {
+export const accoladesLoader = (queryClient: QueryClient, transport: Transport) => async ({request}: LoaderFunctionArgs) => {
   const url = new URL(request.url);
   const hash = url.hash.substring(1);
 
-  const rawMatchDays = await queryClient.ensureQueryData(matchDaysQueryOptions());
+  const rawMatchDays = await queryClient.ensureQueryData(matchDaysQueryOptions(transport));
   const matchDays = rawMatchDays.matchDays.map(d => formatMatchDayString(d.year, d.month, d.day));
   const hasNoDays = matchDays.length === 0;
 
@@ -81,16 +83,17 @@ export const accoladesLoader = (queryClient: QueryClient) => async ({request}: L
   const dateInput = parseMatchDayString(currentDayString);
 
   if (dateInput) {
-    await queryClient.ensureQueryData(highlightsQueryOptions(dateInput));
+    await queryClient.ensureQueryData(highlightsQueryOptions(dateInput, transport));
   }
   return null;
 };
 
 export function AccoladesPage() {
+  const transport = useTransport();
   const location = useLocation();
   const navigate = useNavigate();
 
-  const matchDaysQuery = useQuery(matchDaysQueryOptions());
+  const matchDaysQuery = useQuery(matchDaysQueryOptions(transport));
   const matchDays = matchDaysQuery.data ?? [];
   const hasNoDays = matchDays.length === 0;
 
@@ -106,11 +109,8 @@ export function AccoladesPage() {
   }, [currentDayString, hash, navigate]);
 
   const dateInput = useMemo(() => parseMatchDayString(currentDayString), [currentDayString]);
-
-  const highlightsQuery = useQuery(highlightsQueryOptions(dateInput));
-
+  const highlightsQuery = useQuery(highlightsQueryOptions(dateInput, transport));
   const accolades: AccoladeWithPlayer[] = highlightsQuery.data ?? [];
-
   const loading = matchDaysQuery.isLoading || (highlightsQuery.isFetching && !highlightsQuery.data);
   const error = matchDaysQuery.isError || highlightsQuery.isError;
 
