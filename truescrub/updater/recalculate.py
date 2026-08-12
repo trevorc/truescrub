@@ -2,11 +2,15 @@ import itertools
 import logging
 import operator
 import time
+from concurrent.futures import as_completed, ProcessPoolExecutor
+from typing import Iterator, List, Dict, Tuple
 
 import trueskill
 
 from truescrub import db
-from truescrub.models import RoundRow, SkillHistory, setup_trueskill
+from truescrub.models import (
+  RoundRow, SkillHistory, setup_trueskill, EvaluatedRound, PlayerRoundStats
+)
 from truescrub.seasoncfg import get_all_seasons
 from truescrub.updater.remapper import remap_rounds, apply_player_configurations
 from truescrub.updater.state_loader import StateLoader
@@ -42,10 +46,11 @@ def replace_teams(skill_db, round_teams):
     cursor.execute('INSERT INTO teams DEFAULT VALUES')
     team_id = cursor.lastrowid
 
-    cursor.executemany('''
-        INSERT INTO team_membership (team_id, player_id)
-        VALUES (?, ?)
-        ''', [(team_id, player_id) for player_id in team])
+    cursor.executemany(
+      '''
+      INSERT INTO team_membership (team_id, player_id)
+      VALUES (?, ?)
+      ''', [(team_id, player_id) for player_id in team])
     memberships[team] = team_id
 
   return memberships
@@ -61,45 +66,66 @@ def insert_players(skill_db, player_states):
   db.upsert_player_names(skill_db, players)
 
 
-def compute_assists(rounds):
+def evaluate_rounds(raw_rounds) -> Iterator[EvaluatedRound]:
   last_assists = {}
 
-  # Assumes that players aren't in concurrent matches
-  for rnd in rounds:
-    for player_id, round_stats in rnd['stats'].items():
-      assists = round_stats['match_assists'] - \
-                last_assists.get(player_id, 0)
-      round_stats['assists'] = assists
-      last_assists[player_id] = round_stats['match_assists']
+  for rnd in raw_rounds:
+    player_stats = {}
+    for player_id, raw_stats in rnd['stats'].items():
+      assists = raw_stats['match_assists'] - last_assists.get(player_id, 0)
+      last_assists[player_id] = raw_stats['match_assists']
+      player_stats[player_id] = PlayerRoundStats(
+        kills=raw_stats['kills'],
+        headshots=raw_stats['headshots'],
+        damage=raw_stats['damage'],
+        survived=raw_stats['survived'],
+        assists=assists
+      )
+
     if rnd['last_round']:
       last_assists = {}
 
+    yield EvaluatedRound(
+      game_state_id=rnd['game_state_id'],
+      season_id=rnd['season_id'],
+      created_at=rnd['created_at'],
+      map_name=rnd['map_name'],
+      winner_team=frozenset(rnd['winner']),
+      loser_team=frozenset(rnd['loser']),
+      mvp=rnd['mvp'],
+      stats=player_stats
+    )
 
-def compute_rounds(skill_db, rounds, player_states):
+
+def compute_rounds(skill_db, raw_rounds, player_states):
   insert_players(skill_db, player_states)
-  round_teams = {player_state['teammates'] for player_state in player_states}
-  teams_to_ids = replace_teams(skill_db, round_teams)
+  evaluated_rounds = list(evaluate_rounds(raw_rounds))
 
-  db.replace_maps(skill_db, {rnd['map_name'] for rnd in rounds})
+  all_teams = (
+      {rnd.winner_team for rnd in evaluated_rounds} |
+      {rnd.loser_team for rnd in evaluated_rounds}
+  )
+  teams_to_ids = replace_teams(skill_db, all_teams)
+
+  db.replace_maps(skill_db, {rnd.map_name for rnd in evaluated_rounds})
 
   fixed_rounds = [
     {
-      'created_at': rnd['created_at'],
-      'season_id': rnd['season_id'],
-      'game_state_id': rnd['game_state_id'],
-      'winner': teams_to_ids[rnd['winner']],
-      'loser': teams_to_ids[rnd['loser']],
-      'mvp': rnd['mvp'],
-      'map_name': rnd['map_name'],
+      'created_at': rnd.created_at,
+      'season_id': rnd.season_id,
+      'game_state_id': rnd.game_state_id,
+      'winner': teams_to_ids[rnd.winner_team],
+      'loser': teams_to_ids[rnd.loser_team],
+      'mvp': rnd.mvp,
+      'map_name': rnd.map_name,
     }
-    for rnd in rounds
+    for rnd in evaluated_rounds
   ]
   round_range = db.insert_rounds(skill_db, fixed_rounds)
 
-  compute_assists(rounds)
   round_stats = {
-    rnd['game_state_id']: rnd['stats']
-    for rnd in rounds
+    rnd.game_state_id: rnd.stats
+    for rnd in evaluated_rounds
   }
   db.insert_round_stats(skill_db, round_stats)
 
@@ -107,7 +133,7 @@ def compute_rounds(skill_db, rounds, player_states):
 
 
 def compute_rounds_and_players(state_loader, skill_db, game_state_range=None) \
-    -> (int, (int, int)):
+    -> Tuple[int, Tuple[int, int]]:
   rap = state_loader.extract_game_states(game_state_range)
 
   player_states = apply_player_configurations(rap.player_states)
@@ -119,9 +145,10 @@ def compute_rounds_and_players(state_loader, skill_db, game_state_range=None) \
 
 
 # TODO: extract out history tracking for clients that don't need it
-def compute_player_skills(rounds: [RoundRow], teams: [dict],
-                          current_ratings: {int: trueskill.Rating} = None) \
-    -> ({int: trueskill.Rating}, [SkillHistory]):
+def compute_player_skills(
+    rounds: List[RoundRow], teams: List[dict],
+    current_ratings: Dict[int, trueskill.Rating] | None = None) \
+    -> Tuple[Dict[int, trueskill.Rating], List[SkillHistory]]:
   ratings = {}
   if current_ratings is not None:
     ratings.update(current_ratings)
@@ -147,10 +174,9 @@ def compute_player_skills(rounds: [RoundRow], teams: [dict],
 
 
 def rate_players_by_season(
-    rounds_by_season: {int: [RoundRow]}, teams: [dict],
-    skills_by_season: {int: {int: trueskill.Rating}} = None) \
-    -> ({(int, int): trueskill.Rating}, {int: SkillHistory}):
-  from concurrent.futures import as_completed, ProcessPoolExecutor
+    rounds_by_season: Dict[int, List[RoundRow]], teams: List[dict],
+    skills_by_season: Dict[int, Dict[int, trueskill.Rating]] | None = None) \
+    -> Tuple[Dict[Tuple[int, int], trueskill.Rating], Dict[int, SkillHistory]]:
   skills = {}
   if skills_by_season is None:
     skills_by_season = {}

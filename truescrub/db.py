@@ -9,7 +9,7 @@ from typing import FrozenSet, Iterator, Optional, Tuple, List, Dict, Set
 import trueskill
 
 from truescrub.envconfig import DATA_DIR, SQLITE_TIMEOUT
-from truescrub.models import Player, RoundRow, SkillHistory, GameStateRow
+from truescrub.models import Player, RoundRow, SkillHistory, GameStateRow, PlayerRoundStats
 from truescrub.models import SKILL_MEAN, SKILL_STDEV
 
 
@@ -227,7 +227,7 @@ def insert_rounds(skill_db, rounds: List[Dict]) -> (int, int):
     return max_round_id - len(rounds) + 1, max_round_id
 
 
-def insert_round_stats(skill_db, round_stats_by_game_state_id: Dict[int, Dict]):
+def insert_round_stats(skill_db, round_stats_by_game_state_id: Dict[int, Dict[int, PlayerRoundStats]]):
     min_game_state_id = min(round_stats_by_game_state_id.keys())
     max_game_state_id = max(round_stats_by_game_state_id.keys())
 
@@ -250,11 +250,11 @@ def insert_round_stats(skill_db, round_stats_by_game_state_id: Dict[int, Dict]):
         (
             game_state_id_to_round_id[game_state_id],
             player_id,
-            player_stats['kills'],
-            player_stats['assists'],
-            player_stats['damage'],
-            player_stats['survived'],
-            player_stats.get('headshots', 0),
+            player_stats.kills,
+            player_stats.assists,
+            player_stats.damage,
+            player_stats.survived,
+            player_stats.headshots,
         )
         for game_state_id, round_stats in round_stats_by_game_state_id.items()
         for player_id, player_stats in round_stats.items()
@@ -445,8 +445,8 @@ def get_player_rows_by_season(skill_db, seasons):
     return itertools.groupby(player_rows, operator.itemgetter(0))
 
 
-def get_skills_by_season(skill_db, seasons: [int]) \
-        -> {int: {int: trueskill.Rating}}:
+def get_skills_by_season(skill_db, seasons: List[int]) \
+        -> Dict[int, Dict[int, trueskill.Rating]]:
     return {
         season_id: {
             player_row[1]: trueskill.Rating(player_row[3], player_row[4])
@@ -510,22 +510,9 @@ def get_player_profile(skill_db, player_id: int):
 
 def get_players_in_last_round(skill_db) -> Set[int]:
     player_ids = execute(skill_db, '''
-    SELECT m.player_id
-    FROM rounds r
-    JOIN ( SELECT w.round_id
-                , w.winner AS team_id
-           FROM rounds w
-           UNION ALL
-           SELECT l.round_id
-                , l.loser AS team_id
-           FROM rounds l
-         ) teams
-    ON    r.round_id = teams.round_id
-    JOIN  team_membership m
-    ON    teams.team_id = m.team_id
-    WHERE r.round_id =
-          ( SELECT MAX(round_id)
-            FROM rounds )
+    SELECT player_id
+    FROM round_players
+    WHERE round_id = (SELECT MAX(round_id) FROM rounds)
     ''')
     return {row[0] for row in player_ids}
 
@@ -594,8 +581,8 @@ def save_game_state_progress(skill_db, max_game_state_id):
     ''', [max_game_state_id])
 
 
-def update_player_skills(skill_db, ratings: {int: trueskill.Rating},
-                         impact_ratings: {int: float}):
+def update_player_skills(skill_db, ratings: Dict[int, trueskill.Rating],
+                         impact_ratings: Dict[int, float]):
     skill_db.executemany('''
     UPDATE players
     SET skill_mean = ?
@@ -608,7 +595,7 @@ def update_player_skills(skill_db, ratings: {int: trueskill.Rating},
     ])
 
 
-def replace_overall_skill_history(skill_db, skill_history: [SkillHistory]):
+def replace_overall_skill_history(skill_db, skill_history: List[SkillHistory]):
     skill_db.executemany('''
     REPLACE INTO overall_skill_history (
         player_id
@@ -624,8 +611,8 @@ def replace_overall_skill_history(skill_db, skill_history: [SkillHistory]):
 
 
 def replace_season_skills(
-        skill_db, season_skills: {(int, int): trueskill.Rating},
-        season_impact_ratings: {int: {int: float}}):
+        skill_db, season_skills: Dict[Tuple[int, int], trueskill.Rating],
+        season_impact_ratings: Dict[int, Dict[int, float]]):
     skill_db.executemany('''
     REPLACE INTO skills (
       player_id
@@ -647,7 +634,7 @@ def replace_season_skills(
 
 
 def replace_season_skill_history(
-        skill_db, history_by_season: {int: SkillHistory}):
+        skill_db, history_by_season: Dict[int, SkillHistory]):
     skill_history = list(itertools.chain(*history_by_season.values()))
 
     skill_db.executemany('''
@@ -684,7 +671,7 @@ def adapt_timezone(tz: datetime.timezone) -> str:
 def get_impact_ratings_by_day(
         skill_db, player_id: int, tz: datetime.timezone,
         season_id: Optional[int] = None) \
-        -> {str: float}:
+        -> Dict[str, float]:
     tz_offset = adapt_timezone(tz)
 
     params = {**COEFFICIENTS_DICT, 'tz_offset': tz_offset, 'player_id': player_id}
@@ -926,6 +913,19 @@ def initialize_skill_db(skill_db):
     ''')
 
     cursor.execute('''
+    CREATE VIEW IF NOT EXISTS round_teams AS
+    SELECT round_id, winner AS team_id FROM rounds
+    UNION ALL
+    SELECT round_id, loser AS team_id FROM rounds;
+    ''')
+
+    cursor.execute('''
+    CREATE VIEW IF NOT EXISTS round_players AS
+    SELECT rt.round_id, m.player_id
+    FROM round_teams rt
+    JOIN team_membership m ON rt.team_id = m.team_id;
+    ''')
+    cursor.execute('''
     CREATE TABLE IF NOT EXISTS game_state_progress(
       game_state_progress_id    INTEGER PRIMARY KEY
     , updated_at                DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -986,22 +986,15 @@ def get_player_rounds(skill_db, player_id: int):
     team_rows = skill_db.execute('''
     SELECT participants.team_id, players.steam_name
     FROM (
-        SELECT r.winner AS team_id
-        FROM rounds r
-        JOIN team_membership m ON m.team_id = r.winner OR m.team_id = r.loser
-        WHERE m.player_id = ?
-        UNION
-        SELECT r.loser AS team_id
-        FROM rounds r
-        JOIN team_membership m ON m.team_id = r.winner OR m.team_id = r.loser
-        WHERE m.player_id = ?
+        SELECT DISTINCT team_id FROM round_teams
+        WHERE round_id IN (SELECT round_id FROM round_players WHERE player_id = ?)
     ) match_teams
     JOIN team_membership participants
     ON   participants.team_id = match_teams.team_id
     JOIN players
     ON   players.player_id = participants.player_id
     ORDER BY participants.team_id
-    ''', (player_id, player_id)).fetchall()
+    ''', (player_id,)).fetchall()
 
     teams = {
       team_id: list(val[1] for val in group)
@@ -1012,9 +1005,7 @@ def get_player_rounds(skill_db, player_id: int):
     round_rows = skill_db.execute('''
     SELECT created_at, winner, loser
     FROM rounds
-    JOIN team_membership m
-    ON m.team_id = rounds.winner OR m.team_id = rounds.loser
-    WHERE m.player_id = ?
+    WHERE round_id IN (SELECT round_id FROM round_players WHERE player_id = ?)
     ORDER BY created_at DESC
     LIMIT 50
     ''', (player_id,)).fetchall()

@@ -4,17 +4,16 @@ version = "0.1.0"
 requires-python = "==3.12.*"
 dependencies = [
     "trueskill==0.4.5",
-    "pytest==9.0.3",
+    "pytest==9.1.1",
     "build==1.5.0",
-    "setuptools==82.0.1",
-    "numpy==2.4.6",
+    "setuptools==83.0.0",
+    "numpy==2.5.1",
     "deap==1.4.4",
     "optuna==4.9.0",
-    "tqdm==4.68.1",
-    "requests>=2.31.0",
-    "grpcio==1.81.1",
-    "grpcio-reflection==1.81.1",
-    "grpcio-health-checking==1.81.1",
+    "tqdm==4.69.1",
+    "grpcio==1.83.0",
+    "grpcio-reflection==1.83.0",
+    "grpcio-health-checking==1.83.0",
 ]
 
 [tool.uv]

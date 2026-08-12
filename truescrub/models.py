@@ -2,7 +2,7 @@ import bisect
 import datetime
 import json
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Optional, Dict, FrozenSet
 
 import trueskill
 
@@ -12,6 +12,7 @@ from google.protobuf import json_format
 
 __all__ = ['SKILL_MEAN', 'SKILL_STDEV', 'Match', 'Player',
            'SkillHistory', 'RoundRow', 'GameStateRow',
+           'PlayerRoundStats', 'EvaluatedRound',
            'setup_trueskill']
 
 SKILL_MEAN = 1000.0
@@ -127,6 +128,27 @@ class GameStateRow:
     self.allplayers = json.loads(allplayers)
     self.previous_allplayers = {} if previous_allplayers is None \
       else json.loads(previous_allplayers)
+
+
+@dataclass(frozen=True, slots=True)
+class PlayerRoundStats:
+  kills: int
+  headshots: int
+  damage: int
+  survived: bool
+  assists: int
+
+
+@dataclass(frozen=True, slots=True)
+class EvaluatedRound:
+  game_state_id: int
+  season_id: int
+  created_at: datetime.datetime
+  map_name: str
+  winner_team: FrozenSet[int]
+  loser_team: FrozenSet[int]
+  mvp: Optional[int]
+  stats: Dict[int, PlayerRoundStats]
 
 
 @dataclass(slots=True)

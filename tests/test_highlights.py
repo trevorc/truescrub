@@ -1,8 +1,7 @@
 import datetime
+import pytest
 import sqlite3
 from typing import Dict
-
-import pytest
 
 from proto import common_pb2
 from proto import highlights_service_pb2
@@ -173,7 +172,8 @@ def test_get_skill_changes_between_rounds(test_db):
   skill_change = next(change for change in result if change.player_id == 1)
 
   from truescrub.models import find_skill_group
-  assert find_skill_group(skill_change.previous_skill.mmr) != find_skill_group(skill_change.next_skill.mmr)
+  assert find_skill_group(skill_change.previous_skill.mmr) != find_skill_group(
+    skill_change.next_skill.mmr)
   assert skill_change.next_skill.mmr > skill_change.previous_skill.mmr
 
 
@@ -187,7 +187,8 @@ def test_get_highlights(test_db):
   # Check time window
   assert len(result.time_windows) == 1
   assert result.time_windows[0].start_inclusive.ToDatetime() == day
-  assert result.time_windows[0].end_exclusive.ToDatetime() == day + datetime.timedelta(days=1)
+  assert result.time_windows[
+           0].end_exclusive.ToDatetime() == day + datetime.timedelta(days=1)
 
   # Check rounds played
   assert result.rounds_played == 10
@@ -208,12 +209,15 @@ def test_get_highlights(test_db):
   skill_changes = result.season_skill_group_changes
   assert len(skill_changes) >= 1
 
-  player1_change = next(change for change in skill_changes if change.player_id == 1)
+  player1_change = next(
+    change for change in skill_changes if change.player_id == 1)
 
   assert player1_change.HasField('previous_skill')
   assert player1_change.HasField('next_skill')
   from truescrub.models import find_skill_group
-  assert find_skill_group(player1_change.previous_skill.mmr) != find_skill_group(player1_change.next_skill.mmr)
+  assert find_skill_group(
+    player1_change.previous_skill.mmr) != find_skill_group(
+    player1_change.next_skill.mmr)
   assert player1_change.next_skill.mmr > player1_change.previous_skill.mmr
 
 
@@ -231,6 +235,42 @@ def test_get_accolades_in_highlights(test_db):
     assert isinstance(accolade_data.name, str)
     assert len(accolade_data.name) > 0
     assert len(accolade_data.details) > 0
+
+
+def test_cross_season_starting_skill():
+  db_manager = TestDBManager()
+
+  day1 = datetime.datetime(2020, 1, 15, tzinfo=datetime.timezone.utc)
+  game_states_1 = []
+  for i in range(10):
+    game_states_1.append(create_game_state_for_round(
+      day1 + datetime.timedelta(minutes=i * 10),
+      map_name="de_dust2",
+      ct_team=[(1, "Player1"), (2, "Player2")],
+      t_team=[(3, "Player3")],
+      winner="CT"
+    ))
+  db_manager.add_game_states(game_states_1)
+
+  day2 = datetime.datetime(2024, 1, 15, tzinfo=datetime.timezone.utc)
+  db_manager.add_game_states([create_game_state_for_round(
+    day2,
+    map_name="de_dust2",
+    ct_team=[(1, "Player1"), (2, "Player2")],
+    t_team=[(3, "Player3")],
+    winner="CT"
+  )])
+
+  db_manager.process_game_states()
+  skill_db = db_manager.skill_db
+
+  round_range, _ = get_round_range_for_day(skill_db, day2)
+  player_ratings = get_player_ratings_between_rounds(skill_db, round_range)
+
+  player1 = next(p for p in player_ratings if p.player.player_id == 1)
+
+  assert player1.HasField('starting_skill')
+  assert abs(player1.starting_skill.mmr - 500.0) < 0.001
 
 
 if __name__ == '__main__':

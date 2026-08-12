@@ -10,6 +10,9 @@ import pytest
 import trueskill
 
 from truescrub.models import RoundRow, SkillHistory, setup_trueskill
+from truescrub.updater.recalculate import compute_player_skills
+from truescrub.updater.recalculate import evaluate_rounds
+from truescrub.updater.recalculate import rate_players_by_season
 
 setup_trueskill()
 
@@ -42,9 +45,6 @@ TEAMS = {
 # ---------------------------------------------------------------------------
 # compute_player_skills
 # ---------------------------------------------------------------------------
-
-from truescrub.updater.recalculate import compute_player_skills
-
 
 class TestComputePlayerSkills:
   def test_winner_rating_increases(self):
@@ -104,36 +104,38 @@ class TestComputePlayerSkills:
     expected_rounds = [_round_row(1, winner=1, loser=2)]
     # Upset: Underdog (300) beats Favorite (100)
     upset_rounds = [_round_row(1, winner=2, loser=1)]
-    
+
     prior = {
       100: trueskill.Rating(mu=1500, sigma=100),
       200: trueskill.Rating(mu=1500, sigma=100),
       300: trueskill.Rating(mu=500, sigma=100),
       400: trueskill.Rating(mu=500, sigma=100),
     }
-    
-    expected_ratings, _ = compute_player_skills(expected_rounds, TEAMS, current_ratings=prior)
+
+    expected_ratings, _ = compute_player_skills(expected_rounds, TEAMS,
+                                                current_ratings=prior)
     expected_delta = expected_ratings[100].mu - prior[100].mu
-    
-    upset_ratings, _ = compute_player_skills(upset_rounds, TEAMS, current_ratings=prior)
+
+    upset_ratings, _ = compute_player_skills(upset_rounds, TEAMS,
+                                             current_ratings=prior)
     upset_delta = upset_ratings[300].mu - prior[300].mu
-    
+
     assert upset_delta > expected_delta
 
   def test_uncertainty_volatility_scaling(self):
     # Team 1 beats Team 2
     prior = {
-      100: trueskill.Rating(mu=1000, sigma=10), # Veteran
-      200: trueskill.Rating(mu=1000, sigma=250), # Newbie
+      100: trueskill.Rating(mu=1000, sigma=10),  # Veteran
+      200: trueskill.Rating(mu=1000, sigma=250),  # Newbie
       300: trueskill.Rating(mu=1000, sigma=100),
       400: trueskill.Rating(mu=1000, sigma=100),
     }
     rounds = [_round_row(1, winner=1, loser=2)]
     ratings, _ = compute_player_skills(rounds, TEAMS, current_ratings=prior)
-    
+
     veteran_delta = ratings[100].mu - prior[100].mu
     newbie_delta = ratings[200].mu - prior[200].mu
-    
+
     assert newbie_delta > veteran_delta
 
   def test_recalculate_adapter_asymmetric_teams(self):
@@ -147,53 +149,74 @@ class TestComputePlayerSkills:
       102: trueskill.Rating(mu=1000, sigma=100),
       201: trueskill.Rating(mu=1000, sigma=100),
       202: trueskill.Rating(mu=1000, sigma=100),
-      203: trueskill.Rating(mu=2000, sigma=1), # Distinctly unique
+      203: trueskill.Rating(mu=2000, sigma=1),  # Distinctly unique
     }
     rounds = [_round_row(1, winner=1, loser=2)]
-    ratings, _ = compute_player_skills(rounds, asym_teams, current_ratings=prior)
-    
+    ratings, _ = compute_player_skills(rounds, asym_teams,
+                                       current_ratings=prior)
+
     assert len(ratings) == 5
     # ID 203 should lose a tiny fraction of points because sigma is 1, but its mu should remain ~2000
     assert ratings[203].mu > 1900
 
 
 # ---------------------------------------------------------------------------
-# compute_assists
+# evaluate_rounds
 # ---------------------------------------------------------------------------
 
-from truescrub.updater.recalculate import compute_assists
+def _raw_round(last_round: bool, stats: dict) -> dict:
+  return {
+    'game_state_id': 1,
+    'season_id': 1,
+    'created_at': datetime.datetime.utcnow(),
+    'map_name': 'de_dust2',
+    'winner': [1],
+    'loser': [2],
+    'mvp': None,
+    'last_round': last_round,
+    'stats': stats,
+  }
 
 
-class TestComputeAssists:
+def _raw_stats(match_assists: int) -> dict:
+  return {
+    'kills': 0, 'headshots': 0, 'damage': 0, 'survived': False,
+    'match_assists': match_assists,
+  }
+
+
+class TestEvaluateRounds:
   def test_computes_per_round_assists(self):
     rounds = [
-      {'stats': {1: {'match_assists': 3}, 2: {'match_assists': 1}},
-       'last_round': False},
-      {'stats': {1: {'match_assists': 5}, 2: {'match_assists': 1}},
-       'last_round': False},
+      _raw_round(False, {
+        1: _raw_stats(3),
+        2: _raw_stats(1)
+      }),
+      _raw_round(False, {
+        1: _raw_stats(5),
+        2: _raw_stats(1)
+      }),
     ]
-    compute_assists(rounds)
-    assert rounds[0]['stats'][1]['assists'] == 3
-    assert rounds[0]['stats'][2]['assists'] == 1
-    assert rounds[1]['stats'][1]['assists'] == 2  # 5 - 3
-    assert rounds[1]['stats'][2]['assists'] == 0  # 1 - 1
+    evaluated = list(evaluate_rounds(rounds))
+    assert evaluated[0].stats[1].assists == 3
+    assert evaluated[0].stats[2].assists == 1
+    assert evaluated[1].stats[1].assists == 2  # 5 - 3
+    assert evaluated[1].stats[2].assists == 0  # 1 - 1
 
   def test_resets_on_last_round(self):
     rounds = [
-      {'stats': {1: {'match_assists': 3}}, 'last_round': True},
-      {'stats': {1: {'match_assists': 2}}, 'last_round': False},
+      _raw_round(True, {1: _raw_stats(3)}),
+      _raw_round(False, {1: _raw_stats(2)}),
     ]
-    compute_assists(rounds)
+    evaluated = evaluate_rounds(rounds)
+    next(evaluated)
     # After last_round=True, assists reset
-    assert rounds[1]['stats'][1]['assists'] == 2
+    assert next(evaluated).stats[1].assists == 2
 
 
 # ---------------------------------------------------------------------------
 # rate_players_by_season
 # ---------------------------------------------------------------------------
-
-from truescrub.updater.recalculate import rate_players_by_season
-
 
 class TestRatePlayersBySeason:
   def test_seasons_computed_independently(self):

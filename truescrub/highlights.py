@@ -1,10 +1,9 @@
 import datetime
-import operator
 import itertools
-from typing import List, Tuple, Dict, NamedTuple, Optional
-
+import operator
 from google.protobuf.field_mask_pb2 import FieldMask
 from google.protobuf.timestamp_pb2 import Timestamp
+from typing import List, Tuple, Dict, NamedTuple, Optional
 
 from proto import common_pb2
 from proto import highlights_service_pb2
@@ -97,7 +96,7 @@ def get_most_played_maps_between_rounds(
     SELECT map_name
          , COUNT(*) AS round_count
     FROM rounds
-    JOIN maps ON rounds.map_id = maps.map_id
+             JOIN maps ON rounds.map_id = maps.map_id
     WHERE round_id BETWEEN ? AND ?
     GROUP BY map_name
     ORDER BY round_count DESC
@@ -141,7 +140,12 @@ def get_player_ratings_between_rounds(
             JOIN ( SELECT ssh2.player_id
                         , MAX(ssh2.round_id) AS max_round_id
                    FROM season_skill_history ssh2
+                   JOIN rounds rounds_before
+                     ON ssh2.round_id = rounds_before.round_id
+                   JOIN rounds current_r
+                     ON current_r.round_id = :first_round
                    WHERE ssh2.round_id < :first_round
+                     AND rounds_before.season_id = current_r.season_id
                    GROUP BY ssh2.player_id
                ) ms
             ON ms.player_id = ssh.player_id
@@ -158,8 +162,8 @@ def get_player_ratings_between_rounds(
          , ir.rounds_played
          , ir.total_mvps
          , ir.average_headshots
-         , s.skill_mean
-         , s.skill_stdev
+         , s.skill_mean AS skill_mean
+         , s.skill_stdev AS skill_stdev
          , players.skill_mean
          , players.skill_stdev
     FROM players
@@ -175,11 +179,16 @@ def get_player_ratings_between_rounds(
 
   player_ratings = []
   for row in itertools.starmap(PlayerRatingRow, rating_details):
-    current_player = Player(row.player_id, row.steam_name, row.current_skill_mean, row.current_skill_stdev,
+    current_player = Player(row.player_id, row.steam_name,
+                            row.current_skill_mean, row.current_skill_stdev,
                             row.impact_rating)
     starting_player = Player(row.player_id, row.steam_name,
-                             row.starting_skill_mean,
-                             row.starting_skill_stdev,
+                             SKILL_MEAN
+                             if row.starting_skill_mean is None
+                             else row.starting_skill_mean,
+                             SKILL_STDEV
+                             if row.starting_skill_stdev is None
+                             else row.starting_skill_stdev,
                              0.0)
 
     player_ratings.append(highlights_service_pb2.DailyHighlight(
@@ -215,9 +224,6 @@ def get_player_ratings_between_rounds(
   player_ratings.sort(key=operator.attrgetter('impact_rating'), reverse=True)
 
   return player_ratings
-
-
-
 
 
 def get_skill_changes_between_rounds(
@@ -262,7 +268,8 @@ def get_skill_changes_between_rounds(
              SKILL_MEAN if row.earlier_skill_mean is None else row.earlier_skill_mean,
              SKILL_STDEV if row.earlier_skill_stdev is None else row.earlier_skill_stdev,
              0.0),
-      Player(row.player_id, row.steam_name, row.later_skill_mean, row.later_skill_stdev, 0.0),
+      Player(row.player_id, row.steam_name, row.later_skill_mean,
+             row.later_skill_stdev, 0.0),
     )
     for row in itertools.starmap(SkillChangeRow, skill_change_rows)
   ]
