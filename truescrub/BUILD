@@ -1,5 +1,4 @@
 load("@aspect_rules_py//py:defs.bzl", "py_binary", "py_image_layer", "py_layer_tier", "py_library")
-load("@bazel_lib//lib:transitions.bzl", "platform_transition_filegroup")
 load("@rules_oci//oci:defs.bzl", "oci_image", "oci_image_index", "oci_load", "oci_push")
 load("@rules_pkg//pkg:tar.bzl", "pkg_tar")
 
@@ -174,12 +173,6 @@ pkg_tar(
     owner = "65532.65532",
 )
 
-py_image_layer(
-    name = "layer",
-    binary = ":truescrub",
-    layer_tier = ":tier",
-)
-
 platform(
     name = "linux_amd64",
     constraint_values = [
@@ -188,10 +181,11 @@ platform(
     ],
 )
 
-platform_transition_filegroup(
+py_image_layer(
     name = "layer_amd64",
-    srcs = [":layer"],
-    target_platform = ":linux_amd64",
+    binary = ":truescrub",
+    layer_tier = ":tier",
+    platform = "@@//truescrub:linux_amd64",
 )
 
 platform(
@@ -202,10 +196,11 @@ platform(
     ],
 )
 
-platform_transition_filegroup(
+py_image_layer(
     name = "layer_arm64",
-    srcs = [":layer"],
-    target_platform = ":linux_arm64",
+    binary = ":truescrub",
+    layer_tier = ":tier",
+    platform = "@@//truescrub:linux_arm64",
 )
 
 ENTRYPOINT = [
