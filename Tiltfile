@@ -25,27 +25,6 @@ REGISTRY = "k3d-registry.localhost:5000"
 bazel_build("//truescrub:push", "truescrub", REGISTRY)
 bazel_build("//client:push", "truescrub-client", REGISTRY)
 
-# Generate local dev certificates if they don't exist
-if not os.path.exists("k8s/overlays/dev/tls.crt"):
-    print("Generating local TLS certificates...")
-    local([
-        "openssl",
-        "req",
-        "-x509",
-        "-nodes",
-        "-days",
-        "3650",
-        "-newkey",
-        "rsa:2048",
-        "-keyout",
-        "k8s/overlays/dev/tls.key",
-        "-out",
-        "k8s/overlays/dev/tls.crt",
-        "-subj",
-        "/CN=localhost",
-        "-addext",
-        "subjectAltName = DNS:localhost",
-    ])
-
 watch_file("k8s")
-k8s_yaml(local("kustomize build --enable-helm k8s/overlays/dev"))
+local("bazel build //k8s/overlays/dev")
+k8s_yaml("bazel-bin/k8s/overlays/dev/manifests.yaml")

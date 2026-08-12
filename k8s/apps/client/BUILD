@@ -1,13 +1,11 @@
 load("@rules_kustomize//kustomize:kustomize.bzl", "kustomization")
 
 kustomization(
-    name = "truescrub",
+    name = "client",
     srcs = [
-        "grpcroute.yaml",
-        "httproute.yaml",
+        "deployment.yaml",
         "kustomization.yaml",
-        "networkpolicy.yaml",
-        "truescrub.yaml",
+        "service.yaml",
     ],
     visibility = ["//k8s/overlays/dev:__pkg__"],
 )
