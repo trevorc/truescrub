@@ -22,12 +22,9 @@ ts_library(
         "//:node_modules/@tanstack/react-query",
         "//:node_modules/@types/react",
         "//:node_modules/@types/react-dom",
-        "//:node_modules/@types/react-router-dom",
         "//:node_modules/react",
         "//:node_modules/react-dom",
         "//:node_modules/react-router-dom",
-        "//:node_modules/recharts",
-        "//:node_modules/redux",
         "//client/api",
         "//client/components:footer",
         "//client/components:navbar",
@@ -38,8 +35,6 @@ ts_library(
         "//client/pages:not_found_page",
         "//client/pages:profile_page",
         "//client/pages:skill_groups_page",
-        "//proto:highlights_service_js",
-        "//proto:matchmaking_service_js",
     ],
 )
 

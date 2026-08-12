@@ -12,15 +12,12 @@ ts_library(
     visibility = ["//client:__subpackages__"],
     deps = [
         "//:node_modules/@connectrpc/connect-query",
-        "//:node_modules/@tanstack/react-query",
         "//:node_modules/@types/react",
         "//:node_modules/@types/react-dom",
         "//:node_modules/react",
         "//:node_modules/react-dom",
         "//:node_modules/react-router-dom",
-        "//client/api",
         "//client/components:globals",
-        "//proto:matchmaking_service_js",
         "//proto:season_service_js",
     ],
 )
@@ -34,13 +31,11 @@ ts_library(
     visibility = ["//client:__subpackages__"],
     deps = [
         "//:node_modules/@connectrpc/connect-query",
-        "//:node_modules/@tanstack/react-query",
         "//:node_modules/@types/react",
         "//:node_modules/@types/react-dom",
         "//:node_modules/react",
         "//:node_modules/react-dom",
         "//:node_modules/react-router-dom",
-        "//client/api",
         "//client/components:error_state",
         "//client/components:loading_state",
         "//proto:matchmaking_service_js",
@@ -54,7 +49,6 @@ ts_library(
     visibility = ["//client:__subpackages__"],
     deps = [
         "//:node_modules/@connectrpc/connect-query",
-        "//:node_modules/@tanstack/react-query",
         "//:node_modules/@types/react",
         "//:node_modules/@types/react-dom",
         "//:node_modules/react",
@@ -122,7 +116,6 @@ ts_library(
         ":skill_group",
         "//:node_modules/@bufbuild/protobuf",
         "//:node_modules/@connectrpc/connect-query",
-        "//:node_modules/@tanstack/react-query",
         "//:node_modules/@types/react",
         "//:node_modules/@types/react-dom",
         "//:node_modules/react",
@@ -175,7 +168,6 @@ ts_library(
     deps = [
         ":skill_group",
         "//:node_modules/@connectrpc/connect-query",
-        "//:node_modules/@tanstack/react-query",
         "//:node_modules/@types/react",
         "//:node_modules/@types/react-dom",
         "//:node_modules/react",
