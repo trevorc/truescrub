@@ -224,6 +224,8 @@ jest_test(
         "//:node_modules/ts-jest",
         "//:tsconfig",
         "//client:file_mock",
+        "//client:test_setup",
+        "//:node_modules/jest-environment-jsdom",
     ],
     node_modules = "//:node_modules",
 )
@@ -246,6 +248,8 @@ jest_test(
         "//:node_modules/ts-jest",
         "//:tsconfig",
         "//client:file_mock",
+        "//client:test_setup",
+        "//:node_modules/jest-environment-jsdom",
     ],
     node_modules = "//:node_modules",
 )
@@ -278,6 +282,8 @@ jest_test(
         "//:node_modules/ts-jest",
         "//:tsconfig",
         "//client:file_mock",
+        "//client:test_setup",
+        "//:node_modules/jest-environment-jsdom",
     ],
     node_modules = "//:node_modules",
 )
@@ -300,6 +306,8 @@ jest_test(
         "//:node_modules/ts-jest",
         "//:tsconfig",
         "//client:file_mock",
+        "//client:test_setup",
+        "//:node_modules/jest-environment-jsdom",
     ],
     node_modules = "//:node_modules",
 )
@@ -322,6 +330,8 @@ jest_test(
         "//:node_modules/ts-jest",
         "//:tsconfig",
         "//client:file_mock",
+        "//client:test_setup",
+        "//:node_modules/jest-environment-jsdom",
     ],
     node_modules = "//:node_modules",
 )

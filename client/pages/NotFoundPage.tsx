@@ -1,10 +1,10 @@
 import React, {useMemo} from 'react';
 import {Link} from 'react-router-dom';
 
-import chicken1 from './chickens/404_chicken_1.png';
-import chicken2 from './chickens/404_chicken_2.png';
-import chicken3 from './chickens/404_chicken_3.png';
-import chicken4 from './chickens/404_chicken_4.png';
+import chicken1 from 'client/pages/chickens/404_chicken_1.png';
+import chicken2 from 'client/pages/chickens/404_chicken_2.png';
+import chicken3 from 'client/pages/chickens/404_chicken_3.png';
+import chicken4 from 'client/pages/chickens/404_chicken_4.png';
 
 const CHICKENS = [chicken1, chicken2, chicken3, chicken4];
 

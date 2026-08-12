@@ -1,4 +1,5 @@
 load("@aspect_rules_esbuild//esbuild:defs.bzl", "esbuild")
+load("@aspect_rules_jest//jest:defs.bzl", "jest_test")
 load("@aspect_rules_js//js:defs.bzl", "js_binary", "js_library")
 load("@bazel_lib//lib:directory_path.bzl", "directory_path")
 load("@rules_oci//oci:defs.bzl", "oci_image", "oci_image_index", "oci_push")
@@ -8,6 +9,13 @@ load("//client:rules/tailwind.bzl", "tailwind_css")
 load("//client:ts_library.bzl", "ts_library")
 
 js_library(
+    name = "test_setup",
+    srcs = ["testSetup.js"],
+    visibility = ["//client:__subpackages__"],
+)
+
+
+js_library(
     name = "file_mock",
     srcs = ["fileMock.js"],
     visibility = ["//client:__subpackages__"],
@@ -15,7 +23,10 @@ js_library(
 
 ts_library(
     name = "client_ts",
-    srcs = ["TrueScrubClient.tsx"],
+    srcs = [
+        "TrueScrubClient.tsx",
+        "index.tsx",
+    ],
     visibility = ["//client:__subpackages__"],
     deps = [
         "//:node_modules/@connectrpc/connect-query",
@@ -26,8 +37,7 @@ ts_library(
         "//:node_modules/react-dom",
         "//:node_modules/react-router-dom",
         "//client/api",
-        "//client/components:footer",
-        "//client/components:navbar",
+        "//client/layouts:root_layout",
         "//client/pages:accolades_page",
         "//client/pages:home_page",
         "//client/pages:leaderboard_page",
@@ -46,7 +56,7 @@ esbuild(
     ],
     config = "esbuild.config.mjs",
     entry_points = [
-        "TrueScrubClient.js",
+        "index.tsx",
         "style_bundle.css",
     ],
     metafile = True,
@@ -150,3 +160,33 @@ oci_push(
     remote_tags = ["latest"],
     repository = "localhost:5000/truescrub-client",
 )
+
+ts_library(
+    name = "client_ts_test_lib",
+    srcs = ["TrueScrubClient.test.tsx"],
+    tsconfig = "//:tsconfig_test",
+    deps = [
+        ":client_ts",
+        "//:node_modules/@types/jest",
+        "//:node_modules/@types/react",
+        "//:node_modules/@types/react-dom",
+        "//:node_modules/react",
+        "//:node_modules/react-dom",
+        "//:node_modules/react-router-dom",
+    ],
+)
+
+jest_test(
+    name = "client_ts_test",
+    config = "//:jest_config",
+    data = [
+        ":client_ts_test_lib",
+        "//:node_modules/ts-jest",
+        "//:tsconfig",
+        "//client:file_mock",
+        "//client:test_setup",
+        "//:node_modules/jest-environment-jsdom",
+    ],
+    node_modules = "//:node_modules",
+)
+
