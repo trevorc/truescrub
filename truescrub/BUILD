@@ -190,7 +190,7 @@ py_image_layer(
     name = "layer_amd64",
     binary = ":truescrub",
     layer_tier = ":tier",
-    platform = "@@//truescrub:linux_amd64",
+    platform = "//truescrub:linux_amd64",
 )
 
 platform(
@@ -205,7 +205,7 @@ py_image_layer(
     name = "layer_arm64",
     binary = ":truescrub",
     layer_tier = ":tier",
-    platform = "@@//truescrub:linux_arm64",
+    platform = "//truescrub:linux_arm64",
 )
 
 ENTRYPOINT = [
@@ -262,8 +262,6 @@ oci_image_index(
 oci_push(
     name = "push",
     image = ":image_index",
-    remote_tags = ["latest"],
-    repository = "localhost:5000/truescrub",
 )
 
 oci_load(

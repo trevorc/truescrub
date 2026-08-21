@@ -165,3 +165,17 @@ python_grpc_library(
     name = "config_service_py_pb2_grpc",
     protos = [":config_service_proto"],
 )
+
+ts_proto_library(
+    name = "config_service_js",
+    copy_files = False,
+    gen_connect_query = True,
+    gen_connect_query_service_mapping = {
+        "config_service.proto": ["ConfigService"],
+    },
+    node_modules = "//:node_modules",
+    proto = ":config_service_proto",
+    protoc_gen_options = {
+        "js_import_style": "legacy_commonjs",
+    },
+)

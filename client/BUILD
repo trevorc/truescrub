@@ -1,15 +1,22 @@
 load("@aspect_rules_esbuild//esbuild:defs.bzl", "esbuild")
 load("@aspect_rules_jest//jest:defs.bzl", "jest_test")
-load("@aspect_rules_js//js:defs.bzl", "js_binary", "js_library")
+load("@aspect_rules_js//js:defs.bzl", "js_binary")
 load("@bazel_lib//lib:directory_path.bzl", "directory_path")
+load("@bazel_skylib//rules:write_file.bzl", "write_file")
 load("@rules_oci//oci:defs.bzl", "oci_image", "oci_image_index", "oci_push")
 load("@rules_pkg//pkg:tar.bzl", "pkg_tar")
 load("//client:rules/esbuild.bzl", "esbuild_metadata")
 load("//client:rules/tailwind.bzl", "tailwind_css")
 load("//client:rules/ts_library.bzl", "ts_library")
 
+config_setting(
+    name = "minify",
+    values = {"compilation_mode": "opt"},
+)
+
 ts_library(
     name = "test_setup",
+    testonly = True,
     srcs = ["testSetup.ts"],
     tsconfig = "//:tsconfig_test",
     visibility = ["//client:__subpackages__"],
@@ -20,10 +27,16 @@ ts_library(
     ],
 )
 
-js_library(
+ts_library(
     name = "file_mock",
-    srcs = ["fileMock.js"],
+    testonly = True,
+    srcs = ["fileMock.ts"],
+    tsconfig = "//:tsconfig_test",
     visibility = ["//client:__subpackages__"],
+    deps = [
+        "//:node_modules/@types/jest",
+        "//:node_modules/@types/node",
+    ],
 )
 
 ts_library(
@@ -39,9 +52,10 @@ ts_library(
         "//:node_modules/@types/react",
         "//:node_modules/@types/react-dom",
         "//:node_modules/react",
-        "//:node_modules/react-dom",
         "//:node_modules/react-router-dom",
-        "//client/api",
+        "//client/api:brand",
+        "//client/api:seasons",
+        "//client/api:truescrub",
         "//client/layouts:root_layout",
         "//client/pages:accolades_page",
         "//client/pages:home_page",
@@ -53,26 +67,53 @@ ts_library(
     ],
 )
 
+BASE_ESBUILD_CONFIG = {
+    "loader": {".png": "file"},
+    "assetNames": "assets/[name]-[hash]",
+    "entryNames": "[name]-[hash]",
+    "publicPath": "/htdocs/",
+}
+
+write_file(
+    name = "esbuild_dev_config",
+    out = "esbuild.dev.config.mjs",
+    content = ["export default " + json.encode(BASE_ESBUILD_CONFIG)],
+)
+
+write_file(
+    name = "esbuild_prod_config",
+    out = "esbuild.prod.config.mjs",
+    content = ["export default " + json.encode(dict(
+        BASE_ESBUILD_CONFIG,
+        conditions = [
+            "production",
+            "browser",
+            "import",
+        ],
+    ))],
+)
+
 esbuild(
     name = "app_bundle",
-    srcs = [
-        "esbuild.config.mjs",
-        ":style_bundle",
-    ],
-    config = "esbuild.config.mjs",
+    srcs = [":style_bundle"],
+    config = select({
+        ":minify": ":esbuild.prod.config.mjs",
+        "//conditions:default": ":esbuild.dev.config.mjs",
+    }),
     entry_points = [
         "index.tsx",
         "style_bundle.css",
     ],
     metafile = True,
-    minify = True,
+    minify = select({
+        ":minify": True,
+        "//conditions:default": False,
+    }),
     output_dir = True,
     sourcemap = None,
     tsconfig = "//:tsconfig",
     visibility = ["//visibility:public"],
-    deps = [
-        ":client_ts",
-    ],
+    deps = [":client_ts"],
 )
 
 esbuild_metadata(
@@ -162,12 +203,11 @@ oci_image_index(
 oci_push(
     name = "push",
     image = ":image",
-    remote_tags = ["latest"],
-    repository = "localhost:5000/truescrub-client",
 )
 
 ts_library(
     name = "client_ts_test_lib",
+    testonly = True,
     srcs = ["TrueScrubClient.test.tsx"],
     tsconfig = "//:tsconfig_test",
     deps = [
@@ -181,21 +221,21 @@ ts_library(
         "//:node_modules/@types/react",
         "//:node_modules/@types/react-dom",
         "//:node_modules/react",
-        "//:node_modules/react-dom",
         "//:node_modules/react-router-dom",
-        "//client/api",
+        "//client/api:brand",
+        "//client/api:truescrub",
+        "//proto:config_service_js",
         "//proto:season_service_js",
     ],
 )
 
 jest_test(
     name = "client_ts_test",
-    config = "//:jest_config",
+    config = "//:jest.config.js",
     data = [
         ":client_ts_test_lib",
+        "//:jest_config",
         "//:node_modules/jest-environment-jsdom",
-        "//:node_modules/ts-jest",
-        "//:tsconfig",
         "//client:file_mock",
         "//client:test_setup",
     ],

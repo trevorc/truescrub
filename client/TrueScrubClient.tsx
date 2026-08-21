@@ -1,28 +1,35 @@
-import {createBrowserRouter, RouterProvider} from "react-router-dom";
+import {createBrowserRouter, RouteObject, RouterProvider} from "react-router-dom";
 import {TransportProvider} from "@connectrpc/connect-query";
-import {QueryClientProvider} from "@tanstack/react-query";
+import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import {queryClient, transport} from "client/api/truescrub.js";
 import {matchmakingLoader, MatchmakingPage} from "client/pages/MatchmakingPage.js";
 import {accoladesLoader, AccoladesPage} from "client/pages/AccoladesPage.js";
-import {homeLoader, HomePage} from "client/pages/HomePage.js";
+import {HomePage} from "client/pages/HomePage.js";
 import {leaderboardLoader, LeaderboardPage} from "client/pages/LeaderboardPage.js";
 import {profileLoader, ProfilePage} from "client/pages/ProfilePage.js";
 import {SkillGroupsPage} from "client/pages/SkillGroupsPage.js";
 import {NotFoundPage} from "client/pages/NotFoundPage.js";
 import {RootLayout} from "client/layouts/RootLayout.js";
-
-import {QueryClient} from "@tanstack/react-query";
-import {RouteObject} from "react-router-dom";
+import {brandQueryOptions} from "client/api/brand.js";
+import {availableSeasonsQueryOptions} from "client/api/seasons.js";
+import {LoadingState} from "client/components/LoadingState.js";
 import type {Transport} from "@connectrpc/connect";
 
 export const getRoutes = (queryClient: QueryClient, transport: Transport): RouteObject[] => [
   {
     element: <RootLayout/>,
+    HydrateFallback: () => <LoadingState message="Initializing App..."/>,
+    loader: async () => {
+      await Promise.all([
+        queryClient.ensureQueryData(brandQueryOptions(transport)),
+        queryClient.ensureQueryData(availableSeasonsQueryOptions(transport))
+      ]);
+      return null;
+    },
     children: [
       {
         path: "/",
         element: <HomePage/>,
-        loader: homeLoader(queryClient, transport),
       },
       {
         path: "/matchmaking",

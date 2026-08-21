@@ -18,7 +18,9 @@ ts_library(
         "//:node_modules/react",
         "//:node_modules/react-dom",
         "//:node_modules/react-router-dom",
-        "//client/api",
+        "//client/api:brand",
+        "//client/api:seasons",
+        "//client/api:truescrub",
         "//client/components:globals",
         "//proto:season_service_js",
     ],
@@ -37,7 +39,8 @@ ts_library(
         "//:node_modules/react",
         "//:node_modules/react-dom",
         "//:node_modules/react-router-dom",
-        "//client/api",
+        "//client/api:seasons",
+        "//client/api:truescrub",
         "//client/components:error_state",
         "//client/components:loading_state",
         "//proto:matchmaking_service_js",
@@ -57,7 +60,7 @@ ts_library(
         "//:node_modules/react",
         "//:node_modules/react-dom",
         "//:node_modules/react-router-dom",
-        "//client/api",
+        "//client/api:truescrub",
         "//client/components:accolade_card",
         "//client/components:error_state",
         "//client/components:globals",
@@ -126,7 +129,9 @@ ts_library(
         "//:node_modules/react",
         "//:node_modules/react-dom",
         "//:node_modules/react-router-dom",
-        "//client/api",
+        "//client/api:brand",
+        "//client/api:seasons",
+        "//client/api:truescrub",
         "//client/components:error_state",
         "//client/components:globals",
         "//client/components:loading_state",
@@ -149,7 +154,7 @@ ts_library(
         "//:node_modules/@types/react-dom",
         "//:node_modules/react",
         "//:node_modules/react-dom",
-        "//client/api",
+        "//client/api:truescrub",
         "//client/components:error_state",
         "//client/components:loading_state",
         "//proto:profile_service_js",
@@ -167,7 +172,7 @@ ts_library(
         "//:node_modules/@types/react-dom",
         "//:node_modules/react",
         "//:node_modules/react-dom",
-        "//client/api",
+        "//client/api:truescrub",
         "//client/components:error_state",
         "//client/components:loading_state",
         "//proto:profile_service_js",
@@ -217,7 +222,8 @@ ts_library(
         "//:node_modules/react-router-dom",
         "//:node_modules/recharts",
         "//:node_modules/redux",
-        "//client/api",
+        "//client/api:seasons",
+        "//client/api:truescrub",
         "//client/components:error_state",
         "//client/components:loading_state",
         "//proto:common_js",
@@ -251,6 +257,7 @@ ts_library(
 
 ts_library(
     name = "leaderboard_page_test_lib",
+    testonly = True,
     srcs = ["LeaderboardPage.test.ts"],
     tsconfig = "//:tsconfig_test",
     deps = [
@@ -262,12 +269,11 @@ ts_library(
 
 jest_test(
     name = "leaderboard_page_test",
-    config = "//:jest_config",
+    config = "//:jest.config.js",
     data = [
         ":leaderboard_page_test_lib",
+        "//:jest_config",
         "//:node_modules/jest-environment-jsdom",
-        "//:node_modules/ts-jest",
-        "//:tsconfig",
         "//client:file_mock",
         "//client:test_setup",
     ],
@@ -276,6 +282,7 @@ jest_test(
 
 ts_library(
     name = "profile_page_test_lib",
+    testonly = True,
     srcs = ["ProfilePage.test.ts"],
     tsconfig = "//:tsconfig_test",
     deps = [
@@ -287,12 +294,11 @@ ts_library(
 
 jest_test(
     name = "profile_page_test",
-    config = "//:jest_config",
+    config = "//:jest.config.js",
     data = [
         ":profile_page_test_lib",
+        "//:jest_config",
         "//:node_modules/jest-environment-jsdom",
-        "//:node_modules/ts-jest",
-        "//:tsconfig",
         "//client:file_mock",
         "//client:test_setup",
     ],
@@ -310,6 +316,7 @@ ts_library(
 
 ts_library(
     name = "skill_group_test_lib",
+    testonly = True,
     srcs = ["skill_group.test.ts"],
     tsconfig = "//:tsconfig_test",
     deps = [
@@ -322,12 +329,11 @@ ts_library(
 
 jest_test(
     name = "skill_group_test",
-    config = "//:jest_config",
+    config = "//:jest.config.js",
     data = [
         ":skill_group_test_lib",
+        "//:jest_config",
         "//:node_modules/jest-environment-jsdom",
-        "//:node_modules/ts-jest",
-        "//:tsconfig",
         "//client:file_mock",
         "//client:test_setup",
     ],
@@ -336,6 +342,7 @@ jest_test(
 
 ts_library(
     name = "accolades_page_test_lib",
+    testonly = True,
     srcs = ["AccoladesPage.test.ts"],
     tsconfig = "//:tsconfig_test",
     deps = [
@@ -347,12 +354,11 @@ ts_library(
 
 jest_test(
     name = "accolades_page_test",
-    config = "//:jest_config",
+    config = "//:jest.config.js",
     data = [
         ":accolades_page_test_lib",
+        "//:jest_config",
         "//:node_modules/jest-environment-jsdom",
-        "//:node_modules/ts-jest",
-        "//:tsconfig",
         "//client:file_mock",
         "//client:test_setup",
     ],
@@ -361,6 +367,7 @@ jest_test(
 
 ts_library(
     name = "skill_groups_page_test_lib",
+    testonly = True,
     srcs = ["SkillGroupsPage.test.ts"],
     tsconfig = "//:tsconfig_test",
     deps = [
@@ -372,12 +379,11 @@ ts_library(
 
 jest_test(
     name = "skill_groups_page_test",
-    config = "//:jest_config",
+    config = "//:jest.config.js",
     data = [
         ":skill_groups_page_test_lib",
+        "//:jest_config",
         "//:node_modules/jest-environment-jsdom",
-        "//:node_modules/ts-jest",
-        "//:tsconfig",
         "//client:file_mock",
         "//client:test_setup",
     ],

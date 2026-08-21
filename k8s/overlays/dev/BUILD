@@ -1,3 +1,4 @@
+load("@rules_helm//helm:defs.bzl", "helm_template")
 load("@rules_kustomize//kustomize:kustomize.bzl", "kustomization", "kustomized_resources")
 
 genrule(
@@ -10,6 +11,16 @@ genrule(
     tools = ["@openssl"],
 )
 
+helm_template(
+    name = "gateway_helm",
+    chart = "@envoy_gateway_chart//:gateway-helm",
+    opts = [
+        "--name-template=eg",
+        "--namespace=envoy-gateway-system",
+        "--include-crds",
+    ],
+)
+
 kustomization(
     name = "dev",
     srcs = [
@@ -17,10 +28,10 @@ kustomization(
         "gatewayclass.yaml",
         "kustomization.yaml",
         "namespace.yaml",
-        "tls.crt",
-        "tls.key",
+        ":gateway_helm",
+        ":tls.crt",
+        ":tls.key",
     ],
-    requires_helm = True,
     deps = [
         "//k8s/apps/client",
         "//k8s/apps/truescrub",

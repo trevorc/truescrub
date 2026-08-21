@@ -1,4 +1,7 @@
-import {useState, useEffect} from "react";
+import {useEffect, useState} from "react";
+import {useSuspenseQuery} from "@tanstack/react-query";
+import {brandQueryOptions} from "client/api/brand.js";
+import {useTransport} from "@connectrpc/connect-query";
 
 const QUIPS = [
   "No chickens were harmed in the making of this leaderboard.",
@@ -26,6 +29,8 @@ const QUIPS = [
 
 export function Footer() {
   const [quip, setQuip] = useState("");
+  const transport = useTransport();
+  const {data: {siteName}} = useSuspenseQuery(brandQueryOptions(transport));
 
   useEffect(() => {
     setQuip(QUIPS[Math.floor(Math.random() * QUIPS.length)]);
@@ -40,7 +45,7 @@ export function Footer() {
           </span>
           <p className="italic">{quip}</p>
         </div>
-        <p>&copy; {new Date().getFullYear()} TrueScrub</p>
+        <p>&copy; {new Date().getFullYear()} {siteName}</p>
       </footer>
   );
 }

@@ -1,27 +1,23 @@
 import {Link} from "react-router-dom";
 import type {QueryClient} from "@tanstack/react-query";
-import {useQuery} from "@tanstack/react-query";
-import {createQueryOptions, useTransport} from "@connectrpc/connect-query";
+import {useSuspenseQuery} from "@tanstack/react-query";
+import {useTransport} from "@connectrpc/connect-query";
+import {brandQueryOptions} from "client/api/brand.js";
+import {availableSeasonsQueryOptions, getLatestSeasonPath} from "client/api/seasons.js";
 import type {Transport} from "@connectrpc/connect";
 import chicken_png from "client/components/img/chicken.png";
 import karambit_png from "client/pages/img/karambit.png";
 import c4_png from "client/pages/img/c4.png";
 import accolades_icon_png from "client/pages/img/accolades_icon.png";
 
-import {getAvailableSeasons} from "proto/season_service-SeasonService_connectquery.js";
 
-export const seasonsQueryOptions = (transport: Transport) => createQueryOptions(getAvailableSeasons, {}, {transport});
 
-export const homeLoader = (queryClient: QueryClient, transport: Transport) => async () => {
-  await queryClient.ensureQueryData(seasonsQueryOptions(transport));
-  return null;
-};
 
 export function HomePage() {
   const transport = useTransport();
-  const seasonsQuery = useQuery(seasonsQueryOptions(transport));
-  const seasons = seasonsQuery.data?.availableSeasons ?? [];
-  const seasonPath = seasons.length > 1 ? `/season/${seasons.length}` : "";
+  const {data: {availableSeasons}} = useSuspenseQuery(availableSeasonsQueryOptions(transport));
+  const {data: {siteName}} = useSuspenseQuery(brandQueryOptions(transport));
+  const seasonPath = getLatestSeasonPath(availableSeasons);
 
   return (
       <div
@@ -34,7 +30,7 @@ export function HomePage() {
           </div>
           <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-white mb-4">
             Welcome to <br/>
-            <span className="heading-gradient">TrueScrub™</span>
+            <span className="heading-gradient">{siteName}™</span>
           </h1>
           <p className="text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed">
             The ultimate competitive matchmaking and rating engine. Analyze performance, discover

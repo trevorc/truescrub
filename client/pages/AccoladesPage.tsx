@@ -1,8 +1,8 @@
-import {useEffect, useMemo} from "react";
+import {Suspense, useEffect} from "react";
 import type {LoaderFunctionArgs} from "react-router-dom";
 import {useLocation, useNavigate} from "react-router-dom";
 import type {QueryClient} from "@tanstack/react-query";
-import {skipToken, useQuery} from "@tanstack/react-query";
+import {useSuspenseQuery, useQuery} from "@tanstack/react-query";
 import type {Transport} from "@connectrpc/connect";
 import {createQueryOptions, useTransport} from "@connectrpc/connect-query";
 
@@ -15,54 +15,47 @@ import {
   GetDailyHighlightsResponse,
   ListMatchDaysResponse
 } from "proto/highlights_service_pb.js";
+import {create} from "@bufbuild/protobuf";
+import {Date as RpcDate, DateSchema} from "proto/common_pb.js";
 import {AccoladeCard} from "client/components/AccoladeCard.js";
 import {ErrorState} from "client/components/ErrorState.js";
 import {LoadingState} from "client/components/LoadingState.js";
 
 type AccoladeWithPlayer = { accolade: Accolade; playerName: string };
 
-export function formatMatchDayString(year: number, month: number, day: number): string {
-  const m = String(month).padStart(2, '0');
-  const d = String(day).padStart(2, '0');
-  return `${year}-${m}-${d}`;
+export function formatMatchDayString(date: RpcDate): string {
+  const m = String(date.month).padStart(2, '0');
+  const d = String(date.day).padStart(2, '0');
+  return `${date.year}-${m}-${d}`;
 }
 
-export function parseMatchDayString(dateStr: string | null | undefined): {
-  year: number,
-  month: number,
-  day: number
-} | undefined {
+export function parseMatchDayString(dateStr: string | null): RpcDate | undefined {
   if (!dateStr) return undefined;
   const parts = dateStr.split('-');
   if (parts.length !== 3) return undefined;
   const [year, month, day] = parts.map(Number);
   if (isNaN(year) || isNaN(month) || isNaN(day)) return undefined;
-  return {year, month, day};
+  return create(DateSchema, {year, month, day});
 }
 
 export const matchDaysQueryOptions = (transport: Transport) => ({
   ...createQueryOptions(listMatchDays, {timezone: "-05:00"}, {transport}),
   select: (data: ListMatchDaysResponse) =>
-      data.matchDays.map(d => formatMatchDayString(d.year, d.month, d.day))
+      data.matchDays.map(formatMatchDayString)
 });
 
-export const highlightsQueryOptions = (dateInput: {
-  year: number,
-  month: number,
-  day: number
-} | undefined, transport: Transport) => ({
+export const highlightsQueryOptions = (dateInput: RpcDate, transport: Transport) => ({
   ...createQueryOptions(
       getDailyHighlights,
-      dateInput ? {
+      {
         date: dateInput,
         timezone: "-05:00",
         readMask: {
           paths: ["players.accolades", "players.player.steam_name"]
         },
-      } : skipToken,
+      },
       {transport}
   ),
-  enabled: dateInput !== undefined,
   select: (data: GetDailyHighlightsResponse) => data.players.flatMap(p =>
       p.accolades.map(accolade => ({
         accolade, playerName: p.player?.steamName ?? "Unknown"
@@ -75,15 +68,13 @@ export const accoladesLoader = (queryClient: QueryClient, transport: Transport) 
   const hash = url.hash.substring(1);
 
   const rawMatchDays = await queryClient.ensureQueryData(matchDaysQueryOptions(transport));
-  const matchDays = rawMatchDays.matchDays.map(d => formatMatchDayString(d.year, d.month, d.day));
-  const hasNoDays = matchDays.length === 0;
-
-  const currentIndex = hasNoDays ? 0 : Math.max(0, matchDays.indexOf(hash));
-  const currentDayString = !hasNoDays ? matchDays[currentIndex] : null;
+  const matchDays = rawMatchDays.matchDays.map(formatMatchDayString);
+  const currentIndex = matchDays.length === 0 ? 0 : Math.max(0, matchDays.indexOf(hash));
+  const currentDayString = matchDays.length === 0 ? null : matchDays[currentIndex];
   const dateInput = parseMatchDayString(currentDayString);
 
   if (dateInput) {
-    await queryClient.ensureQueryData(highlightsQueryOptions(dateInput, transport));
+    queryClient.prefetchQuery(highlightsQueryOptions(dateInput, transport));
   }
   return null;
 };
@@ -93,26 +84,18 @@ export function AccoladesPage() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const matchDaysQuery = useQuery(matchDaysQueryOptions(transport));
-  const matchDays = matchDaysQuery.data ?? [];
+  const {data: matchDays} = useSuspenseQuery(matchDaysQueryOptions(transport));
   const hasNoDays = matchDays.length === 0;
 
   const hash = location.hash.substring(1);
   const currentIndex = hasNoDays ? 0 : Math.max(0, matchDays.indexOf(hash));
-  const currentDayString = !hasNoDays ? matchDays[currentIndex] : null;
+  const currentDayString = hasNoDays ? null : matchDays[currentIndex];
 
-  // Auto-correct URL if it doesn't match the resolved current day
   useEffect(() => {
     if (currentDayString && hash !== currentDayString) {
       navigate(`#${currentDayString}`, {replace: true});
     }
   }, [currentDayString, hash, navigate]);
-
-  const dateInput = useMemo(() => parseMatchDayString(currentDayString), [currentDayString]);
-  const highlightsQuery = useQuery(highlightsQueryOptions(dateInput, transport));
-  const accolades: AccoladeWithPlayer[] = highlightsQuery.data ?? [];
-  const loading = matchDaysQuery.isLoading || (highlightsQuery.isFetching && !highlightsQuery.data);
-  const error = matchDaysQuery.isError || highlightsQuery.isError;
 
   const displayDate = currentDayString
       ? new Date(currentDayString + 'T00:00:00-05:00').toLocaleDateString('en-US', {
@@ -121,7 +104,17 @@ export function AccoladesPage() {
         month: 'long',
         day: 'numeric'
       })
-      : (matchDaysQuery.isError ? "Error" : "No Match Days Found");
+      : "No Match Days Found";
+
+  const dateInput = parseMatchDayString(currentDayString);
+  const highlightsQuery = useQuery({
+    ...highlightsQueryOptions(dateInput!, transport),
+    enabled: !!dateInput
+  });
+
+  const loading = highlightsQuery.isLoading || highlightsQuery.isFetching;
+  const error = highlightsQuery.isError;
+  const accolades = highlightsQuery.data ?? [];
 
   return (
       <>
@@ -146,22 +139,22 @@ export function AccoladesPage() {
           </button>
         </div>
 
-        {loading && (
+        {hasNoDays ? (
+            <div className="text-center py-16 text-slate-400">
+              <p className="text-lg font-medium">No match data.</p>
+            </div>
+        ) : !dateInput ? (
+            <ErrorState message="Invalid match day string in URL."/>
+        ) : loading ? (
             <LoadingState message="Chickens are crunching the stats..."/>
-        )}
-
-        {error && !loading && (
-            <ErrorState message="Failed to load accolades. Please try again later."/>
-        )}
-
-        {!loading && !error && accolades.length === 0 && !hasNoDays && (
+        ) : error ? (
+            <ErrorState message="Failed to load daily highlights."/>
+        ) : accolades.length === 0 ? (
             <div className="text-center py-16 text-slate-400">
               <p className="text-lg font-medium">No accolades available for this day.</p>
               <p className="text-sm text-slate-500 mt-1">Even the chickens left.</p>
             </div>
-        )}
-
-        {!loading && !error && accolades.length > 0 && (
+        ) : (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {accolades.map((acc) => (
                   <AccoladeCard key={`${acc.playerName}-${acc.accolade.name}`}

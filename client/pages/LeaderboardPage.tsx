@@ -1,13 +1,14 @@
 import React, {useState} from 'react';
 import type {QueryClient} from '@tanstack/react-query';
-import {useQuery} from '@tanstack/react-query';
+import {useQuery, useSuspenseQuery} from '@tanstack/react-query';
 import {createQueryOptions, useTransport} from '@connectrpc/connect-query';
+import {brandQueryOptions} from 'client/api/brand.js';
+import {availableSeasonsQueryOptions} from 'client/api/seasons.js';
 import type {Transport} from '@connectrpc/connect';
 
 import type {LoaderFunctionArgs} from 'react-router-dom';
 import {Link, useParams} from 'react-router-dom';
 import {getLeaderboard} from 'proto/leaderboard_service-LeaderboardService_connectquery.js';
-import {getAvailableSeasons} from 'proto/season_service-SeasonService_connectquery.js';
 import {fromJson} from '@bufbuild/protobuf';
 import {SkillGroupConfigurationSchema} from 'truescrub/proto/profile_pb.js';
 import skillGroupsJson from 'truescrub/proto/skill_groups.json';
@@ -88,15 +89,15 @@ function PercentileEstimate({mu, sigma, zScore}: {
   );
 }
 
-export const availableSeasonsQueryOptions = (transport: Transport) => createQueryOptions(getAvailableSeasons, {}, {transport});
 export const leaderboardQueryOptions = (seasonId: number | undefined, transport: Transport) => createQueryOptions(getLeaderboard, {seasonId}, {transport});
 
 export const leaderboardLoader = (queryClient: QueryClient, transport: Transport) => async ({params}: LoaderFunctionArgs) => {
   const seasonId = params.seasonId ? parseInt(params.seasonId, 10) : undefined;
   await Promise.all([
-    queryClient.ensureQueryData(leaderboardQueryOptions(seasonId, transport)),
-    queryClient.ensureQueryData(availableSeasonsQueryOptions(transport))
+    queryClient.ensureQueryData(availableSeasonsQueryOptions(transport)),
+    queryClient.ensureQueryData(brandQueryOptions(transport)),
   ]);
+  queryClient.prefetchQuery(leaderboardQueryOptions(seasonId, transport));
   return null;
 };
 
@@ -109,10 +110,10 @@ export function LeaderboardPage() {
   const skillGroupsConfig = React.useMemo(() => fromJson(SkillGroupConfigurationSchema, skillGroupsJson), []);
 
   const leaderboardQuery = useQuery(leaderboardQueryOptions(parsedSeasonId, transport));
-  const seasonsQuery = useQuery(availableSeasonsQueryOptions(transport));
+  const {data: {availableSeasons}} = useSuspenseQuery(availableSeasonsQueryOptions(transport));
+  const {data: {siteName}} = useSuspenseQuery(brandQueryOptions(transport));
   const rawPlayers = leaderboardQuery.data?.leaderboard || [];
-  const seasons = seasonsQuery.data?.availableSeasons || [];
-  const loading = leaderboardQuery.isLoading;
+  const loading = leaderboardQuery.isLoading || leaderboardQuery.isFetching;
   const error = leaderboardQuery.isError;
 
   const players = React.useMemo(() => {
@@ -134,7 +135,7 @@ export function LeaderboardPage() {
         <div className="mb-4 flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
             <h1 className="text-4xl font-bold text-white mb-2">Leaderboard</h1>
-            <p className="text-slate-400">Top ranked players across TrueScrub matchmaking.</p>
+            <p className="text-slate-400">Top ranked players across {siteName} matchmaking.</p>
           </div>
         </div>
 
@@ -147,7 +148,7 @@ export function LeaderboardPage() {
             <Link to="/leaderboard"
                   className={!parsedSeasonId ? "px-3 py-1.5 rounded-lg text-sm font-medium bg-brand-600 text-white shadow-md shadow-brand-500/20" : "px-3 py-1.5 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"}>All</Link>
 
-            {seasons.map((season) => (
+            {availableSeasons.map((season) => (
                 <Link key={season} to={`/leaderboard/season/${season}`}
                       className={parsedSeasonId === season ? "px-3 py-1.5 rounded-lg text-sm font-medium bg-brand-600 text-white shadow-md shadow-brand-500/20" : "px-3 py-1.5 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"}>{season}</Link>
             ))}
@@ -172,15 +173,11 @@ export function LeaderboardPage() {
           </div>
         </div>
 
-        {loading && (
+        {loading ? (
             <LoadingState message="Loading leaderboard..."/>
-        )}
-
-        {error && !loading && (
+        ) : error ? (
             <ErrorState message="Failed to load leaderboard. Please try again later."/>
-        )}
-
-        {!loading && !error && (
+        ) : (
             <div className="glass-panel rounded-2xl overflow-hidden shadow-2xl">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse whitespace-nowrap">
@@ -211,7 +208,6 @@ export function LeaderboardPage() {
                     const {lower, upper} = calculatePercentileBounds(mu, sigma, zScore);
                     const impact = player.impactRating != null ? player.impactRating.toFixed(2) : '-';
 
-                    // Map legacy image names
                     const displayName = skillGroupName(dynamicMmr, skillGroupsConfig, showSpecialSkillGroups);
                     const baseName = skillGroupName(dynamicMmr, skillGroupsConfig, false);
                     const isSpecial = showSpecialSkillGroups && displayName !== baseName;
@@ -220,7 +216,6 @@ export function LeaderboardPage() {
                         <tr key={player.playerId.toString()}
                             className="hover:bg-slate-800/50 transition-colors group">
                           <td className="py-3 px-6">
-                            {/* Native a tag for profiles until they are ported */}
                             <a href={`/profiles/${player.playerId.toString()}`}
                                className="font-medium text-white group-hover:text-brand-400 group-hover:underline transition-colors flex items-center gap-3">
                               <div
@@ -263,6 +258,13 @@ export function LeaderboardPage() {
                         </tr>
                     );
                   })}
+                  {players.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="py-12 text-center text-slate-500 italic">
+                          No players found on this leaderboard.
+                        </td>
+                      </tr>
+                  )}
                   </tbody>
                 </table>
               </div>

@@ -45,6 +45,9 @@ importers:
       '@connectrpc/protoc-gen-connect-query':
         specifier: 2.2.0
         version: 2.2.0(@bufbuild/protoc-gen-es@2.13.0(@bufbuild/protobuf@2.13.0)(supports-color@8.1.1))(supports-color@8.1.1)
+      '@jest/types':
+        specifier: ^30.4.1
+        version: 30.4.1
       '@tailwindcss/cli':
         specifier: 4.3.3
         version: 4.3.3

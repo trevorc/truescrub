@@ -2,12 +2,12 @@ import React, {useMemo, useState} from 'react';
 import type {LoaderFunctionArgs} from 'react-router-dom';
 import {NavLink, Route, Routes, useParams} from 'react-router-dom';
 import type {QueryClient} from '@tanstack/react-query';
-import {useQuery} from '@tanstack/react-query';
+import {useQuery, useSuspenseQuery} from '@tanstack/react-query';
 import {createQueryOptions, useTransport} from "@connectrpc/connect-query";
+import {availableSeasonsQueryOptions} from 'client/api/seasons.js';
 import type {Transport} from "@connectrpc/connect";
 
 import {getProfile, getSkillHistory} from 'proto/profile_service-ProfileService_connectquery.js';
-import {getAvailableSeasons} from 'proto/season_service-SeasonService_connectquery.js';
 import {ErrorState} from 'client/components/ErrorState.js';
 import {LoadingState} from 'client/components/LoadingState.js';
 import {
@@ -22,8 +22,8 @@ import {
   YAxis
 } from 'recharts';
 
-import {MatchesTab} from 'client/pages/MatchesTab.js';
-import {TeamRecordsTab} from 'client/pages/TeamRecordsTab.js';
+import {MatchesTab, playerRoundsQueryOptions} from 'client/pages/MatchesTab.js';
+import {TeamRecordsTab, playerTeamRecordsQueryOptions} from 'client/pages/TeamRecordsTab.js';
 import {fromJson} from '@bufbuild/protobuf';
 import {
   AchievementConfigurationSchema,
@@ -169,8 +169,6 @@ export function getLocalTimezoneOffset(date: Date = new Date()) {
 
 export const profileQueryOptions = (playerId: bigint, transport: Transport) =>
     createQueryOptions(getProfile, {playerId}, {transport});
-export const availableSeasonsQueryOptions = (transport: Transport) =>
-    createQueryOptions(getAvailableSeasons, {}, {transport});
 export const skillHistoryQueryOptions = (
     playerId: bigint,
     seasonId: number,
@@ -184,13 +182,15 @@ export const skillHistoryQueryOptions = (
 
 export const profileLoader = (queryClient: QueryClient, transport: Transport) => async ({params}: LoaderFunctionArgs) => {
   const playerId = BigInt(params.playerId || '0');
-  await Promise.all([
-    queryClient.ensureQueryData(profileQueryOptions(playerId, transport)),
-    queryClient.ensureQueryData(availableSeasonsQueryOptions(transport)),
-    queryClient.ensureQueryData(skillHistoryQueryOptions(playerId, 0, getLocalTimezoneOffset(), transport))
-  ]);
+  await queryClient.ensureQueryData(availableSeasonsQueryOptions(transport));
+  queryClient.prefetchQuery(profileQueryOptions(playerId, transport));
+  queryClient.prefetchQuery(skillHistoryQueryOptions(playerId, 0, getLocalTimezoneOffset(), transport));
   return null;
 };
+
+function seasonLabel(season: number): string {
+  return season === 0 ? "all" : `${season}`;
+}
 
 export function ProfilePage() {
   const transport = useTransport();
@@ -207,9 +207,8 @@ export function ProfilePage() {
     error: profileError
   } = useQuery(profileQueryOptions(id, transport));
   const {
-    data: seasonsData,
-    isLoading: seasonsLoading
-  } = useQuery(availableSeasonsQueryOptions(transport));
+    data: {availableSeasons}
+  } = useSuspenseQuery(availableSeasonsQueryOptions(transport));
   const {
     data: historyData,
     isLoading: historyLoading
@@ -235,8 +234,8 @@ export function ProfilePage() {
     }).sort((a, b) => a.date - b.date);
   }, [historyData, skillGroupsConfig]);
 
-  if (profileLoading || seasonsLoading) {
-    return <LoadingState/>;
+  if (profileLoading) {
+    return <LoadingState message="Loading player profile..."/>;
   }
 
   if (profileError || !profileData?.player) {
@@ -253,7 +252,6 @@ export function ProfilePage() {
     seasonRatings,
     achievements
   } = profileData;
-  const currentSeason = seasonsData?.availableSeasons?.length || 0;
 
   const allSeasonIds = Object.keys(seasonSkills)
       .map(Number)
@@ -478,15 +476,12 @@ export function ProfilePage() {
                     </h2>
                     <div className="flex items-center gap-3">
                       <div className="text-sm font-medium flex items-center gap-1">
-                        {[0, ...Array.from({length: currentSeason}, (_, i) => i + 1)].map(season => {
-                          const label = season === 0 ? 'all' : season;
-                          if (season === selectedSeason) {
-                            return <strong key={season}
-                                           className="px-2.5 py-1 bg-brand-500/20 shadow-inner border border-brand-500/30 rounded-lg text-brand-300">{label}</strong>
-                          }
-                          return <button key={season} onClick={() => setSelectedSeason(season)}
-                                         className="px-2.5 py-1 text-brand-400 hover:text-brand-300 hover:underline transition-colors">{label}</button>
-                        })}
+                        {[0, ...availableSeasons].map(season => season === selectedSeason
+                            ? <strong key={season}
+                                      className="px-2.5 py-1 bg-brand-500/20 shadow-inner border border-brand-500/30 rounded-lg text-brand-300">{seasonLabel(season)}</strong>
+                            : <button key={season} onClick={() => setSelectedSeason(season)}
+                                      className="px-2.5 py-1 text-brand-400 hover:text-brand-300 hover:underline transition-colors">{seasonLabel(season)}</button>
+                        )}
                       </div>
                       <button onClick={() => setShowImpact(!showImpact)} type="button"
                               className="btn-secondary text-xs px-4 py-1.5 rounded-full font-bold uppercase tracking-wider backdrop-blur-md bg-dark-card/50 hover:bg-white/10 border-white/10 transition-all text-slate-300 hover:text-white">
