@@ -1,0 +1,12 @@
+--- src/python/grpcio/grpc/_cython/_cygrpc/private_key_signing/BUILD.bazel
++++ src/python/grpcio/grpc/_cython/_cygrpc/private_key_signing/BUILD.bazel
+@@ -9,7 +9,6 @@ cc_library(
+         "//src/core/grpcio/grpc/_cython:__subpackages__",
+     ],
+     deps = [
+         "//:gpr",
+         "//:grpc",
+         "@rules_python//python/cc:current_py_cc_headers",
+-        "@rules_python//python/cc:current_py_cc_libs",
+     ],
+ )

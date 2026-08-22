@@ -1,8 +1,8 @@
 bazel_dep(name = "aspect_rules_esbuild", version = "0.27.0")
-bazel_dep(name = "aspect_rules_js", version = "3.4.0")
+bazel_dep(name = "aspect_rules_js", version = "3.4.1")
 bazel_dep(name = "aspect_rules_jest", version = "0.26.0")
-bazel_dep(name = "aspect_rules_py", version = "2.0.0-alpha.5")
-bazel_dep(name = "aspect_rules_ts", version = "3.10.0")
+bazel_dep(name = "aspect_rules_py", version = "2.0.0-alpha.6")
+bazel_dep(name = "aspect_rules_ts", version = "3.10.1")
 bazel_dep(name = "bazel_lib", version = "3.7.1")
 bazel_dep(name = "bazel_skylib", version = "1.9.2")
 bazel_dep(name = "grpc", version = "1.83.0")
@@ -15,17 +15,59 @@ bazel_dep(name = "riegeli", version = "0.0.0-20250822-9f2744d")
 bazel_dep(name = "rules_helm", version = "0.31.0")
 bazel_dep(name = "rules_kustomize", version = "0.5.3")
 bazel_dep(name = "rules_oci", version = "2.3.0")
-bazel_dep(name = "rules_pkg", version = "1.3.0")
 bazel_dep(name = "rules_proto_grpc_python", version = "5.8.0")
+bazel_dep(name = "tar.bzl", version = "0.10.8")
 
 single_version_override(
-    module_name = "googleapis",
-    version = "0.0.0-20260812-f76fc6dc",
+    module_name = "envoy_api",
+    version = "0.0.0-20260130-84e8436",
+)
+
+single_version_override(
+    module_name = "grpc",
+    patch_strip = 0,
+    patches = ["//patches:grpc_remove_py_libs.patch"],
 )
 
 single_version_override(
     module_name = "highwayhash",
     version = "0.0.0-20240305-5ad3bf8.bcr.1",
+)
+
+http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+http_file = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
+
+http_archive(
+    name = "sws_linux_amd64",
+    build_file_content = 'exports_files(["static-web-server"])',
+    sha256 = "804bc0c31c78385ac04e9a36f3c2aa3d3170eb77d66807c2a1660c56b2026bb1",
+    strip_prefix = "static-web-server-v2.44.0-x86_64-unknown-linux-musl",
+    urls = ["https://github.com/static-web-server/static-web-server/releases/download/v2.44.0/static-web-server-v2.44.0-x86_64-unknown-linux-musl.tar.gz"],
+)
+
+http_archive(
+    name = "sws_linux_arm64",
+    build_file_content = 'exports_files(["static-web-server"])',
+    sha256 = "e9d6bd0b05dea441028eb4e690249ab585d711b311646bf9f420fcea01449670",
+    strip_prefix = "static-web-server-v2.44.0-aarch64-unknown-linux-musl",
+    urls = ["https://github.com/static-web-server/static-web-server/releases/download/v2.44.0/static-web-server-v2.44.0-aarch64-unknown-linux-musl.tar.gz"],
+)
+
+http_file(
+    name = "tailwindcss_linux_amd64",
+    downloaded_file_path = "tailwindcss",
+    executable = True,
+    sha256 = "dc61b3ac6b8c9ca874c0cc4c57b2409791a64c5540404ca5f5367360babc313a",
+    urls = ["https://github.com/tailwindlabs/tailwindcss/releases/download/v4.3.3/tailwindcss-linux-x64"],
+)
+
+http_file(
+    name = "tailwindcss_linux_arm64",
+    downloaded_file_path = "tailwindcss",
+    executable = True,
+    sha256 = "55fd0b241214eff3de1e8ee4f22796662f2d2e7a49bcfca7477cfd0bac398195",
+    urls = ["https://github.com/tailwindlabs/tailwindcss/releases/download/v4.3.3/tailwindcss-linux-arm64"],
 )
 
 interpreters = use_extension("@aspect_rules_py//py:extensions.bzl", "python_interpreters")
@@ -53,23 +95,11 @@ oci.pull(
         "linux/arm64/v8",
     ],
 )
-oci.pull(
-    name = "sws_base",
-    digest = "sha256:2c1a7c3e0feaea5859307403b74e1c575f3ec1499094fc077344173d11abaae2",
-    image = "docker.io/joseluisq/static-web-server",
-    platforms = [
-        "linux/amd64",
-        "linux/arm64",
-    ],
-)
 use_repo(
     oci,
     "distroless_cc",
     "distroless_cc_linux_amd64",
     "distroless_cc_linux_arm64_v8",
-    "sws_base",
-    "sws_base_linux_amd64",
-    "sws_base_linux_arm64",
 )
 
 ################
@@ -89,13 +119,13 @@ npm.npm_translate_lock(
 )
 use_repo(npm, "npm")
 
-rules_ts_ext = use_extension(
+rules_typescript = use_extension(
     "@aspect_rules_ts//ts:extensions.bzl",
     "typescript",
     dev_dependency = True,
 )
-rules_ts_ext.deps()
-use_repo(rules_ts_ext, "npm_typescript")
+rules_typescript.deps()
+use_repo(rules_typescript, "npm_typescript")
 
 ##########
 ## Helm ##
@@ -108,7 +138,7 @@ helm_import_repository = use_repo_rule(
 
 helm_import_repository(
     name = "envoy_gateway_chart",
-    url = "oci://registry-1.docker.io/envoyproxy/gateway-helm:v1.8.1",
+    url = "oci://registry-1.docker.io/envoyproxy/gateway-helm:v1.9.0",
 )
 
 ################
@@ -118,4 +148,5 @@ helm_import_repository(
 register_toolchains(
     "@llvm//toolchain:all",
     "@python_interpreters//:all",
+    "//client/toolchains:all",
 )

@@ -1,11 +1,10 @@
 load("@aspect_rules_esbuild//esbuild:defs.bzl", "esbuild")
 load("@aspect_rules_jest//jest:defs.bzl", "jest_test")
-load("@aspect_rules_js//js:defs.bzl", "js_binary")
-load("@bazel_lib//lib:directory_path.bzl", "directory_path")
+load("@bazel_lib//lib:copy_to_directory.bzl", "copy_to_directory")
 load("@bazel_skylib//rules:write_file.bzl", "write_file")
 load("@rules_oci//oci:defs.bzl", "oci_image", "oci_image_index", "oci_push")
-load("@rules_pkg//pkg:tar.bzl", "pkg_tar")
-load("//client:rules/esbuild.bzl", "esbuild_metadata")
+load("@tar.bzl", "mutate", "tar")
+load("//client:rules/sws.bzl", "sws")
 load("//client:rules/tailwind.bzl", "tailwind_css")
 load("//client:rules/ts_library.bzl", "ts_library")
 
@@ -68,9 +67,10 @@ ts_library(
 )
 
 BASE_ESBUILD_CONFIG = {
-    "loader": {".png": "file"},
     "assetNames": "assets/[name]-[hash]",
     "entryNames": "[name]-[hash]",
+    "format": "esm",
+    "loader": {".png": "file"},
     "publicPath": "/htdocs/",
 }
 
@@ -102,7 +102,7 @@ esbuild(
     }),
     entry_points = [
         "index.tsx",
-        "style_bundle.css",
+        ":style_bundle",
     ],
     metafile = True,
     minify = select({
@@ -116,26 +116,11 @@ esbuild(
     deps = [":client_ts"],
 )
 
-esbuild_metadata(
+filegroup(
     name = "app_bundle_metadata",
-    target = ":app_bundle",
+    srcs = [":app_bundle"],
+    output_group = "metafile",
     visibility = ["//client/public:__pkg__"],
-)
-
-directory_path(
-    name = "tailwindcss_entrypoint",
-    directory = "//:node_modules/@tailwindcss/cli/dir",
-    path = "dist/index.mjs",
-)
-
-js_binary(
-    name = "tailwindcss",
-    data = [
-        "//:node_modules/@tailwindcss/cli",
-        "//:node_modules/tailwindcss",
-    ],
-    entry_point = ":tailwindcss_entrypoint",
-    visibility = ["//client:__subpackages__"],
 )
 
 tailwind_css(
@@ -145,64 +130,83 @@ tailwind_css(
     visibility = ["//client:__subpackages__"],
 )
 
-pkg_tar(
-    name = "sws_config_layer",
-    srcs = ["sws.toml"],
-    package_dir = "/",
-)
-
-pkg_tar(
-    name = "client_public_layer",
+copy_to_directory(
+    name = "client_assets",
     srcs = [
+        ":app_bundle",
         "//client/public:favicon.png",
         "//client/public:index.html",
     ],
-    package_dir = "/public",
-    strip_prefix = "/client/public",
+    replace_prefixes = {
+        "public/": "",
+        "app_bundle/": "htdocs/",
+    },
 )
 
-pkg_tar(
+sws(
+    name = "server",
+    assets = ":client_assets",
+    config = "sws.toml",
+)
+
+tar(
+    name = "sws_config_layer",
+    srcs = ["sws.toml"],
+    mutate = mutate(package_dir = "/"),
+)
+
+tar(
+    name = "sws_bin_linux_amd64",
+    srcs = ["@sws_linux_amd64//:static-web-server"],
+    mutate = mutate(package_dir = "/"),
+)
+
+tar(
+    name = "sws_bin_linux_arm64",
+    srcs = ["@sws_linux_arm64//:static-web-server"],
+    mutate = mutate(package_dir = "/"),
+)
+
+tar(
     name = "client_layer",
-    srcs = [
-        ":app_bundle",
-    ],
-    package_dir = "/public/htdocs",
-    strip_prefix = "/client/app_bundle",
+    srcs = [":client_assets"],
+    mutate = mutate(
+        package_dir = "/public",
+        strip_prefix = "client/client_assets",
+    ),
 )
 
 oci_image(
-    name = "image_amd64",
-    base = "@sws_base_linux_amd64",
+    name = "image",
+    architecture = select({
+        "@platforms//cpu:aarch64": "arm64",
+        "@platforms//cpu:x86_64": "amd64",
+    }),
     entrypoint = ["/static-web-server"],
-    tars = [
-        ":sws_config_layer",
-        ":client_public_layer",
-        ":client_layer",
-    ],
-)
-
-oci_image(
-    name = "image_arm64",
-    base = "@sws_base_linux_arm64",
-    entrypoint = ["/static-web-server"],
-    tars = [
-        ":sws_config_layer",
-        ":client_public_layer",
-        ":client_layer",
-    ],
+    env = {
+        "SERVER_CONFIG_FILE": "/sws.toml",
+        "SERVER_ROOT": "/public",
+    },
+    os = "linux",
+    tars = [":sws_config_layer"] + select({
+        "@platforms//cpu:aarch64": [":sws_bin_linux_arm64"],
+        "@platforms//cpu:x86_64": [":sws_bin_linux_amd64"],
+    }) + [":client_layer"],
+    user = "65532:65532",
 )
 
 oci_image_index(
-    name = "image",
-    images = [
-        ":image_amd64",
-        ":image_arm64",
+    name = "image_index",
+    images = [":image"],
+    platforms = [
+        "//platform:linux_amd64",
+        "//platform:linux_arm64",
     ],
 )
 
 oci_push(
     name = "push",
-    image = ":image",
+    image = ":image_index",
 )
 
 ts_library(

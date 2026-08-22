@@ -1,36 +1,54 @@
-load("@aspect_rules_js//js:defs.bzl", "js_run_binary")
+load("@aspect_rules_js//js:providers.bzl", "JsInfo")
 
-def tailwind_css(name, srcs, input = None, **kwargs):
-    """Compiles Tailwind CSS by scanning content files for class names.
+_TAILWINDCSS_TOOLCHAIN = "//client/toolchains:tailwindcss_toolchain_type"
 
-    Args:
-        name: Target name.
-        srcs: Labels of files to scan for class names (e.g. esbuild bundles).
-        input: Optional CSS file to use as the entry point (e.g. "style.css").
-        **kwargs: Additional arguments to pass to js_run_binary.
-    """
-    output = name + ".css"
+def _tailwind_css_impl(ctx):
+    tailwind_bin = ctx.toolchains[_TAILWINDCSS_TOOLCHAIN].info.executable
 
-    run_srcs = list(srcs)
-    args = []
+    output = ctx.actions.declare_file(ctx.attr.name + ".css")
 
-    if input:
-        run_srcs.append(input)
-        args.extend(["--input", input])
+    args = ctx.actions.args()
+    if ctx.file.input:
+        args.add("-i", ctx.file.input.path)
+    args.add("--output", output.path)
+    args.add("--minify")
 
-    args.extend([
-        "--output",
-        output,
-        "--minify",
+    transitive_inputs = depset(transitive = [
+        dep[JsInfo].transitive_sources if JsInfo in dep else dep[DefaultInfo].files
+        for dep in ctx.attr.srcs
     ])
 
-    js_run_binary(
+    run_inputs = [transitive_inputs]
+    if ctx.file.input:
+        run_inputs.append(depset([ctx.file.input]))
+
+    ctx.actions.run(
+        outputs = [output],
+        inputs = depset(transitive = run_inputs),
+        executable = tailwind_bin,
+        arguments = [args],
+        progress_message = "Compiling Tailwind CSS %s" % ctx.label,
+    )
+
+    return [DefaultInfo(files = depset([output]))]
+
+tailwind_css_rule = rule(
+    implementation = _tailwind_css_impl,
+    toolchains = [_TAILWINDCSS_TOOLCHAIN],
+    attrs = {
+        "srcs": attr.label_list(allow_files = True),
+        "input": attr.label(allow_single_file = [".css"]),
+    },
+)
+
+def _tailwind_css_macro_impl(name, visibility, **kwargs):
+    tailwind_css_rule(
         name = name,
-        tool = "//client:tailwindcss",
-        srcs = run_srcs,
-        outs = [output],
-        chdir = native.package_name(),
-        args = args,
-        silent_on_success = True,
+        visibility = visibility,
         **kwargs
     )
+
+tailwind_css = macro(
+    implementation = _tailwind_css_macro_impl,
+    inherit_attrs = tailwind_css_rule,
+)

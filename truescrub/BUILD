@@ -1,6 +1,6 @@
 load("@aspect_rules_py//py:defs.bzl", "py_binary", "py_image_layer", "py_layer_tier", "py_library")
-load("@rules_oci//oci:defs.bzl", "oci_image", "oci_image_index", "oci_load", "oci_push")
-load("@rules_pkg//pkg:tar.bzl", "pkg_tar")
+load("@rules_oci//oci:defs.bzl", "oci_image", "oci_image_index", "oci_push")
+load("@tar.bzl", "tar")
 
 package(
     default_visibility = [
@@ -151,9 +151,7 @@ py_binary(
     name = "truescrub",
     srcs = ["__main__.py"],
     main = "__main__.py",
-    visibility = [
-        "//:__pkg__",
-    ],
+    visibility = ["//:__pkg__"],
     deps = [":application"],
 )
 
@@ -168,84 +166,38 @@ py_library(
 
 py_layer_tier(
     name = "tier",
-    interpreter_group = "interpreter",
+    groups = {
+        "@@grpc+//src/python/grpcio/grpc:grpcio": "50_grpc",
+        "@@grpc+//src/python/grpcio/grpc/_cython:cygrpc": "50_grpc",
+        "@@riegeli+//python/riegeli/records:record_writer": "40_riegeli",
+        "@@riegeli+//python/riegeli/records:record_reader": "40_riegeli",
+    },
+    interpreter_group = "10_interpreter",
 )
 
-pkg_tar(
+tar(
     name = "data_dir",
-    empty_dirs = ["/data"],
-    mode = "0755",
-    owner = "65532.65532",
-)
-
-platform(
-    name = "linux_amd64",
-    constraint_values = [
-        "@platforms//os:linux",
-        "@platforms//cpu:x86_64",
-    ],
+    mtree = ["data type=dir uid=65532 gid=65532 mode=0755"],
 )
 
 py_image_layer(
-    name = "layer_amd64",
+    name = "layer",
     binary = ":truescrub",
     layer_tier = ":tier",
-    platform = "//truescrub:linux_amd64",
-)
-
-platform(
-    name = "linux_arm64",
-    constraint_values = [
-        "@platforms//os:linux",
-        "@platforms//cpu:aarch64",
-    ],
-)
-
-py_image_layer(
-    name = "layer_arm64",
-    binary = ":truescrub",
-    layer_tier = ":tier",
-    platform = "//truescrub:linux_arm64",
-)
-
-ENTRYPOINT = [
-    "/app.runfiles/_main/truescrub/._truescrub.venv/bin/python3",
-    "/app.runfiles/_main/truescrub/__main__.py",
-    "--addr=0.0.0.0",
-    "--port=9000",
-]
-
-oci_image(
-    name = "image_amd64",
-    base = "@distroless_cc_linux_amd64",
-    entrypoint = ENTRYPOINT,
-    env = {
-        "TRUESCRUB_DATA_DIR": "/data",
-        "PYTHONPATH": "/app.runfiles/_main",
-        "LD_LIBRARY_PATH": "/app.runfiles/aspect_rules_py++python_interpreters+python_3_12_x86_64_unknown_linux_gnu/lib:/app.runfiles/_main/_solib_k8/_U_A_Arules_Upython++python+python_U3_U12_Ux86_U64-unknown-linux-gnu_S_S_Clibpython___Ulib",
-    },
-    exposed_ports = ["9000/tcp"],
-    tars = [
-        ":data_dir",
-        ":layer_amd64",
-    ],
-    user = "65532",
-    workdir = "/app.runfiles/_main",
 )
 
 oci_image(
-    name = "image_arm64",
-    base = "@distroless_cc_linux_arm64_v8",
-    entrypoint = ENTRYPOINT,
-    env = {
-        "TRUESCRUB_DATA_DIR": "/data",
-        "PYTHONPATH": "/app.runfiles/_main",
-        "LD_LIBRARY_PATH": "/app.runfiles/aspect_rules_py++python_interpreters+python_3_12_aarch64_unknown_linux_gnu/lib:/app.runfiles/_main/_solib_k8/_U_A_Arules_Upython++python+python_U3_U12_Uaarch64-unknown-linux-gnu_S_S_Clibpython___Ulib",
-    },
+    name = "image",
+    base = select({
+        "@platforms//cpu:aarch64": "@distroless_cc_linux_arm64_v8",
+        "@platforms//cpu:x86_64": "@distroless_cc_linux_amd64",
+    }),
+    entrypoint = ["/app"],
+    env = {"TRUESCRUB_DATA_DIR": "/data"},
     exposed_ports = ["9000/tcp"],
     tars = [
         ":data_dir",
-        ":layer_arm64",
+        ":layer",
     ],
     user = "65532",
     workdir = "/app.runfiles/_main",
@@ -253,19 +205,14 @@ oci_image(
 
 oci_image_index(
     name = "image_index",
-    images = [
-        ":image_amd64",
-        ":image_arm64",
+    images = [":image"],
+    platforms = [
+        "//platform:linux_amd64",
+        "//platform:linux_arm64",
     ],
 )
 
 oci_push(
     name = "push",
     image = ":image_index",
-)
-
-oci_load(
-    name = "load_amd64",
-    image = ":image_amd64",
-    repo_tags = ["truescrub:latest"],
 )

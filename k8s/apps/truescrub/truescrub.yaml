@@ -43,7 +43,6 @@ spec:
       containers:
         - name: truescrub
           image: truescrub
-          args: [ "-a", "0.0.0.0" ]
           ports:
             - name: http
               containerPort: 9000
