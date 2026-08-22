@@ -1,0 +1,23 @@
+apiVersion: k3d.io/v1alpha5
+kind: Simple
+kubeAPI:
+  hostIP: "127.0.0.1"
+image: rancher/k3s:v1.36.3-k3s1
+ports:
+  - port: 10443:443
+    nodeFilters: [ "loadbalancer" ]
+options:
+  kubeconfig:
+    updateDefaultKubeconfig: true
+  k3s:
+    extraArgs:
+      - arg: --disable=traefik,metrics-server
+        nodeFilters: [ "server:*" ]
+      - arg: --kubelet-arg=feature-gates=KubeletInUserNamespace=true
+        nodeFilters: [ "server:*" ]
+      - arg: --kubelet-arg=cgroup-driver=cgroupfs
+        nodeFilters: [ "server:*" ]
+      - arg: --kube-controller-manager-arg=feature-gates=KubeletInUserNamespace=true
+        nodeFilters: [ "server:*" ]
+      - arg: --kube-apiserver-arg=feature-gates=KubeletInUserNamespace=true
+        nodeFilters: [ "server:*" ]
