@@ -1,6 +1,7 @@
 load("@aspect_rules_esbuild//esbuild:defs.bzl", "esbuild")
 load("@aspect_rules_jest//jest:defs.bzl", "jest_test")
 load("@bazel_lib//lib:copy_to_directory.bzl", "copy_to_directory")
+load("@bazel_lib//lib:transitions.bzl", "platform_transition_filegroup")
 load("@bazel_skylib//rules:write_file.bzl", "write_file")
 load("@rules_oci//oci:defs.bzl", "oci_image", "oci_image_index", "oci_push")
 load("@tar.bzl", "mutate", "tar")
@@ -150,9 +151,15 @@ sws(
 )
 
 tar(
-    name = "sws_config_layer",
+    name = "sws_config_layer_tar",
     srcs = ["sws.toml"],
     mutate = mutate(package_dir = "/"),
+)
+
+platform_transition_filegroup(
+    name = "sws_config_layer",
+    srcs = [":sws_config_layer_tar"],
+    target_platform = "//platform:linux_amd64",
 )
 
 tar(
@@ -168,12 +175,18 @@ tar(
 )
 
 tar(
-    name = "client_layer",
+    name = "client_layer_tar",
     srcs = [":client_assets"],
     mutate = mutate(
         package_dir = "/public",
         strip_prefix = "client/client_assets",
     ),
+)
+
+platform_transition_filegroup(
+    name = "client_layer",
+    srcs = [":client_layer_tar"],
+    target_platform = "//platform:linux_amd64",
 )
 
 oci_image(
