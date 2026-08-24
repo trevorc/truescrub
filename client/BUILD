@@ -159,18 +159,15 @@ tar(
 platform_transition_filegroup(
     name = "sws_config_layer",
     srcs = [":sws_config_layer_tar"],
-    target_platform = "//platform:linux_amd64",
+    target_platform = "//platform:generic",
 )
 
 tar(
-    name = "sws_bin_linux_amd64",
-    srcs = ["@sws_linux_amd64//:static-web-server"],
-    mutate = mutate(package_dir = "/"),
-)
-
-tar(
-    name = "sws_bin_linux_arm64",
-    srcs = ["@sws_linux_arm64//:static-web-server"],
+    name = "sws_bin",
+    srcs = select({
+        "@platforms//cpu:aarch64": ["@sws_linux_arm64//:static-web-server"],
+        "@platforms//cpu:x86_64": ["@sws_linux_amd64//:static-web-server"],
+    }),
     mutate = mutate(package_dir = "/"),
 )
 
@@ -186,7 +183,7 @@ tar(
 platform_transition_filegroup(
     name = "client_layer",
     srcs = [":client_layer_tar"],
-    target_platform = "//platform:linux_amd64",
+    target_platform = "//platform:generic",
 )
 
 oci_image(
@@ -201,10 +198,11 @@ oci_image(
         "SERVER_ROOT": "/public",
     },
     os = "linux",
-    tars = [":sws_config_layer"] + select({
-        "@platforms//cpu:aarch64": [":sws_bin_linux_arm64"],
-        "@platforms//cpu:x86_64": [":sws_bin_linux_amd64"],
-    }) + [":client_layer"],
+    tars = [
+        ":sws_config_layer",
+        ":sws_bin",
+        ":client_layer",
+    ],
     user = "65532:65532",
 )
 

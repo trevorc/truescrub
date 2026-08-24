@@ -188,10 +188,7 @@ py_image_layer(
 
 oci_image(
     name = "image",
-    base = select({
-        "@platforms//cpu:aarch64": "@distroless_cc_linux_arm64_v8",
-        "@platforms//cpu:x86_64": "@distroless_cc_linux_amd64",
-    }),
+    base = "@distroless_cc",
     entrypoint = ["/app"],
     env = {"TRUESCRUB_DATA_DIR": "/data"},
     exposed_ports = ["9000/tcp"],

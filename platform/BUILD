@@ -15,3 +15,8 @@ platform(
         "@platforms//cpu:aarch64",
     ],
 )
+
+platform(
+    name = "generic",
+    constraint_values = [],
+)
