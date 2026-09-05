@@ -1,4 +1,4 @@
-import {Link} from "react-router-dom";
+import {Link} from "@tanstack/react-router";
 import {useSuspenseQuery} from "@tanstack/react-query";
 import {brandQueryOptions} from "client/api/brand.js";
 import {availableSeasonsQueryOptions, getLatestSeasonPath} from "client/api/seasons.js";

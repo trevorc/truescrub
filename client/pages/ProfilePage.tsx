@@ -1,12 +1,10 @@
 import React, {useMemo, useState} from 'react';
-import type {LoaderFunctionArgs} from 'react-router-dom';
-import {NavLink, Route, Routes, useParams} from 'react-router-dom';
-import type {QueryClient} from '@tanstack/react-query';
+import {createRoute, Link, Outlet} from '@tanstack/react-router';
+import {rootRoute} from 'client/RootRoute.js';
 import {useQuery, useSuspenseQuery} from '@tanstack/react-query';
 import {createQueryOptions, useTransport} from "@connectrpc/connect-query";
 import {availableSeasonsQueryOptions} from 'client/api/seasons.js';
 import type {Transport} from "@connectrpc/connect";
-
 import {getProfile, getSkillHistory} from 'proto/profile_service-ProfileService_connectquery.js';
 import {ErrorState} from 'client/components/ErrorState.js';
 import {LoadingState} from 'client/components/LoadingState.js';
@@ -21,9 +19,8 @@ import {
   XAxis,
   YAxis
 } from 'recharts';
-
 import {MatchesTab, playerRoundsQueryOptions} from 'client/pages/MatchesTab.js';
-import {TeamRecordsTab, playerTeamRecordsQueryOptions} from 'client/pages/TeamRecordsTab.js';
+import {playerTeamRecordsQueryOptions, TeamRecordsTab} from 'client/pages/TeamRecordsTab.js';
 import {fromJson} from '@bufbuild/protobuf';
 import {
   AchievementConfigurationSchema,
@@ -31,10 +28,7 @@ import {
 } from 'truescrub/proto/profile_pb.js';
 import skillGroupsJson from 'truescrub/proto/skill_groups.json';
 import {skillGroupName} from 'client/pages/skill_group.js';
-
 import achievementsJson from 'truescrub/proto/achievements.json';
-
-
 import rank_cardboard_i from "client/pages/ranks/cardboard_i.png";
 import rank_cardboard_ii from "client/pages/ranks/cardboard_ii.png";
 import rank_cardboard_iii from "client/pages/ranks/cardboard_iii.png";
@@ -48,7 +42,6 @@ import rank_plastic_elite from "client/pages/ranks/plastic_elite.png";
 import rank_plastic_i from "client/pages/ranks/plastic_i.png";
 import rank_plastic_ii from "client/pages/ranks/plastic_ii.png";
 import rank_plastic_iii from "client/pages/ranks/plastic_iii.png";
-
 import ach_distinct_maps from "client/pages/achievements/distinct_maps.png";
 import ach_distinct_teammates from "client/pages/achievements/distinct_teammates.png";
 import ach_multi_kill_rounds from "client/pages/achievements/multi_kill_rounds.png";
@@ -58,7 +51,7 @@ import ach_survived_losses from "client/pages/achievements/survived_losses.png";
 import ach_total_headshots from "client/pages/achievements/total_headshots.png";
 import ach_total_kills from "client/pages/achievements/total_kills.png";
 import ach_total_mvps from "client/pages/achievements/total_mvps.png";
-import ach_zero_damage_rounds from "client/pages/achievements/zero_damage_rounds.png";
+import ach_zero_damage_rounds from "client/pages/achievements/zero_damage_rounds.png"
 
 const RANKS: Record<string, string> = {
   "Cardboard I": rank_cardboard_i,
@@ -180,59 +173,68 @@ export const skillHistoryQueryOptions = (
   timezone
 }, {transport});
 
-export const profileLoader = (queryClient: QueryClient, transport: Transport) => async ({params}: LoaderFunctionArgs) => {
-  const playerId = BigInt(params.playerId || '0');
-  await queryClient.ensureQueryData(availableSeasonsQueryOptions(transport));
-  queryClient.prefetchQuery(profileQueryOptions(playerId, transport));
-  queryClient.prefetchQuery(skillHistoryQueryOptions(playerId, 0, getLocalTimezoneOffset(), transport));
-  return null;
-};
+export const profileRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/profiles/$playerId',
+  loader: async ({context: {queryClient, transport}, params: {playerId}}) => {
+    const id = BigInt(playerId);
+    await queryClient.ensureQueryData(availableSeasonsQueryOptions(transport));
+    queryClient.prefetchQuery(profileQueryOptions(id, transport));
+    queryClient.prefetchQuery(skillHistoryQueryOptions(id, 0, getLocalTimezoneOffset(), transport));
+  },
+  component: function ProfileLayoutComponent() {
+    const {playerId} = profileRoute.useParams();
+    return <ProfilePage routePlayerId={playerId}/>;
+  }
+});
+
+export const profileOverviewRoute = createRoute({
+  getParentRoute: () => profileRoute,
+  path: '/',
+  component: function ProfileOverviewComponent() {
+    const {playerId} = profileRoute.useParams();
+    return <OverviewTab routePlayerId={playerId}/>;
+  }
+});
+
+export const profileMatchesRoute = createRoute({
+  getParentRoute: () => profileRoute,
+  path: '/matches',
+  loader: ({context: {queryClient, transport}, params: {playerId}}) => {
+    queryClient.prefetchQuery(playerRoundsQueryOptions(BigInt(playerId), transport));
+  },
+  component: function ProfileMatchesComponent() {
+    const {playerId} = profileRoute.useParams();
+    return <MatchesTab playerId={BigInt(playerId)}/>;
+  }
+});
+
+export const profileTeamRecordsRoute = createRoute({
+  getParentRoute: () => profileRoute,
+  path: '/team_records',
+  loader: ({context: {queryClient, transport}, params: {playerId}}) => {
+    queryClient.prefetchQuery(playerTeamRecordsQueryOptions(BigInt(playerId), transport));
+  },
+  component: function ProfileTeamRecordsComponent() {
+    const {playerId} = profileRoute.useParams();
+    return <TeamRecordsTab playerId={BigInt(playerId)}/>;
+  }
+});
 
 function seasonLabel(season: number): string {
   return season === 0 ? "all" : `${season}`;
 }
 
-export function ProfilePage() {
+export function ProfilePage({routePlayerId}: { routePlayerId?: string }) {
   const transport = useTransport();
-  const {playerId} = useParams();
-  const id = BigInt(playerId || '0');
+  const id = BigInt(routePlayerId || '0');
   const skillGroupsConfig = React.useMemo(() => fromJson(SkillGroupConfigurationSchema, skillGroupsJson), []);
-
-  const [selectedSeason, setSelectedSeason] = useState<number>(0);
-  const [showImpact, setShowImpact] = useState<boolean>(false);
 
   const {
     data: profileData,
     isLoading: profileLoading,
     error: profileError
   } = useQuery(profileQueryOptions(id, transport));
-  const {
-    data: {availableSeasons}
-  } = useSuspenseQuery(availableSeasonsQueryOptions(transport));
-  const {
-    data: historyData,
-    isLoading: historyLoading
-  } = useQuery(skillHistoryQueryOptions(id, selectedSeason, getLocalTimezoneOffset(), transport));
-
-  const chartData = useMemo(() => {
-    if (!historyData?.history) return [];
-    return historyData.history.map(point => {
-      const date = new Date(
-          point.date!.year,
-          point.date!.month - 1,
-          point.date!.day
-      ).getTime();
-      const mu = point.skill?.mu || 0;
-      const sigma = point.skill?.sigma || 0;
-      return {
-        date,
-        mmr: Math.floor(mu - 2 * sigma),
-        confidence: [mu - 2 * sigma, mu + 2 * sigma],
-        impact: point.impactRating !== undefined ? point.impactRating : null,
-        skillGroup: skillGroupName(point.skill!.mmr, skillGroupsConfig)
-      };
-    }).sort((a, b) => a.date - b.date);
-  }, [historyData, skillGroupsConfig]);
 
   if (profileLoading) {
     return <LoadingState message="Loading player profile..."/>;
@@ -247,50 +249,7 @@ export function ProfilePage() {
     player,
     roundsWon,
     roundsLost,
-    seasonSkills,
-    overallRating,
-    seasonRatings,
-    achievements
   } = profileData;
-
-  const allSeasonIds = Object.keys(seasonSkills)
-      .map(Number)
-      .sort((a, b) => b - a);
-
-  const {
-    enrichedAchievements,
-    earnedCount,
-    totalTiers
-  } = calculateAchievements(config.achievements, achievements);
-
-  // TODO: Remove this once Recharts PR #7136 is released
-  // (https://github.com/recharts/recharts/pull/7136) The base TooltipProps
-  // does not include the payload property injected at runtime.
-  interface CustomTooltipProps extends TooltipProps<number, string> {
-    payload?: any[];
-    label?: string;
-  }
-
-  const CustomTooltip = ({active, payload, label}: CustomTooltipProps) => {
-    if (active && payload && payload.length && label) {
-      const data = payload[0].payload;
-      return (
-          <div
-              className="bg-slate-900/95 border border-white/10 rounded-xl p-3 shadow-xl backdrop-blur-md">
-            <div className="font-bold text-white mb-1">{new Date(label).toLocaleDateString()}</div>
-            <div className="text-sm">
-              <strong>{data.skillGroup}</strong> (<span style={{color: '#22d3ee'}}>{data.mmr}</span>)
-            </div>
-            {showImpact && data.impact !== null && (
-                <div className="text-sm mt-1">
-                  Impact: <strong>{data.impact.toFixed(2)}</strong>
-                </div>
-            )}
-          </div>
-      );
-    }
-    return null;
-  };
 
   return (
       <div className="max-w-7xl mx-auto px-4 py-8 relative">
@@ -308,7 +267,7 @@ export function ProfilePage() {
                     className="absolute inset-0 bg-brand-400 rounded-full blur-xl opacity-30 group-hover:opacity-60 transition-opacity duration-500"></div>
                 <div
                     className="w-24 h-24 rounded-full bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center text-4xl font-black text-white shadow-2xl border-4 border-dark-bg relative z-10 transform group-hover:scale-105 transition-transform duration-500">
-                  {player.steamName?.[0]?.toUpperCase()}
+                  {player.steamName.substring(0, 1).toUpperCase()}
                 </div>
               </div>
               <div className="flex flex-col">
@@ -343,376 +302,473 @@ export function ProfilePage() {
 
           {/* Tab Navigation */}
           <div className="flex items-center gap-4 mb-4 pb-2 overflow-x-auto relative z-10">
-            <NavLink to={`/profiles/${playerId}`} end
-                     className={({isActive}) => `px-6 py-2.5 rounded-full font-bold uppercase tracking-widest text-sm transition-all ${isActive ? 'bg-brand-500 text-white shadow-[0_0_15px_rgba(14,165,233,0.5)]' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>
+            <Link to="/profiles/$playerId" params={{playerId: routePlayerId!}}
+                  activeProps={{className: 'bg-brand-500 text-white shadow-[0_0_15px_rgba(14,165,233,0.5)]'}}
+                  inactiveProps={{className: 'text-slate-400 hover:text-white hover:bg-white/5'}}
+                  className="px-6 py-2.5 rounded-full font-bold uppercase tracking-widest text-sm transition-all"
+                  activeOptions={{exact: true}}>
               Overview
-            </NavLink>
-            <NavLink to={`/profiles/${playerId}/matches`}
-                     className={({isActive}) => `px-6 py-2.5 rounded-full font-bold uppercase tracking-widest text-sm transition-all ${isActive ? 'bg-brand-500 text-white shadow-[0_0_15px_rgba(14,165,233,0.5)]' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>
+            </Link>
+            <Link to="/profiles/$playerId/matches" params={{playerId: routePlayerId!}}
+                  activeProps={{className: 'bg-brand-500 text-white shadow-[0_0_15px_rgba(14,165,233,0.5)]'}}
+                  inactiveProps={{className: 'text-slate-400 hover:text-white hover:bg-white/5'}}
+                  className="px-6 py-2.5 rounded-full font-bold uppercase tracking-widest text-sm transition-all">
               Matches
-            </NavLink>
-            <NavLink to={`/profiles/${playerId}/team_records`}
-                     className={({isActive}) => `px-6 py-2.5 rounded-full font-bold uppercase tracking-widest text-sm transition-all ${isActive ? 'bg-brand-500 text-white shadow-[0_0_15px_rgba(14,165,233,0.5)]' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>
+            </Link>
+            <Link to="/profiles/$playerId/team_records" params={{playerId: routePlayerId!}}
+                  activeProps={{className: 'bg-brand-500 text-white shadow-[0_0_15px_rgba(14,165,233,0.5)]'}}
+                  inactiveProps={{className: 'text-slate-400 hover:text-white hover:bg-white/5'}}
+                  className="px-6 py-2.5 rounded-full font-bold uppercase tracking-widest text-sm transition-all">
               Team Records
-            </NavLink>
+            </Link>
+          </div>
+        </div>
+        <Outlet/>
+      </div>
+  );
+}
+
+export function OverviewTab({routePlayerId}: { routePlayerId?: string }) {
+  const transport = useTransport();
+  const id = BigInt(routePlayerId || '0');
+  const skillGroupsConfig = React.useMemo(() => fromJson(SkillGroupConfigurationSchema, skillGroupsJson), []);
+
+  const [selectedSeason, setSelectedSeason] = useState<number>(0);
+  const [showImpact, setShowImpact] = useState<boolean>(false);
+
+  const {
+    data: profileData,
+    isLoading: profileLoading,
+    error: profileError
+  } = useQuery(profileQueryOptions(id, transport));
+
+  const {
+    data: {availableSeasons}
+  } = useSuspenseQuery(availableSeasonsQueryOptions(transport));
+
+  const {
+    data: historyData,
+    isLoading: historyLoading
+  } = useQuery(skillHistoryQueryOptions(id, selectedSeason, getLocalTimezoneOffset(), transport));
+
+  const chartData = useMemo(() => {
+    if (!historyData?.history) return [];
+    return historyData.history.map(point => {
+      const date = new Date(
+          point.date!.year,
+          point.date!.month - 1,
+          point.date!.day
+      ).getTime();
+      const mu = point.skill?.mu || 0;
+      const sigma = point.skill?.sigma || 0;
+      return {
+        date,
+        mmr: Math.floor(mu - 2 * sigma),
+        confidence: [mu - 2 * sigma, mu + 2 * sigma],
+        impact: point.impactRating !== undefined ? point.impactRating : null,
+        skillGroup: skillGroupName(point.skill!.mmr, skillGroupsConfig)
+      };
+    }).sort((a, b) => a.date - b.date);
+  }, [historyData, skillGroupsConfig]);
+
+  if (profileLoading) return <LoadingState message="Loading overview..."/>;
+  if (profileError || !profileData?.player) return null;
+
+  const {
+    player,
+    roundsWon,
+    roundsLost,
+    seasonSkills,
+    overallRating,
+    seasonRatings,
+    achievements
+  } = profileData;
+
+  const allSeasonIds = Object.keys(seasonSkills)
+      .map(Number)
+      .sort((a, b) => b - a);
+
+  const {
+    enrichedAchievements,
+    earnedCount,
+    totalTiers
+  } = calculateAchievements(config.achievements, achievements);
+
+  interface CustomTooltipProps extends TooltipProps<number, string> {
+    payload?: any[];
+    label?: string;
+  }
+
+  const CustomTooltip = ({active, payload, label}: CustomTooltipProps) => {
+    if (active && payload && payload.length && label) {
+      const data = payload[0].payload;
+      return (
+          <div
+              className="bg-slate-900/95 border border-white/10 rounded-xl p-3 shadow-xl backdrop-blur-md">
+            <div className="font-bold text-white mb-1">{new Date(label).toLocaleDateString()}</div>
+            <div className="text-sm">
+              <strong>{data.skillGroup}</strong> (<span style={{color: '#22d3ee'}}>{data.mmr}</span>)
+            </div>
+            {
+                showImpact && data.impact !== null && (
+                    <div className="text-sm mt-1">
+                      Impact: <strong>{data.impact.toFixed(2)}</strong>
+                    </div>
+                )
+            }
+          </div>
+      );
+    }
+    return null;
+  };
+
+  return (
+      <>
+        <div className="grid lg:grid-cols-2 gap-8 mb-8">
+          {/* Player Skill Table */}
+          <div
+              className="glass-panel rounded-[2rem] overflow-hidden shadow-2xl flex flex-col relative w-full">
+            <div
+                className="absolute inset-0 bg-gradient-to-b from-slate-800/50 to-transparent pointer-events-none"></div>
+            <div className="p-6 border-b border-white/10 relative z-10">
+              <h2 className="text-2xl font-bold text-brand-400 flex items-center gap-2 drop-shadow-sm">
+                <svg className="w-6 h-6 text-brand-400 drop-shadow-md" fill="none"
+                     viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                        d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                </svg>
+                Player Skill
+              </h2>
+            </div>
+            <div className="overflow-x-auto flex-1 relative z-10">
+              <table className="w-full text-left border-collapse h-full">
+                <thead>
+                <tr className="bg-dark-card/50 border-b border-white/5 text-slate-400 text-xs font-bold uppercase tracking-widest">
+                  <th className="py-4 px-2 sm:px-4">Season</th>
+                  <th className="py-4 px-2 sm:px-4 text-right">MMR</th>
+                  <th className="py-4 px-2 sm:px-4">Percentile</th>
+                  <th className="py-4 px-2 sm:px-4">Skill Group</th>
+                </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                {allSeasonIds.map(seasonId => {
+                  const sp = seasonSkills[seasonId];
+                  if (!sp) return null;
+                  const leftOffset = Math.min(sp.lowerBound, 0.9);
+                  const width = Math.max(sp.upperBound, 0.1) - leftOffset;
+                  return (
+                      <tr key={seasonId}
+                          className="hover:bg-slate-800/30 transition-colors group">
+                        <td className="py-3 px-2 sm:px-4 font-medium text-slate-300">{seasonId}</td>
+                        <td className="py-3 px-2 sm:px-4 text-right font-mono text-brand-400 group-hover:text-brand-300 transition-colors"
+                            title={`${sp.skill?.mu?.toFixed(2)} ± ${sp.skill?.sigma?.toFixed(2)}σ`}>
+                          {Math.floor(sp.skill?.mmr || 0)}
+                        </td>
+                        <td className="py-3 px-2 sm:px-4">
+                          <div className="flex items-center gap-2">
+                            <span
+                                className="text-xs font-medium text-slate-400 w-10 text-right">{(sp.lowerBound * 100).toFixed(1)}%</span>
+                            <div
+                                className="h-2 w-24 bg-slate-900/80 rounded-full shadow-inner border border-white/5 relative overflow-hidden flex items-center">
+                              <div
+                                  className="absolute h-full rounded-full bg-gradient-to-r from-brand-600 via-brand-400 to-brand-300 shadow-[0_0_10px_rgba(56,189,248,0.4)]"
+                                  style={{
+                                    left: `${leftOffset * 100}%`,
+                                    width: `${width * 100}%`
+                                  }}></div>
+                            </div>
+                            <span
+                                className="text-xs font-medium text-slate-400 w-10">{(sp.upperBound * 100).toFixed(1)}%</span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-2 sm:px-4">
+                          <div className="flex items-center gap-2">
+                            <img
+                                src={RANKS[skillGroupName(sp.skill!.mmr, skillGroupsConfig)] || ""}
+                                alt={skillGroupName(sp.skill!.mmr, skillGroupsConfig)}
+                                className="w-8 h-8 object-contain drop-shadow-md"/>
+                            <span
+                                className="bg-slate-900/80 px-3 py-1.5 rounded-xl text-xs font-semibold text-brand-300 border border-brand-500/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] whitespace-nowrap">{skillGroupName(sp.skill!.mmr, skillGroupsConfig)}</span>
+                          </div>
+                        </td>
+                      </tr>
+                  );
+                })}
+                </tbody>
+                <tfoot className="bg-dark-card/50 border-t border-white/10">
+                {(() => {
+                  return (
+                      <tr>
+                        <td className="py-4 px-2 sm:px-4 font-bold text-white uppercase tracking-wider text-xs">Overall</td>
+                        <td className="py-4 px-2 sm:px-4 text-right font-mono font-bold text-brand-400 text-lg"
+                            title={`${player.skill?.mu?.toFixed(2)} ± ${player.skill?.sigma?.toFixed(2)}σ`}>{Math.floor(player.skill?.mmr || 0)}</td>
+                        <td className="py-4 px-2 sm:px-4">
+                        </td>
+                        <td className="py-4 px-2 sm:px-4">
+                          <div className="flex items-center gap-2">
+                            <img
+                                src={RANKS[skillGroupName(player.skill!.mmr, skillGroupsConfig)] || ""}
+                                alt={skillGroupName(player.skill!.mmr, skillGroupsConfig)}
+                                className="w-10 h-10 object-contain drop-shadow-md"/>
+                            <span
+                                className="bg-gradient-to-r from-brand-500 to-purple-600 px-3 py-1.5 rounded-xl text-xs font-bold text-white shadow-lg whitespace-nowrap">{skillGroupName(player.skill!.mmr, skillGroupsConfig)}</span>
+                          </div>
+                        </td>
+                      </tr>
+                  );
+                })()}
+                </tfoot>
+              </table>
+            </div>
+          </div>
+
+          {/* Skill History Chart */}
+          <div
+              className="glass-panel rounded-[2rem] overflow-hidden shadow-2xl flex flex-col relative w-full">
+            <div
+                className="absolute inset-0 bg-gradient-to-b from-slate-800/50 to-transparent pointer-events-none"></div>
+            <div
+                className="p-6 border-b border-white/10 relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <h2 className="text-2xl font-bold text-purple-400 flex items-center gap-2 drop-shadow-sm">
+                <svg className="w-6 h-6 text-purple-400 drop-shadow-md" fill="none"
+                     viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                        d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
+                </svg>
+                Skill History
+              </h2>
+              <div className="flex items-center gap-3">
+                <div className="text-sm font-medium flex items-center gap-1">
+                  {[0, ...availableSeasons].map(season => season === selectedSeason
+                      ? <strong key={season}
+                                className="px-2.5 py-1 bg-brand-500/20 shadow-inner border border-brand-500/30 rounded-lg text-brand-300">{seasonLabel(season)}</strong>
+                      : <button key={season} onClick={() => setSelectedSeason(season)}
+                                className="px-2.5 py-1 text-brand-400 hover:text-brand-300 hover:underline transition-colors">{seasonLabel(season)}</button>
+                  )}
+                </div>
+                <button onClick={() => setShowImpact(!showImpact)} type="button"
+                        className="btn-secondary text-xs px-4 py-1.5 rounded-full font-bold uppercase tracking-wider backdrop-blur-md bg-dark-card/50 hover:bg-white/10 border-white/10 transition-all text-slate-300 hover:text-white">
+                  {showImpact ? 'Hide impact' : 'Show impact'}
+                </button>
+              </div>
+            </div>
+            <div className="relative w-full flex-1 min-h-[320px] p-4">
+              {historyLoading ? (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div
+                        className="w-8 h-8 border-4 border-brand-500/20 border-t-brand-500 rounded-full animate-spin"></div>
+                  </div>
+              ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart data={chartData}
+                                   margin={{top: 10, right: 10, left: -20, bottom: 0}}>
+                      <XAxis
+                          dataKey="date"
+                          type="number"
+                          domain={['dataMin', 'dataMax']}
+                          tickFormatter={(tick) => new Date(tick).toLocaleDateString()}
+                          stroke="rgba(255,255,255,0.1)"
+                          tick={{fill: '#94a3b8', fontSize: 12}}
+                      />
+                      <YAxis
+                          yAxisId="left"
+                          domain={['auto', 'auto']}
+                          stroke="rgba(255,255,255,0.1)"
+                          tick={{fill: '#94a3b8', fontSize: 12}}
+                      />
+                      {showImpact && (
+                          <YAxis
+                              yAxisId="right"
+                              orientation="right"
+                              domain={[0, 2]}
+                              stroke="rgba(255,255,255,0.1)"
+                              tick={{fill: '#94a3b8', fontSize: 12}}
+                          />
+                      )}
+                      <Tooltip content={<CustomTooltip/>}/>
+                      <Area
+                          yAxisId="left"
+                          type="monotone"
+                          dataKey="confidence"
+                          stroke="none"
+                          fill="#c084fc"
+                          fillOpacity={0.10}
+                          isAnimationActive={false}
+                      />
+                      <Line
+                          yAxisId="left"
+                          type="monotone"
+                          dataKey="mmr"
+                          stroke="#22d3ee"
+                          strokeWidth={2}
+                          dot={{fill: '#0f172a', stroke: '#22d3ee', strokeWidth: 2, r: 4}}
+                          isAnimationActive={false}
+                      />
+                      {showImpact && (
+                          <Scatter
+                              yAxisId="right"
+                              dataKey="impact"
+                              fill="#10b981"
+                              isAnimationActive={false}
+                          />
+                      )}
+                    </ComposedChart>
+                  </ResponsiveContainer>
+              )}
+            </div>
           </div>
         </div>
 
-        <Routes>
-          <Route index element={
-            <>
-              <div className="grid lg:grid-cols-2 gap-8 mb-8">
-                {/* Player Skill Table */}
-                <div
-                    className="glass-panel rounded-[2rem] overflow-hidden shadow-2xl flex flex-col relative w-full">
-                  <div
-                      className="absolute inset-0 bg-gradient-to-b from-slate-800/50 to-transparent pointer-events-none"></div>
-                  <div className="p-6 border-b border-white/10 relative z-10">
-                    <h2 className="text-2xl font-bold text-brand-400 flex items-center gap-2 drop-shadow-sm">
-                      <svg className="w-6 h-6 text-brand-400 drop-shadow-md" fill="none"
-                           viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
-                              d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
-                      </svg>
-                      Player Skill
-                    </h2>
-                  </div>
-                  <div className="overflow-x-auto flex-1 relative z-10">
-                    <table className="w-full text-left border-collapse h-full">
-                      <thead>
-                      <tr className="bg-dark-card/50 border-b border-white/5 text-slate-400 text-xs font-bold uppercase tracking-widest">
-                        <th className="py-4 px-2 sm:px-4">Season</th>
-                        <th className="py-4 px-2 sm:px-4 text-right">MMR</th>
-                        <th className="py-4 px-2 sm:px-4">Percentile</th>
-                        <th className="py-4 px-2 sm:px-4">Skill Group</th>
-                      </tr>
-                      </thead>
-                      <tbody className="divide-y divide-white/5">
-                      {allSeasonIds.map(seasonId => {
-                        const sp = seasonSkills[seasonId];
-                        if (!sp) return null;
-                        const leftOffset = Math.min(sp.lowerBound, 0.9);
-                        const width = Math.max(sp.upperBound, 0.1) - leftOffset;
-                        return (
-                            <tr key={seasonId}
-                                className="hover:bg-slate-800/30 transition-colors group">
-                              <td className="py-3 px-2 sm:px-4 font-medium text-slate-300">{seasonId}</td>
-                              <td className="py-3 px-2 sm:px-4 text-right font-mono text-brand-400 group-hover:text-brand-300 transition-colors"
-                                  title={`${sp.skill?.mu?.toFixed(2)} ± ${sp.skill?.sigma?.toFixed(2)}σ`}>
-                                {Math.floor(sp.skill?.mmr || 0)}
-                              </td>
-                              <td className="py-3 px-2 sm:px-4">
-                                <div className="flex items-center gap-2">
-                            <span
-                                className="text-xs font-medium text-slate-400 w-10 text-right">{(sp.lowerBound * 100).toFixed(1)}%</span>
-                                  <div
-                                      className="h-2 w-24 bg-slate-900/80 rounded-full shadow-inner border border-white/5 relative overflow-hidden flex items-center">
-                                    <div
-                                        className="absolute h-full rounded-full bg-gradient-to-r from-brand-600 via-brand-400 to-brand-300 shadow-[0_0_10px_rgba(56,189,248,0.4)]"
-                                        style={{
-                                          left: `${leftOffset * 100}%`,
-                                          width: `${width * 100}%`
-                                        }}></div>
-                                  </div>
-                                  <span
-                                      className="text-xs font-medium text-slate-400 w-10">{(sp.upperBound * 100).toFixed(1)}%</span>
-                                </div>
-                              </td>
-                              <td className="py-3 px-2 sm:px-4">
-                                <div className="flex items-center gap-2">
-                                  <img
-                                      src={RANKS[skillGroupName(sp.skill!.mmr, skillGroupsConfig)] || ""}
-                                      alt={skillGroupName(sp.skill!.mmr, skillGroupsConfig)}
-                                      className="w-8 h-8 object-contain drop-shadow-md"/>
-                                  <span
-                                      className="bg-slate-900/80 px-3 py-1.5 rounded-xl text-xs font-semibold text-brand-300 border border-brand-500/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] whitespace-nowrap">{skillGroupName(sp.skill!.mmr, skillGroupsConfig)}</span>
-                                </div>
-                              </td>
-                            </tr>
-                        );
-                      })}
-                      </tbody>
-                      <tfoot className="bg-dark-card/50 border-t border-white/10">
-                      {(() => {
-                        return (
-                            <tr>
-                              <td className="py-4 px-2 sm:px-4 font-bold text-white uppercase tracking-wider text-xs">Overall</td>
-                              <td className="py-4 px-2 sm:px-4 text-right font-mono font-bold text-brand-400 text-lg"
-                                  title={`${player.skill?.mu?.toFixed(2)} ± ${player.skill?.sigma?.toFixed(2)}σ`}>{Math.floor(player.skill?.mmr || 0)}</td>
-                              <td className="py-4 px-2 sm:px-4">
-                              </td>
-                              <td className="py-4 px-2 sm:px-4">
-                                <div className="flex items-center gap-2">
-                                  <img
-                                      src={RANKS[skillGroupName(player.skill!.mmr, skillGroupsConfig)] || ""}
-                                      alt={skillGroupName(player.skill!.mmr, skillGroupsConfig)}
-                                      className="w-10 h-10 object-contain drop-shadow-md"/>
-                                  <span
-                                      className="bg-gradient-to-r from-brand-500 to-purple-600 px-3 py-1.5 rounded-xl text-xs font-bold text-white shadow-lg whitespace-nowrap">{skillGroupName(player.skill!.mmr, skillGroupsConfig)}</span>
-                                </div>
-                              </td>
-                            </tr>
-                        );
-                      })()}
-                      </tfoot>
-                    </table>
-                  </div>
-                </div>
+        <div className="glass-panel rounded-[2rem] overflow-hidden shadow-2xl relative mb-8">
+          <div
+              className="absolute inset-0 bg-gradient-to-b from-slate-800/50 to-transparent pointer-events-none"></div>
+          <div className="p-6 border-b border-white/10 relative z-10">
+            <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-600 flex items-center gap-2 drop-shadow-sm">
+              <svg className="w-6 h-6 text-green-400 drop-shadow-md" fill="none"
+                   viewBox="0 0 24 24"
+                   stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                      d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+              </svg>
+              Player Impact
+            </h2>
+          </div>
+          <div className="overflow-x-auto relative z-10">
+            <table className="w-full text-left border-collapse">
+              <thead>
+              <tr className="bg-dark-card/50 border-b border-white/5 text-slate-400 text-xs font-bold uppercase tracking-widest">
+                <th className="py-4 px-4 sm:px-6">Season</th>
+                <th className="py-4 px-4 sm:px-6 text-right"
+                    title="Percent of rounds MVP">MVP
+                </th>
+                <th className="py-4 px-4 sm:px-6 text-right"
+                    title="Average kills per round">KPR
+                </th>
+                <th className="py-4 px-4 sm:px-6 text-right"
+                    title="Average deaths per round">DPR
+                </th>
+                <th className="py-4 px-4 sm:px-6 text-right"
+                    title="Average damage per round">ADR
+                </th>
+                <th className="py-4 px-4 sm:px-6 text-right"
+                    title="Percent of rounds with kills, assists or survived">KAS
+                </th>
+                <th className="py-4 px-4 sm:px-6 text-center text-green-400">Impact</th>
+              </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+              {allSeasonIds.map(seasonId => {
+                const sr = seasonRatings[seasonId];
+                if (!sr) return null;
+                const impactClass = (sr.impactRating !== undefined && sr.impactRating > 1.0)
+                    ? "bg-green-500/20 text-green-400 border border-green-500/30"
+                    : "bg-slate-800 text-slate-400 border border-white/5";
 
-                {/* Skill History Chart */}
-                <div
-                    className="glass-panel rounded-[2rem] overflow-hidden shadow-2xl flex flex-col relative w-full">
-                  <div
-                      className="absolute inset-0 bg-gradient-to-b from-slate-800/50 to-transparent pointer-events-none"></div>
-                  <div
-                      className="p-6 border-b border-white/10 relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <h2 className="text-2xl font-bold text-purple-400 flex items-center gap-2 drop-shadow-sm">
-                      <svg className="w-6 h-6 text-purple-400 drop-shadow-md" fill="none"
-                           viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
-                              d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
-                      </svg>
-                      Skill History
-                    </h2>
-                    <div className="flex items-center gap-3">
-                      <div className="text-sm font-medium flex items-center gap-1">
-                        {[0, ...availableSeasons].map(season => season === selectedSeason
-                            ? <strong key={season}
-                                      className="px-2.5 py-1 bg-brand-500/20 shadow-inner border border-brand-500/30 rounded-lg text-brand-300">{seasonLabel(season)}</strong>
-                            : <button key={season} onClick={() => setSelectedSeason(season)}
-                                      className="px-2.5 py-1 text-brand-400 hover:text-brand-300 hover:underline transition-colors">{seasonLabel(season)}</button>
-                        )}
-                      </div>
-                      <button onClick={() => setShowImpact(!showImpact)} type="button"
-                              className="btn-secondary text-xs px-4 py-1.5 rounded-full font-bold uppercase tracking-wider backdrop-blur-md bg-dark-card/50 hover:bg-white/10 border-white/10 transition-all text-slate-300 hover:text-white">
-                        {showImpact ? 'Hide impact' : 'Show impact'}
-                      </button>
-                    </div>
-                  </div>
-                  <div className="relative w-full flex-1 min-h-[320px] p-4">
-                    {historyLoading ? (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div
-                              className="w-8 h-8 border-4 border-brand-500/20 border-t-brand-500 rounded-full animate-spin"></div>
-                        </div>
-                    ) : (
-                        <ResponsiveContainer width="100%" height="100%">
-                          <ComposedChart data={chartData}
-                                         margin={{top: 10, right: 10, left: -20, bottom: 0}}>
-                            <XAxis
-                                dataKey="date"
-                                type="number"
-                                domain={['dataMin', 'dataMax']}
-                                tickFormatter={(tick) => new Date(tick).toLocaleDateString()}
-                                stroke="rgba(255,255,255,0.1)"
-                                tick={{fill: '#94a3b8', fontSize: 12}}
-                            />
-                            <YAxis
-                                yAxisId="left"
-                                domain={['auto', 'auto']}
-                                stroke="rgba(255,255,255,0.1)"
-                                tick={{fill: '#94a3b8', fontSize: 12}}
-                            />
-                            {showImpact && (
-                                <YAxis
-                                    yAxisId="right"
-                                    orientation="right"
-                                    domain={[0, 2]}
-                                    stroke="rgba(255,255,255,0.1)"
-                                    tick={{fill: '#94a3b8', fontSize: 12}}
-                                />
-                            )}
-                            <Tooltip content={<CustomTooltip/>}/>
-                            <Area
-                                yAxisId="left"
-                                type="monotone"
-                                dataKey="confidence"
-                                stroke="none"
-                                fill="#c084fc"
-                                fillOpacity={0.10}
-                                isAnimationActive={false}
-                            />
-                            <Line
-                                yAxisId="left"
-                                type="monotone"
-                                dataKey="mmr"
-                                stroke="#22d3ee"
-                                strokeWidth={2}
-                                dot={{fill: '#0f172a', stroke: '#22d3ee', strokeWidth: 2, r: 4}}
-                                isAnimationActive={false}
-                            />
-                            {showImpact && (
-                                <Scatter
-                                    yAxisId="right"
-                                    dataKey="impact"
-                                    fill="#10b981"
-                                    isAnimationActive={false}
-                                />
-                            )}
-                          </ComposedChart>
-                        </ResponsiveContainer>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Player Impact Table */}
-              <div className="glass-panel rounded-[2rem] overflow-hidden shadow-2xl relative mb-8">
-                <div
-                    className="absolute inset-0 bg-gradient-to-b from-slate-800/50 to-transparent pointer-events-none"></div>
-                <div className="p-6 border-b border-white/10 relative z-10">
-                  <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-600 flex items-center gap-2 drop-shadow-sm">
-                    <svg className="w-6 h-6 text-green-400 drop-shadow-md" fill="none"
-                         viewBox="0 0 24 24"
-                         stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
-                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                    </svg>
-                    Player Impact
-                  </h2>
-                </div>
-                <div className="overflow-x-auto relative z-10">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                    <tr className="bg-dark-card/50 border-b border-white/5 text-slate-400 text-xs font-bold uppercase tracking-widest">
-                      <th className="py-4 px-4 sm:px-6">Season</th>
-                      <th className="py-4 px-4 sm:px-6 text-right"
-                          title="Percent of rounds MVP">MVP
-                      </th>
-                      <th className="py-4 px-4 sm:px-6 text-right"
-                          title="Average kills per round">KPR
-                      </th>
-                      <th className="py-4 px-4 sm:px-6 text-right"
-                          title="Average deaths per round">DPR
-                      </th>
-                      <th className="py-4 px-4 sm:px-6 text-right"
-                          title="Average damage per round">ADR
-                      </th>
-                      <th className="py-4 px-4 sm:px-6 text-right"
-                          title="Percent of rounds with kills, assists or survived">KAS
-                      </th>
-                      <th className="py-4 px-4 sm:px-6 text-center text-green-400">Impact</th>
-                    </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/5">
-                    {allSeasonIds.map(seasonId => {
-                      const sr = seasonRatings[seasonId];
-                      if (!sr) return null;
-                      const impactClass = (sr.impactRating !== undefined && sr.impactRating > 1.0)
-                          ? "bg-green-500/20 text-green-400 border border-green-500/30"
-                          : "bg-slate-800 text-slate-400 border border-white/5";
-
-                      return (
-                          <tr key={seasonId}
-                              className="hover:bg-slate-800/30 transition-colors group">
-                            <td className="py-3 px-4 sm:px-6 font-medium text-slate-300">{seasonId}</td>
-                            <td className="py-3 px-4 sm:px-6 text-right font-mono text-slate-400 group-hover:text-white transition-colors">{(sr.mvpRating * 100).toFixed(0)}%</td>
-                            <td className="py-3 px-4 sm:px-6 text-right font-mono text-slate-400 group-hover:text-white transition-colors">{sr.killRating.toFixed(2)}</td>
-                            <td className="py-3 px-4 sm:px-6 text-right font-mono text-slate-400 group-hover:text-white transition-colors">{sr.deathRating.toFixed(2)}</td>
-                            <td className="py-3 px-4 sm:px-6 text-right font-mono text-slate-400 group-hover:text-white transition-colors">{sr.damageRating.toFixed(0)}</td>
-                            <td className="py-3 px-4 sm:px-6 text-right font-mono text-slate-400 group-hover:text-white transition-colors">{(sr.kasRating * 100).toFixed(0)}%</td>
-                            <td className="py-3 px-4 sm:px-6 text-center">
+                return (
+                    <tr key={seasonId}
+                        className="hover:bg-slate-800/30 transition-colors group">
+                      <td className="py-3 px-4 sm:px-6 font-medium text-slate-300">{seasonId}</td>
+                      <td className="py-3 px-4 sm:px-6 text-right font-mono text-slate-400 group-hover:text-white transition-colors">{(sr.mvpRating * 100).toFixed(0)}%</td>
+                      <td className="py-3 px-4 sm:px-6 text-right font-mono text-slate-400 group-hover:text-white transition-colors">{sr.killRating.toFixed(2)}</td>
+                      <td className="py-3 px-4 sm:px-6 text-right font-mono text-slate-400 group-hover:text-white transition-colors">{sr.deathRating.toFixed(2)}</td>
+                      <td className="py-3 px-4 sm:px-6 text-right font-mono text-slate-400 group-hover:text-white transition-colors">{sr.damageRating.toFixed(0)}</td>
+                      <td className="py-3 px-4 sm:px-6 text-right font-mono text-slate-400 group-hover:text-white transition-colors">{(sr.kasRating * 100).toFixed(0)}%</td>
+                      <td className="py-3 px-4 sm:px-6 text-center">
                       <span
                           className={`inline-flex items-center px-3 py-1 rounded-xl text-xs font-bold whitespace-nowrap shadow-inner ${impactClass}`}>
                         {sr.impactRating !== undefined ? sr.impactRating.toFixed(2) : '-'}
                       </span>
-                            </td>
-                          </tr>
-                      );
-                    })}
-                    </tbody>
-                    <tfoot className="bg-dark-card/50 border-t border-white/10">
-                    {overallRating && (
-                        <tr>
-                          <td className="py-4 px-4 sm:px-6 font-bold text-white uppercase tracking-wider text-xs">Overall</td>
-                          <td className="py-4 px-4 sm:px-6 text-right font-mono font-medium text-lg">{(overallRating.mvpRating * 100).toFixed(0)}%</td>
-                          <td className="py-4 px-4 sm:px-6 text-right font-mono font-medium text-lg">{overallRating.killRating.toFixed(2)}</td>
-                          <td className="py-4 px-4 sm:px-6 text-right font-mono font-medium text-lg">{overallRating.deathRating.toFixed(2)}</td>
-                          <td className="py-4 px-4 sm:px-6 text-right font-mono font-medium text-lg">{overallRating.damageRating.toFixed(0)}</td>
-                          <td className="py-4 px-4 sm:px-6 text-right font-mono font-medium text-lg">{(overallRating.kasRating * 100).toFixed(0)}%</td>
-                          <td className="py-4 px-4 sm:px-6 text-center">
+                      </td>
+                    </tr>
+                );
+              })}
+              </tbody>
+              <tfoot className="bg-dark-card/50 border-t border-white/10">
+              {overallRating && (
+                  <tr>
+                    <td className="py-4 px-4 sm:px-6 font-bold text-white uppercase tracking-wider text-xs">Overall</td>
+                    <td className="py-4 px-4 sm:px-6 text-right font-mono font-medium text-lg">{(overallRating.mvpRating * 100).toFixed(0)}%</td>
+                    <td className="py-4 px-4 sm:px-6 text-right font-mono font-medium text-lg">{overallRating.killRating.toFixed(2)}</td>
+                    <td className="py-4 px-4 sm:px-6 text-right font-mono font-medium text-lg">{overallRating.deathRating.toFixed(2)}</td>
+                    <td className="py-4 px-4 sm:px-6 text-right font-mono font-medium text-lg">{overallRating.damageRating.toFixed(0)}</td>
+                    <td className="py-4 px-4 sm:px-6 text-right font-mono font-medium text-lg">{(overallRating.kasRating * 100).toFixed(0)}%</td>
+                    <td className="py-4 px-4 sm:px-6 text-center">
                     <span
                         className={`inline-flex items-center px-3 py-1.5 rounded-xl text-sm font-bold whitespace-nowrap shadow-lg ${(overallRating.impactRating !== undefined && overallRating.impactRating > 1.0) ? "bg-gradient-to-r from-green-400 to-emerald-600 text-white" : "bg-slate-700 text-white border border-white/5"}`}>
                       {overallRating.impactRating !== undefined ? overallRating.impactRating.toFixed(2) : '-'}
                     </span>
-                          </td>
-                        </tr>
-                    )}
-                    </tfoot>
-                  </table>
-                </div>
-              </div>
+                    </td>
+                  </tr>
+              )}
+              </tfoot>
+            </table>
+          </div>
+        </div>
 
-              {/* Achievements */}
-              <div className="glass-panel rounded-[2rem] overflow-hidden shadow-2xl relative">
-                <div
-                    className="absolute inset-0 bg-gradient-to-b from-slate-800/50 to-transparent pointer-events-none"></div>
-                <div
-                    className="p-6 border-b border-white/10 relative z-10 flex items-center justify-between">
-                  <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-yellow-600 flex items-center gap-2 drop-shadow-sm">
-                    🏆 Achievements
-                  </h2>
-                  <span className="text-sm font-normal text-slate-500">
+        <div className="glass-panel rounded-[2rem] overflow-hidden shadow-2xl relative">
+          <div
+              className="absolute inset-0 bg-gradient-to-b from-slate-800/50 to-transparent pointer-events-none"></div>
+          <div
+              className="p-6 border-b border-white/10 relative z-10 flex items-center justify-between">
+            <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-yellow-600 flex items-center gap-2 drop-shadow-sm">
+              🏆 Achievements
+            </h2>
+            <span className="text-sm font-normal text-slate-500">
             {earnedCount}/{totalTiers}
           </span>
-                </div>
-                <div className="overflow-x-auto relative z-10">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                    <tr className="bg-dark-card/50 border-b border-white/5 text-slate-400 text-xs font-bold uppercase tracking-widest">
-                      <th className="py-3 px-4 sm:px-6 w-[140px]"></th>
-                      <th className="py-3 px-4 sm:px-6">Category</th>
-                      <th className="py-3 px-4 sm:px-6">Tiers</th>
-                      <th className="py-3 px-4 sm:px-6 text-right">Count</th>
-                    </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/5">
-                    {enrichedAchievements.map(achievement => (
-                        <tr key={achievement.id}
-                            className="hover:bg-slate-800/30 transition-colors">
-                          <td className="py-3 px-4 sm:px-6">
-                            {achievement.highestEarnedTier && (
-                                <img
-                                    src={ACH_IMAGES[achievement.id] || ""}
-                                    alt=""
-                                    className="h-12 w-[120px] object-cover rounded-lg"
-                                />
-                            )}
-                          </td>
-                          <td className="py-4 px-4 sm:px-6">
-                            <div
-                                className="font-medium text-slate-300 text-sm whitespace-nowrap">{achievement.name}</div>
-                          </td>
-                          <td className="py-4 px-4 sm:px-6">
-                            <div className="flex gap-1.5 flex-wrap">
-                              {achievement.tiers.map((tier, i: number) => (
-                                  <span
-                                      key={i}
-                                      className={`inline-flex items-center px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap ${tier.earned ? 'bg-brand-500/20 text-brand-400 border border-brand-500/30' : 'bg-slate-800/50 text-slate-600 border border-white/5'}`}>
+          </div>
+          <div className="overflow-x-auto relative z-10">
+            <table className="w-full text-left border-collapse">
+              <thead>
+              <tr className="bg-dark-card/50 border-b border-white/5 text-slate-400 text-xs font-bold uppercase tracking-widest">
+                <th className="py-3 px-4 sm:px-6 w-[140px]"></th>
+                <th className="py-3 px-4 sm:px-6">Category</th>
+                <th className="py-3 px-4 sm:px-6">Tiers</th>
+                <th className="py-3 px-4 sm:px-6 text-right">Count</th>
+              </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+              {enrichedAchievements.map(achievement => (
+                  <tr key={achievement.id}
+                      className="hover:bg-slate-800/30 transition-colors">
+                    <td className="py-3 px-4 sm:px-6">
+                      {achievement.highestEarnedTier && (
+                          <img
+                              src={ACH_IMAGES[achievement.id] || ""}
+                              alt=""
+                              className="h-12 w-[120px] object-cover rounded-lg"
+                          />
+                      )}
+                    </td>
+                    <td className="py-4 px-4 sm:px-6">
+                      <div
+                          className="font-medium text-slate-300 text-sm whitespace-nowrap">{achievement.name}</div>
+                    </td>
+                    <td className="py-4 px-4 sm:px-6">
+                      <div className="flex gap-1.5 flex-wrap">
+                        {achievement.tiers.map((tier, i: number) => (
+                            <span
+                                key={i}
+                                className={`inline-flex items-center px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap ${tier.earned ? 'bg-brand-500/20 text-brand-400 border border-brand-500/30' : 'bg-slate-800/50 text-slate-600 border border-white/5'}`}>
                           {tier.earned && '✓ '} {tier.name}
-                                    <span
-                                        className={`ml-1 text-[10px] ${tier.earned ? 'text-brand-500/60' : 'text-slate-700'}`}>{tier.threshold}</span>
+                              <span
+                                  className={`ml-1 text-[10px] ${tier.earned ? 'text-brand-500/60' : 'text-slate-700'}`}>{tier.threshold}</span>
                         </span>
-                              ))}
-                            </div>
-                          </td>
-                          <td className="py-4 px-4 sm:px-6 text-right">
+                        ))}
+                      </div>
+                    </td>
+                    <td className="py-4 px-4 sm:px-6 text-right">
                     <span
                         className={`font-mono text-sm ${achievement.highestEarnedTier ? 'text-white' : 'text-slate-500'}`}>
                       {achievement.currentValue}
                     </span>
-                          </td>
-                        </tr>
-                    ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </>
-          }/>
-          <Route path="matches" element={<MatchesTab playerId={id}/>}/>
-          <Route path="team_records" element={<TeamRecordsTab playerId={id}/>}/>
-        </Routes>
-      </div>
+                    </td>
+                  </tr>
+              ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </>
   );
 }

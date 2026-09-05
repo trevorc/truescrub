@@ -1,17 +1,19 @@
-import {Link} from "react-router-dom";
-import type {QueryClient} from "@tanstack/react-query";
+import {createRoute, Link} from "@tanstack/react-router";
 import {useSuspenseQuery} from "@tanstack/react-query";
 import {useTransport} from "@connectrpc/connect-query";
 import {brandQueryOptions} from "client/api/brand.js";
 import {availableSeasonsQueryOptions, getLatestSeasonPath} from "client/api/seasons.js";
-import type {Transport} from "@connectrpc/connect";
+import {rootRoute} from "client/RootRoute.js";
 import chicken_png from "client/components/img/chicken.png";
 import karambit_png from "client/pages/img/karambit.png";
 import c4_png from "client/pages/img/c4.png";
 import accolades_icon_png from "client/pages/img/accolades_icon.png";
 
-
-
+export const indexRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/',
+  component: HomePage,
+});
 
 export function HomePage() {
   const transport = useTransport();

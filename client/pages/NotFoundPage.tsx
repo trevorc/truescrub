@@ -1,5 +1,5 @@
 import React, {useMemo} from 'react';
-import {Link} from 'react-router-dom';
+import {Link} from '@tanstack/react-router';
 
 import chicken1 from 'client/pages/chickens/404_chicken_1.png';
 import chicken2 from 'client/pages/chickens/404_chicken_2.png';

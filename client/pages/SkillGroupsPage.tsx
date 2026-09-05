@@ -1,4 +1,6 @@
 import React from 'react';
+import {createRoute} from '@tanstack/react-router';
+import {rootRoute} from 'client/RootRoute.js';
 import {fromJson} from '@bufbuild/protobuf';
 import {SkillGroupConfigurationSchema} from 'truescrub/proto/profile_pb.js';
 import skillGroupsJson from 'truescrub/proto/skill_groups.json';
@@ -16,6 +18,12 @@ import rank_plastic_elite from "client/pages/ranks/plastic_elite.png";
 import rank_plastic_i from "client/pages/ranks/plastic_i.png";
 import rank_plastic_ii from "client/pages/ranks/plastic_ii.png";
 import rank_plastic_iii from "client/pages/ranks/plastic_iii.png";
+
+export const skillGroupsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/skill_groups',
+  component: SkillGroupsPage,
+});
 
 const RANKS: Record<string, string> = {
   "Cardboard I": rank_cardboard_i,

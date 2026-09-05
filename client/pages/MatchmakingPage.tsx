@@ -1,6 +1,6 @@
 import {useState} from "react";
-import type {LoaderFunctionArgs} from "react-router-dom";
-import {Link, useParams, useSearchParams} from "react-router-dom";
+import {Link, createRoute} from "@tanstack/react-router";
+import {rootRoute} from "client/RootRoute.js";
 import type {QueryClient} from "@tanstack/react-query";
 import {useQuery, useSuspenseQuery} from "@tanstack/react-query";
 import {createQueryOptions, useTransport} from "@connectrpc/connect-query";
@@ -8,12 +8,9 @@ import {availableSeasonsQueryOptions, getLatestSeasonId} from "client/api/season
 import type {Transport} from "@connectrpc/connect";
 
 import {computeMatchmaking} from "proto/matchmaking_service-MatchmakingService_connectquery.js";
-import type {
-  ComputeMatchmakingRequest,
-  PlayerSelection,
-  RoundSelection
-} from "proto/matchmaking_service_pb.js";
-import {Match} from "proto/matchmaking_service_pb.js";
+import type {ComputeMatchmakingRequest} from "proto/matchmaking_service_pb.js";
+import {Match, PlayerSelectionSchema, RoundSelectionSchema} from "proto/matchmaking_service_pb.js";
+import {create} from "@bufbuild/protobuf";
 import {Player} from "proto/common_pb.js";
 import chicken_war_png from "client/pages/img/chicken_war.png";
 import {ErrorState} from "client/components/ErrorState.js";
@@ -125,14 +122,16 @@ const PlayerSelector = ({
   selectedPlayerIds,
   togglePlayer,
   toggleAll,
-  linkTo,
+  linkToPath,
+  playerParams,
   skeleton
 }: {
   availablePlayers: Player[],
   selectedPlayerIds: Set<bigint>,
   togglePlayer: (playerId: bigint) => void,
   toggleAll: () => void,
-  linkTo: { pathname: string, search: string },
+  linkToPath: string,
+  playerParams: string[],
   skeleton: boolean,
 }) => (
     <div className="w-full lg:w-1/3">
@@ -189,7 +188,8 @@ const PlayerSelector = ({
           ) : null}
         </div>
         <Link
-            to={linkTo}
+            to={linkToPath}
+            search={{player: playerParams}}
             className="btn-primary w-full mt-auto py-3 text-lg flex items-center justify-center gap-2">
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
@@ -273,46 +273,96 @@ export const computeMatchmakingQueryOptions = (seasonId: number | undefined, sel
   selection
 }, {transport});
 
-export const matchmakingLoader = (queryClient: QueryClient, transport: Transport, isLatest: boolean = false) => async ({
-  request,
-  params
-}: LoaderFunctionArgs) => {
-  const url = new URL(request.url);
-  const routeSeasonId = params.seasonId;
-  const seasons = await queryClient.ensureQueryData(availableSeasonsQueryOptions(transport));
-  const resolvedSeasonId = isLatest
-      ? getLatestSeasonId(seasons.availableSeasons)
-      : !routeSeasonId
-          ? undefined
-          : isNaN(parseInt(routeSeasonId, 10))
-              ? undefined
-              : parseInt(routeSeasonId, 10);
+function parsePlayerSearch(search: Record<string, unknown>): { player: string[] } {
+  const p = search.player;
+  if (p == null) {
+    return {player: []};
+  }
+  if (Array.isArray(p)) {
+    return {player: p.map(String)};
+  }
+  return {player: [String(p)]};
+}
 
-  const urlPlayerIds = new Set(
-      url.searchParams.getAll("player").filter(Boolean).map(id => BigInt(id)));
+export const matchmakingRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/matchmaking',
+  validateSearch: parsePlayerSearch,
+  component: function MatchmakingRouteComponent() {
+    const {player} = matchmakingRoute.useSearch();
+    return <MatchmakingPage playerSearch={player}/>;
+  },
+  loaderDeps: ({ search }) => search,
+  loader: async ({context: {queryClient, transport}, deps: search}) => {
+    const seasons = await queryClient.ensureQueryData(availableSeasonsQueryOptions(transport));
+    const urlPlayerIds = new Set(search.player.filter(Boolean).map(BigInt));
+    const selection: ComputeMatchmakingRequest["selection"] = {
+      case: 'playerSelection',
+      value: create(PlayerSelectionSchema, {playerIds: Array.from(urlPlayerIds)})
+    };
+    queryClient.prefetchQuery(computeMatchmakingQueryOptions(undefined, selection, transport));
+  }
+});
 
-  const selection: ComputeMatchmakingRequest["selection"] = isLatest
-      ? {case: 'roundSelection', value: {} as RoundSelection}
-      : {
-        case: 'playerSelection',
-        value: {playerIds: Array.from(urlPlayerIds)} as PlayerSelection
-      };
+export const matchmakingLatestRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/matchmaking/latest',
+  validateSearch: parsePlayerSearch,
+  component: function MatchmakingLatestRouteComponent() {
+    const {player} = matchmakingLatestRoute.useSearch();
+    return <MatchmakingPage isLatest={true} playerSearch={player}/>;
+  },
+  loaderDeps: ({ search }) => search,
+  loader: async ({context: {queryClient, transport}, deps: search}) => {
+    const seasons = await queryClient.ensureQueryData(availableSeasonsQueryOptions(transport));
+    const resolvedSeasonId = getLatestSeasonId(seasons.availableSeasons);
+    const selection: ComputeMatchmakingRequest["selection"] = {
+      case: 'roundSelection',
+      value: create(RoundSelectionSchema, {})
+    };
+    queryClient.prefetchQuery(computeMatchmakingQueryOptions(resolvedSeasonId, selection, transport));
+  }
+});
 
-  queryClient.prefetchQuery(computeMatchmakingQueryOptions(resolvedSeasonId, selection, transport));
+export const matchmakingSeasonRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/matchmaking/season/$seasonId',
+  validateSearch: parsePlayerSearch,
+  component: function MatchmakingSeasonRouteComponent() {
+    const {seasonId} = matchmakingSeasonRoute.useParams();
+    const {player} = matchmakingSeasonRoute.useSearch();
+    return <MatchmakingPage routeSeasonId={seasonId} playerSearch={player}/>;
+  },
+  loaderDeps: ({ search }) => search,
+  loader: async ({context: {queryClient, transport}, deps: search, params}) => {
+    const seasons = await queryClient.ensureQueryData(availableSeasonsQueryOptions(transport));
+    const resolvedSeasonId = params.seasonId && !isNaN(parseInt(params.seasonId, 10))
+        ? parseInt(params.seasonId, 10)
+        : undefined;
+    const urlPlayerIds = new Set(search.player.filter(Boolean).map(BigInt));
+    const selection: ComputeMatchmakingRequest["selection"] = {
+      case: 'playerSelection',
+      value: create(PlayerSelectionSchema, {playerIds: Array.from(urlPlayerIds)})
+    };
+    queryClient.prefetchQuery(computeMatchmakingQueryOptions(resolvedSeasonId, selection, transport));
+  }
+});
 
-  return null;
-};
-
-export function MatchmakingPage({isLatest = false}: { isLatest?: boolean }) {
+export function MatchmakingPage({
+  isLatest = false,
+  routeSeasonId,
+  playerSearch = []
+}: {
+  isLatest?: boolean;
+  routeSeasonId?: string;
+  playerSearch?: string[];
+}) {
   const transport = useTransport();
-  const [searchParams] = useSearchParams();
-  const {seasonId: routeSeasonId} = useParams();
   const seasonId = routeSeasonId ? (isNaN(parseInt(routeSeasonId, 10))
       ? undefined : parseInt(routeSeasonId, 10)) : undefined;
 
-  const urlPlayerRaw = searchParams.getAll("player");
-  const urlPlayerIdsKey = urlPlayerRaw.sort().join(",");
-  const urlPlayerIds = new Set(urlPlayerRaw.filter(Boolean).map(id => BigInt(id)));
+  const urlPlayerIdsKey = playerSearch.sort().join(",");
+  const urlPlayerIds = new Set(playerSearch.filter(Boolean).map(BigInt));
 
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<Set<bigint>>(urlPlayerIds);
   const [prevUrlKey, setPrevUrlKey] = useState(urlPlayerIdsKey);
@@ -324,10 +374,10 @@ export function MatchmakingPage({isLatest = false}: { isLatest?: boolean }) {
   const {data: {availableSeasons}} = useSuspenseQuery(availableSeasonsQueryOptions(transport));
 
   const selection: ComputeMatchmakingRequest["selection"] = isLatest
-      ? {case: 'roundSelection', value: {} as RoundSelection}
+      ? {case: 'roundSelection', value: create(RoundSelectionSchema, {})}
       : {
         case: 'playerSelection',
-        value: {playerIds: Array.from(urlPlayerIds)} as PlayerSelection
+        value: create(PlayerSelectionSchema, {playerIds: Array.from(urlPlayerIds)})
       };
 
   const matchmakingQuery = useQuery(computeMatchmakingQueryOptions(seasonId, selection, transport));
@@ -368,15 +418,10 @@ export function MatchmakingPage({isLatest = false}: { isLatest?: boolean }) {
       ? getLatestSeasonId(availableSeasons)
       : seasonId;
 
-  const linkTo = {
-    pathname: displayedSeasonId !== undefined
-        ? `/matchmaking/season/${displayedSeasonId}`
-        : '/matchmaking',
-    search: new URLSearchParams(
-        Array.from(selectedPlayerIds).map(id => ['player', id.toString()])
-    ).toString(),
-  };
-
+  const linkToPath = displayedSeasonId !== undefined
+      ? `/matchmaking/season/${displayedSeasonId}`
+      : '/matchmaking';
+  const playerParams = Array.from(selectedPlayerIds).map(id => id.toString());
   return (
       <div className="flex flex-col">
         {/* Header */}
@@ -394,7 +439,8 @@ export function MatchmakingPage({isLatest = false}: { isLatest?: boolean }) {
 
         <div className="flex flex-col lg:flex-row gap-8">
           <PlayerSelector availablePlayers={availablePlayers} selectedPlayerIds={selectedPlayerIds}
-                          togglePlayer={togglePlayer} toggleAll={toggleAll} linkTo={linkTo}
+                          togglePlayer={togglePlayer} toggleAll={toggleAll}
+                          linkToPath={linkToPath} playerParams={playerParams}
                           skeleton={skeleton}/>
 
           {/* Results */}

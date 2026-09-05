@@ -6,8 +6,8 @@ import {brandQueryOptions} from 'client/api/brand.js';
 import {availableSeasonsQueryOptions} from 'client/api/seasons.js';
 import type {Transport} from '@connectrpc/connect';
 
-import type {LoaderFunctionArgs} from 'react-router-dom';
-import {Link, useParams} from 'react-router-dom';
+import {Link, createRoute} from '@tanstack/react-router';
+import {rootRoute} from 'client/RootRoute.js';
 import {getLeaderboard} from 'proto/leaderboard_service-LeaderboardService_connectquery.js';
 import {fromJson} from '@bufbuild/protobuf';
 import {SkillGroupConfigurationSchema} from 'truescrub/proto/profile_pb.js';
@@ -91,20 +91,31 @@ function PercentileEstimate({mu, sigma, zScore}: {
 
 export const leaderboardQueryOptions = (seasonId: number | undefined, transport: Transport) => createQueryOptions(getLeaderboard, {seasonId}, {transport});
 
-export const leaderboardLoader = (queryClient: QueryClient, transport: Transport) => async ({params}: LoaderFunctionArgs) => {
-  const seasonId = params.seasonId ? parseInt(params.seasonId, 10) : undefined;
-  await Promise.all([
-    queryClient.ensureQueryData(availableSeasonsQueryOptions(transport)),
-    queryClient.ensureQueryData(brandQueryOptions(transport)),
-  ]);
-  queryClient.prefetchQuery(leaderboardQueryOptions(seasonId, transport));
-  return null;
-};
+export const leaderboardRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/leaderboard',
+  component: LeaderboardPage,
+  loader: async ({context: {queryClient, transport}}) => {
+    queryClient.prefetchQuery(leaderboardQueryOptions(undefined, transport));
+  }
+});
 
-export function LeaderboardPage() {
+export const leaderboardSeasonRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/leaderboard/season/$seasonId',
+  component: function LeaderboardSeasonRouteComponent() {
+    const {seasonId} = leaderboardSeasonRoute.useParams();
+    return <LeaderboardPage routeSeasonId={seasonId}/>;
+  },
+  loader: async ({context: {queryClient, transport}, params}) => {
+    const seasonId = params.seasonId ? parseInt(params.seasonId, 10) : undefined;
+    queryClient.prefetchQuery(leaderboardQueryOptions(seasonId, transport));
+  }
+});
+
+export function LeaderboardPage({routeSeasonId}: { routeSeasonId?: string }) {
   const transport = useTransport();
-  const {seasonId} = useParams();
-  const parsedSeasonId = seasonId ? parseInt(seasonId, 10) : undefined;
+  const parsedSeasonId = routeSeasonId ? parseInt(routeSeasonId, 10) : undefined;
   const [showSpecialSkillGroups, setShowSpecialSkillGroups] = useState(false);
   const [zScore, setZScore] = useState(2.0);
   const skillGroupsConfig = React.useMemo(() => fromJson(SkillGroupConfigurationSchema, skillGroupsJson), []);

@@ -1,13 +1,13 @@
 import React from 'react';
 import {render, screen} from '@testing-library/react';
-import {createMemoryRouter, RouterProvider} from 'react-router-dom';
+import {createMemoryHistory, createRouter, RouterProvider} from '@tanstack/react-router';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {TransportProvider} from '@connectrpc/connect-query';
 import {createRouterTransport} from '@connectrpc/connect';
 import {SeasonService} from 'proto/season_service_pb.js';
 import {ConfigService} from 'proto/config_service_pb.js';
 
-import {getRoutes} from 'client/TrueScrubClient.js';
+import {routeTree} from 'client/TrueScrubClient.js';
 
 describe('TrueScrubClient', () => {
   it('renders and maps root route to HomePage', async () => {
@@ -32,8 +32,15 @@ describe('TrueScrubClient', () => {
       },
     });
 
-    const router = createMemoryRouter(
-        getRoutes(testQueryClient, testTransport), {initialEntries: ['/']});
+    const router = createRouter({
+      routeTree,
+      history: createMemoryHistory({initialEntries: ['/']}),
+      context: {
+        queryClient: testQueryClient,
+        transport: testTransport,
+      },
+    });
+
     render(
         <TransportProvider transport={testTransport}>
           <QueryClientProvider client={testQueryClient}>

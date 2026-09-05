@@ -40,6 +40,24 @@ ts_library(
 )
 
 ts_library(
+    name = "root_route_ts",
+    srcs = ["RootRoute.tsx"],
+    visibility = ["//client:__subpackages__"],
+    deps = [
+        "//:node_modules/@connectrpc/connect",
+        "//:node_modules/@tanstack/react-query",
+        "//:node_modules/@tanstack/react-router",
+        "//:node_modules/@types/react",
+        "//:node_modules/react",
+        "//client/api:brand",
+        "//client/api:seasons",
+        "//client/components:loading_state",
+        "//client/layouts:root_layout",
+        "//client/pages:not_found_page",
+    ],
+)
+
+ts_library(
     name = "client_ts",
     srcs = [
         "TrueScrubClient.tsx",
@@ -47,12 +65,15 @@ ts_library(
     ],
     visibility = ["//client:__subpackages__"],
     deps = [
+        ":root_route_ts",
         "//:node_modules/@connectrpc/connect-query",
+        "//:node_modules/@tanstack/history",
         "//:node_modules/@tanstack/react-query",
+        "//:node_modules/@tanstack/react-router",
+        "//:node_modules/@tanstack/router-core",
         "//:node_modules/@types/react",
         "//:node_modules/@types/react-dom",
         "//:node_modules/react",
-        "//:node_modules/react-router-dom",
         "//client/api:brand",
         "//client/api:seasons",
         "//client/api:truescrub",
@@ -229,14 +250,16 @@ ts_library(
         ":client_ts",
         "//:node_modules/@connectrpc/connect",
         "//:node_modules/@connectrpc/connect-query",
+        "//:node_modules/@tanstack/history",
         "//:node_modules/@tanstack/react-query",
+        "//:node_modules/@tanstack/react-router",
+        "//:node_modules/@tanstack/router-core",
         "//:node_modules/@testing-library/react",
         "//:node_modules/@types/jest",
         "//:node_modules/@types/node",
         "//:node_modules/@types/react",
         "//:node_modules/@types/react-dom",
         "//:node_modules/react",
-        "//:node_modules/react-router-dom",
         "//client/api:brand",
         "//client/api:truescrub",
         "//proto:config_service_js",

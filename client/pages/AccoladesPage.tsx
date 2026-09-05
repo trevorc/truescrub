@@ -1,8 +1,7 @@
-import {Suspense, useEffect} from "react";
-import type {LoaderFunctionArgs} from "react-router-dom";
-import {useLocation, useNavigate} from "react-router-dom";
-import type {QueryClient} from "@tanstack/react-query";
-import {useSuspenseQuery, useQuery} from "@tanstack/react-query";
+import {useEffect} from "react";
+import {rootRoute} from "client/RootRoute.js";
+import {createRoute, useLocation, useNavigate} from "@tanstack/react-router";
+import {useQuery, useSuspenseQuery} from "@tanstack/react-query";
 import type {Transport} from "@connectrpc/connect";
 import {createQueryOptions, useTransport} from "@connectrpc/connect-query";
 
@@ -63,21 +62,22 @@ export const highlightsQueryOptions = (dateInput: RpcDate, transport: Transport)
   )
 });
 
-export const accoladesLoader = (queryClient: QueryClient, transport: Transport) => async ({request}: LoaderFunctionArgs) => {
-  const url = new URL(request.url);
-  const hash = url.hash.substring(1);
+export const accoladesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/accolades',
+  loader: async ({context: {queryClient, transport}, location: {hash}}) => {
+    const rawMatchDays = await queryClient.ensureQueryData(matchDaysQueryOptions(transport));
+    const matchDays = rawMatchDays.matchDays.map(formatMatchDayString);
+    const currentIndex = matchDays.length === 0 ? 0 : Math.max(0, matchDays.indexOf(hash || ""));
+    const currentDayString = matchDays.length === 0 ? null : matchDays[currentIndex];
+    const dateInput = parseMatchDayString(currentDayString);
 
-  const rawMatchDays = await queryClient.ensureQueryData(matchDaysQueryOptions(transport));
-  const matchDays = rawMatchDays.matchDays.map(formatMatchDayString);
-  const currentIndex = matchDays.length === 0 ? 0 : Math.max(0, matchDays.indexOf(hash));
-  const currentDayString = matchDays.length === 0 ? null : matchDays[currentIndex];
-  const dateInput = parseMatchDayString(currentDayString);
-
-  if (dateInput) {
-    queryClient.prefetchQuery(highlightsQueryOptions(dateInput, transport));
-  }
-  return null;
-};
+    if (dateInput) {
+      queryClient.prefetchQuery(highlightsQueryOptions(dateInput, transport));
+    }
+  },
+  component: AccoladesPage,
+});
 
 export function AccoladesPage() {
   const transport = useTransport();
@@ -87,13 +87,13 @@ export function AccoladesPage() {
   const {data: matchDays} = useSuspenseQuery(matchDaysQueryOptions(transport));
   const hasNoDays = matchDays.length === 0;
 
-  const hash = location.hash.substring(1);
+  const hash = location.hash || "";
   const currentIndex = hasNoDays ? 0 : Math.max(0, matchDays.indexOf(hash));
   const currentDayString = hasNoDays ? null : matchDays[currentIndex];
 
   useEffect(() => {
     if (currentDayString && hash !== currentDayString) {
-      navigate(`#${currentDayString}`, {replace: true});
+      navigate({to: '.', hash: currentDayString, replace: true});
     }
   }, [currentDayString, hash, navigate]);
 
@@ -121,7 +121,7 @@ export function AccoladesPage() {
         <div
             className="flex justify-between items-center mb-8 bg-dark-card p-4 rounded-xl border border-dark-border">
           <button
-              onClick={() => navigate('#' + matchDays[currentIndex + 1])}
+              onClick={() => navigate({to: '.', hash: matchDays[currentIndex + 1]})}
               disabled={hasNoDays || currentIndex >= matchDays.length - 1}
               className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -131,7 +131,7 @@ export function AccoladesPage() {
             {displayDate}
           </div>
           <button
-              onClick={() => navigate('#' + matchDays[currentIndex - 1])}
+              onClick={() => navigate({to: '.', hash: matchDays[currentIndex - 1]})}
               disabled={hasNoDays || currentIndex <= 0}
               className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >

@@ -52,11 +52,11 @@ ts_library(
     visibility = ["//client:__subpackages__"],
     deps = [
         "//:node_modules/@tanstack/react-query",
+        "//:node_modules/@tanstack/react-router",
         "//:node_modules/@types/react",
         "//:node_modules/@types/react-dom",
         "//:node_modules/react",
         "//:node_modules/react-dom",
-        "//:node_modules/react-router-dom",
         "//client/api:brand",
         "//client/api:seasons",
         "//client/api:truescrub",

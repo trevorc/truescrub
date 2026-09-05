@@ -1,4 +1,4 @@
-import {Outlet} from "react-router-dom";
+import {Outlet} from "@tanstack/react-router";
 import {Navbar} from "client/components/Navbar.js";
 import {Footer} from "client/components/Footer.js";
 import {useSuspenseQuery} from "@tanstack/react-query";

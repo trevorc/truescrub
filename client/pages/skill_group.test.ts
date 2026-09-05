@@ -1,23 +1,25 @@
-import {SkillGroupConfiguration} from 'truescrub/proto/profile_pb.js';
+import {create} from '@bufbuild/protobuf';
+import {SkillGroupConfigurationSchema} from 'truescrub/proto/profile_pb.js';
+import type {SkillGroupConfiguration} from 'truescrub/proto/profile_pb.js';
 import {skillGroupName} from 'client/pages/skill_group.js';
 
 describe('skill_group', () => {
   let mockConfig: SkillGroupConfiguration;
 
   beforeEach(() => {
-    mockConfig = {
+    mockConfig = create(SkillGroupConfigurationSchema, {
       skillGroups: [
         {lowerBound: 0, name: 'Rank 1', specialName: 'Special 1'},
         {lowerBound: 500, name: 'Rank 2', specialName: 'Special 2'},
         {lowerBound: 1000, name: 'Rank 3', specialName: 'Special 3'},
         {lowerBound: 1500, name: 'Rank 4', specialName: 'Special 4'},
       ]
-    } as SkillGroupConfiguration;
+    });
   });
 
   describe('skillGroupName', () => {
     it('returns "Unranked" if the configuration is empty', () => {
-      const emptyConfig = {skillGroups: []} as unknown as SkillGroupConfiguration;
+      const emptyConfig = create(SkillGroupConfigurationSchema, {skillGroups: []});
       expect(skillGroupName(1000, emptyConfig)).toBe('Unranked');
     });
 
