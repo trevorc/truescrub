@@ -17,7 +17,7 @@ py_library(
     srcs = ["state_parsing.py"],
     deps = [
         "//truescrub/proto:game_state_py_pb2",
-        "@protobuf//:protobuf_python",
+        "@pypi//protobuf",
     ],
 )
 
@@ -46,7 +46,6 @@ py_library(
         "//truescrub:db",
         "//truescrub:queue_consumer",
         "//truescrub/proto:game_state_py_pb2",
-        "@riegeli//python/riegeli",
     ],
 )
 

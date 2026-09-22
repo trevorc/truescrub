@@ -1,10 +1,8 @@
-load("@aspect_rules_py//py:defs.bzl", "py_binary")
+load("@aspect_rules_py//py:defs.bzl", "py_binary", "py_library")
 
-py_binary(
-    name = "teameval",
-    srcs = [
-        "teameval.py",
-    ],
+py_library(
+    name = "teameval_lib",
+    srcs = ["teameval.py"],
     visibility = [
         "//:__pkg__",
         "//tests:__pkg__",
@@ -17,12 +15,22 @@ py_binary(
 )
 
 py_binary(
+    name = "teameval",
+    main = "teameval.py",
+    visibility = [
+        "//:__pkg__",
+        "//tests:__pkg__",
+    ],
+    deps = [":teameval_lib"],
+)
+
+py_binary(
     name = "genetic",
     srcs = ["genetic.py"],
     deps = [
         "//truescrub:db",
         "//truescrub:models",
-        "//truescrub/tools:teameval",
+        "//truescrub/tools:teameval_lib",
         "@pypi//deap",
     ],
 )
@@ -34,7 +42,7 @@ py_binary(
         "//truescrub:db",
         "//truescrub:models",
         "//truescrub/tools:genetic",
-        "//truescrub/tools:teameval",
+        "//truescrub/tools:teameval_lib",
         "@pypi//optuna",
     ],
 )

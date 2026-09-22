@@ -1,6 +1,37 @@
+load("@protobuf//bazel/toolchains:proto_lang_toolchain.bzl", "proto_lang_toolchain")
 load("//client:rules/sws.bzl", "binary_toolchain")
+load(":pyinfo_wrapper.bzl", "pyinfo_wrapper")
 
 package(default_visibility = ["//visibility:public"])
+
+# --- Python Proto Toolchain ---
+
+pyinfo_wrapper(
+    name = "pypi_protobuf",
+    target = "@pypi//protobuf",
+    visibility = ["//visibility:public"],
+)
+
+pyinfo_wrapper(
+    name = "pypi_grpcio",
+    target = "@pypi//grpcio",
+    visibility = ["//visibility:public"],
+)
+
+proto_lang_toolchain(
+    name = "python_toolchain",
+    command_line = "--python_out=%s",
+    progress_message = "Generating Python proto_library %{label}",
+    runtime = ":pypi_protobuf",
+)
+
+toolchain(
+    name = "python_proto_toolchain",
+    toolchain = ":python_toolchain",
+    toolchain_type = "@protobuf//bazel/private:python_toolchain_type",
+)
+
+# --- SWS Toolchain ---
 
 toolchain_type(name = "sws_toolchain_type")
 
@@ -33,6 +64,8 @@ toolchain(
     toolchain = ":sws_linux_arm64",
     toolchain_type = ":sws_toolchain_type",
 )
+
+# --- Tailwind CSS Toolchain ---
 
 toolchain_type(name = "tailwindcss_toolchain_type")
 

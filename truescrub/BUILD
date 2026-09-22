@@ -167,8 +167,6 @@ py_library(
 py_layer_tier(
     name = "tier",
     groups = {
-        "@@grpc+//src/python/grpcio/grpc:grpcio": "50_grpc",
-        "@@grpc+//src/python/grpcio/grpc/_cython:cygrpc": "50_grpc",
         "@@riegeli+//python/riegeli/records:record_writer": "40_riegeli",
         "@@riegeli+//python/riegeli/records:record_reader": "40_riegeli",
     },

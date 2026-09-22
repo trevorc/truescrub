@@ -7,7 +7,7 @@ genrule(
         "tls.crt",
         "tls.key",
     ],
-    cmd = "$(location @openssl//:openssl) req -x509 -nodes -days 3650 -newkey rsa:2048 -keyout $(location tls.key) -out $(location tls.crt) -subj '/CN=localhost' -addext 'subjectAltName = DNS:localhost'",
+    cmd = "$(location @openssl//:openssl) req -config /dev/null -x509 -nodes -days 3650 -newkey rsa:2048 -keyout $(location tls.key) -out $(location tls.crt) -subj '/CN=localhost' -addext 'subjectAltName = DNS:localhost'",
     tools = ["@openssl"],
 )
 

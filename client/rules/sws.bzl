@@ -16,7 +16,7 @@ binary_toolchain = rule(
 )
 
 def _sws_impl(ctx):
-    sws_bin = ctx.toolchains["//client/toolchains:sws_toolchain_type"].info.executable
+    sws_bin = ctx.toolchains["//toolchains:sws_toolchain_type"].info.executable
     sws_link = ctx.actions.declare_file(ctx.label.name)
     ctx.actions.symlink(
         output = sws_link,
@@ -44,7 +44,7 @@ def _sws_impl(ctx):
 sws = rule(
     implementation = _sws_impl,
     executable = True,
-    toolchains = ["//client/toolchains:sws_toolchain_type"],
+    toolchains = ["//toolchains:sws_toolchain_type"],
     attrs = {
         "assets": attr.label(mandatory = True, allow_single_file = True),
         "config": attr.label(allow_single_file = True, default = "//client:sws.toml"),

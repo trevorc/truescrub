@@ -1,0 +1,290 @@
+diff --git a/kustomize/private/tools/helm/BUILD.tool.bazel b/kustomize/private/tools/helm/BUILD.tool.bazel
+index 80c5188..62709c0 100644
+--- a/kustomize/private/tools/helm/BUILD.tool.bazel
++++ b/kustomize/private/tools/helm/BUILD.tool.bazel
+@@ -1,6 +1,5 @@
+ load(
+     "{containing_package_prefix}:toolchain.bzl",
+-    "declare_helm_toolchains",
+     "helm_tool",
+ )
+ 
+@@ -8,8 +7,5 @@ helm_tool(
+     name = "tool",
+     binary = "helm{extension}",
+     version = "{version}",
+-)
+-
+-declare_helm_toolchains(
+-    helm_tool = ":tool",
++    visibility = ["//visibility:public"],
+ )
+diff --git a/kustomize/private/tools/helm/BUILD.toolchains.bazel b/kustomize/private/tools/helm/BUILD.toolchains.bazel
+index 8bdf327..cf3dcdc 100644
+--- a/kustomize/private/tools/helm/BUILD.toolchains.bazel
++++ b/kustomize/private/tools/helm/BUILD.toolchains.bazel
+@@ -4,6 +4,6 @@ load(
+ )
+ 
+ declare_bazel_toolchains(
+-    toolchain_prefix = "@{tool_repo}//",
++    tool_repo = "{tool_repo}",
+     version = "{version}",
+ )
+diff --git a/kustomize/private/tools/helm/toolchain.bzl b/kustomize/private/tools/helm/toolchain.bzl
+index 2098a6a..7302b8f 100644
+--- a/kustomize/private/tools/helm/toolchain.bzl
++++ b/kustomize/private/tools/helm/toolchain.bzl
+@@ -111,15 +111,6 @@ helm_toolchain = rule(
+     },
+ )
+ 
+-# buildifier: disable=unnamed-macro
+-def declare_helm_toolchains(helm_tool):
+-    for version, platforms in _TOOLS_BY_RELEASE.items():
+-        for platform in platforms.keys():
+-            helm_toolchain(
+-                name = "{}_{}_{}".format(platform.os, platform.arch, version),
+-                tool = helm_tool,
+-            )
+-
+ def _translate_host_platform(ctx):
+     # NB: This is adapted from rules_go's "_detect_host_platform" function.
+     os = ctx.os.name
+@@ -190,20 +181,24 @@ _download_tool = repository_rule(
+ )
+ 
+ # buildifier: disable=unnamed-macro
+-def declare_bazel_toolchains(version, toolchain_prefix):
++def declare_bazel_toolchains(version, tool_repo):
+     native.constraint_value(
+         name = version,
+         constraint_setting = "{}:tool_version".format(_CONTAINING_PACKAGE_PREFIX),
+     )
+     constraint_value_prefix = "@{}//kustomize/private/tools".format(_MODULE_REPOSITORY_NAME)
+     for platform in _TOOLS_BY_RELEASE[version].keys():
++        helm_toolchain(
++            name = "{}_{}_{}".format(platform.os, platform.arch, version),
++            tool = "@{}_{}_{}//:tool".format(tool_repo, platform.os, platform.arch),
++        )
+         native.toolchain(
+             name = "{}_{}_{}_toolchain".format(platform.os, platform.arch, version),
+             exec_compatible_with = [
+                 "{}:cpu_{}".format(constraint_value_prefix, platform.arch),
+                 "{}:os_{}".format(constraint_value_prefix, platform.os),
+             ],
+-            toolchain = toolchain_prefix + (":{}_{}_{}".format(platform.os, platform.arch, version)),
++            toolchain = ":{}_{}_{}".format(platform.os, platform.arch, version),
+             toolchain_type = "@{}//tools/helm:toolchain_type".format(_MODULE_REPOSITORY_NAME),
+         )
+ 
+@@ -231,10 +226,14 @@ _toolchains_repo = repository_rule(
+ )
+ 
+ def download_tool(name, version = None):
+-    _download_tool(
+-        name = name,
+-        version = version,
+-    )
++    version_str = version or _DEFAULT_TOOL_VERSION
++    for platform in _TOOLS_BY_RELEASE[version_str].keys():
++        _download_tool(
++            name = "{}_{}_{}".format(name, platform.os, platform.arch),
++            version = version_str,
++            os = platform.os,
++            arch = platform.arch,
++        )
+     _toolchains_repo(
+         name = name + "_toolchains",
+         tool_repo = name,
+diff --git a/kustomize/private/tools/kustomize/BUILD.tool.bazel b/kustomize/private/tools/kustomize/BUILD.tool.bazel
+index 2853f25..54d30a1 100644
+--- a/kustomize/private/tools/kustomize/BUILD.tool.bazel
++++ b/kustomize/private/tools/kustomize/BUILD.tool.bazel
+@@ -1,6 +1,5 @@
+ load(
+     "{containing_package_prefix}:toolchain.bzl",
+-    "declare_kustomize_toolchains",
+     "kustomize_tool",
+ )
+ 
+@@ -8,8 +7,5 @@ kustomize_tool(
+     name = "tool",
+     binary = "kustomize{extension}",
+     version = "{version}",
+-)
+-
+-declare_kustomize_toolchains(
+-    kustomize_tool = ":tool",
++    visibility = ["//visibility:public"],
+ )
+diff --git a/kustomize/private/tools/kustomize/BUILD.toolchains.bazel b/kustomize/private/tools/kustomize/BUILD.toolchains.bazel
+index 8bdf327..cf3dcdc 100644
+--- a/kustomize/private/tools/kustomize/BUILD.toolchains.bazel
++++ b/kustomize/private/tools/kustomize/BUILD.toolchains.bazel
+@@ -4,6 +4,6 @@ load(
+ )
+ 
+ declare_bazel_toolchains(
+-    toolchain_prefix = "@{tool_repo}//",
++    tool_repo = "{tool_repo}",
+     version = "{version}",
+ )
+diff --git a/kustomize/private/tools/kustomize/toolchain.bzl b/kustomize/private/tools/kustomize/toolchain.bzl
+index 6c92507..22b7317 100644
+--- a/kustomize/private/tools/kustomize/toolchain.bzl
++++ b/kustomize/private/tools/kustomize/toolchain.bzl
+@@ -119,15 +119,6 @@ kustomize_toolchain = rule(
+     },
+ )
+ 
+-# buildifier: disable=unnamed-macro
+-def declare_kustomize_toolchains(kustomize_tool):
+-    for version, platforms in _TOOLS_BY_RELEASE.items():
+-        for platform in platforms.keys():
+-            kustomize_toolchain(
+-                name = "{}_{}_{}".format(platform.os, platform.arch, version),
+-                tool = kustomize_tool,
+-            )
+-
+ def _translate_host_platform(ctx):
+     # NB: This is adapted from rules_go's "_detect_host_platform" function.
+     os = ctx.os.name
+@@ -201,20 +192,24 @@ _download_tool = repository_rule(
+ )
+ 
+ # buildifier: disable=unnamed-macro
+-def declare_bazel_toolchains(version, toolchain_prefix):
++def declare_bazel_toolchains(version, tool_repo):
+     native.constraint_value(
+         name = version,
+         constraint_setting = "{}:tool_version".format(_CONTAINING_PACKAGE_PREFIX),
+     )
+     constraint_value_prefix = "@{}//kustomize/private/tools".format(_MODULE_REPOSITORY_NAME)
+     for platform in _TOOLS_BY_RELEASE[version].keys():
++        kustomize_toolchain(
++            name = "{}_{}_{}".format(platform.os, platform.arch, version),
++            tool = "@{}_{}_{}//:tool".format(tool_repo, platform.os, platform.arch),
++        )
+         native.toolchain(
+             name = "{}_{}_{}_toolchain".format(platform.os, platform.arch, version),
+             exec_compatible_with = [
+                 "{}:cpu_{}".format(constraint_value_prefix, platform.arch),
+                 "{}:os_{}".format(constraint_value_prefix, platform.os),
+             ],
+-            toolchain = toolchain_prefix + (":{}_{}_{}".format(platform.os, platform.arch, version)),
++            toolchain = ":{}_{}_{}".format(platform.os, platform.arch, version),
+             toolchain_type = "@{}//tools/kustomize:toolchain_type".format(_MODULE_REPOSITORY_NAME),
+         )
+ 
+@@ -242,10 +237,14 @@ _toolchains_repo = repository_rule(
+ )
+ 
+ def download_tool(name, version = None):
+-    _download_tool(
+-        name = name,
+-        version = version,
+-    )
++    version_str = version or _DEFAULT_TOOL_VERSION
++    for platform in _TOOLS_BY_RELEASE[version_str].keys():
++        _download_tool(
++            name = "{}_{}_{}".format(name, platform.os, platform.arch),
++            version = version_str,
++            os = platform.os,
++            arch = platform.arch,
++        )
+     _toolchains_repo(
+         name = name + "_toolchains",
+         tool_repo = name,
+diff --git a/test/BUILD.bazel b/test/BUILD.bazel
+index 9e4cbb5..53f6513 100644
+--- a/test/BUILD.bazel
++++ b/test/BUILD.bazel
+@@ -1,4 +1,5 @@
+ load("kustomize_test.bzl", "kustomize_test")
++load(":toolchain_test.bzl", "toolchain_test_suite")
+ 
+ kustomize_test(
+     name = "simple",
+@@ -44,3 +45,21 @@ kustomize_test(
+     ],
+     requires_helm = True,
+ )
++
++platform(
++    name = "linux_amd64",
++    constraint_values = [
++        "@platforms//os:linux",
++        "@platforms//cpu:x86_64",
++    ],
++)
++
++platform(
++    name = "linux_arm64",
++    constraint_values = [
++        "@platforms//os:linux",
++        "@platforms//cpu:aarch64",
++    ],
++)
++
++toolchain_test_suite(name = "cross_compile_toolchain_test")
+diff --git a/test/toolchain_test.bzl b/test/toolchain_test.bzl
+new file mode 100644
+index 0000000..6c7b0c4
+--- /dev/null
++++ b/test/toolchain_test.bzl
+@@ -0,0 +1,54 @@
++load("@bazel_skylib//lib:unittest.bzl", "analysistest", "asserts")
++
++ResolvedToolchainInfo = provider(fields = ["tool_path"])
++
++def _current_toolchain_impl(ctx):
++    tool_path = ctx.toolchains["//tools/kustomize:toolchain_type"].kustomizeinfo.tool.path
++    return [ResolvedToolchainInfo(tool_path = tool_path)]
++
++current_toolchain = rule(
++    implementation = _current_toolchain_impl,
++    toolchains = ["//tools/kustomize:toolchain_type"],
++)
++
++def _toolchain_test_impl(ctx):
++    env = analysistest.begin(ctx)
++    target = analysistest.target_under_test(env)
++
++    actual_path = target[ResolvedToolchainInfo].tool_path
++    expected_repo = ctx.attr.expected_repo
++
++    asserts.true(
++        env,
++        expected_repo in actual_path,
++        "Expected tool repository to contain '%s', got %s" % (expected_repo, actual_path),
++    )
++
++    return analysistest.end(env)
++
++amd64_toolchain_test = analysistest.make(
++    _toolchain_test_impl,
++    attrs = {"expected_repo": attr.string()},
++    config_settings = {"//command_line_option:extra_execution_platforms": ["//test:linux_amd64"]},
++)
++
++arm64_toolchain_test = analysistest.make(
++    _toolchain_test_impl,
++    attrs = {"expected_repo": attr.string()},
++    config_settings = {"//command_line_option:extra_execution_platforms": ["//test:linux_arm64"]},
++)
++
++def toolchain_test_suite(name):
++    current_toolchain(
++        name = name + "_current_toolchain",
++    )
++    amd64_toolchain_test(
++        name = name + "_amd64",
++        target_under_test = ":" + name + "_current_toolchain",
++        expected_repo = "kustomize_tool_linux_amd64",
++    )
++    arm64_toolchain_test(
++        name = name + "_arm64",
++        target_under_test = ":" + name + "_current_toolchain",
++        expected_repo = "kustomize_tool_linux_arm64",
++    )

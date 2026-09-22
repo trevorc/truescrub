@@ -1,0 +1,24 @@
+Drop the redundant protobuf runtime dep from the record_reader extension.
+
+record_reader.cc imports google.protobuf.message_factory and
+google.protobuf.descriptor_pool at runtime, so the extension needs the
+protobuf Python runtime in its runfiles. The sibling data entry
+:records_metadata_py_pb2 already provides it: py_proto_library attaches the
+runtime declared by the registered Python proto_lang_toolchain, which in
+riegeli's default configuration is this same @com_google_protobuf target.
+
+Naming the source-built runtime explicitly bypasses toolchain resolution.
+Consumers that register a Python proto toolchain whose runtime is the
+protobuf wheel from PyPI end up shipping both runtimes, with import order
+deciding which one loads.
+
+--- a/python/riegeli/records/BUILD
++++ b/python/riegeli/records/BUILD
+@@ -17,7 +17,6 @@ py_extension(
+     data = [
+         ":records_metadata_py_pb2",
+         ":skipped_region",
+-        "@com_google_protobuf//:protobuf_python",
+     ],
+     # record_reader.cc has #define before #include to influence what the
+     # included files provide.

@@ -1,22 +1,22 @@
-bazel_dep(name = "aspect_rules_esbuild", version = "0.27.0")
+bazel_dep(name = "aspect_rules_esbuild", version = "0.27.1")
 bazel_dep(name = "aspect_rules_js", version = "3.4.1")
 bazel_dep(name = "aspect_rules_jest", version = "0.26.0")
 bazel_dep(name = "aspect_rules_py", version = "2.0.0-alpha.6")
 bazel_dep(name = "aspect_rules_ts", version = "3.10.1")
 bazel_dep(name = "bazel_lib", version = "3.7.2")
 bazel_dep(name = "bazel_skylib", version = "1.9.2")
-bazel_dep(name = "grpc", version = "1.83.0")
-bazel_dep(name = "jq.bzl", version = "0.6.1")
-bazel_dep(name = "llvm", version = "0.8.19")
+bazel_dep(name = "grpc", version = "1.84.0")
+bazel_dep(name = "jq.bzl", version = "0.6.2")
+bazel_dep(name = "llvm", version = "0.8.21")
 bazel_dep(name = "openssl", version = "4.0.1.bcr.0")
 bazel_dep(name = "platforms", version = "1.1.0")
-bazel_dep(name = "protobuf", version = "36.1.bcr.1")
+bazel_dep(name = "protobuf", version = "36.2")
 bazel_dep(name = "riegeli", version = "0.0.0-20250822-9f2744d")
-bazel_dep(name = "rules_helm", version = "0.31.0")
+bazel_dep(name = "rules_helm", version = "0.32.0")
 bazel_dep(name = "rules_kustomize", version = "0.5.3")
 bazel_dep(name = "rules_oci", version = "2.3.0")
-bazel_dep(name = "rules_proto_grpc_python", version = "5.8.0")
-bazel_dep(name = "tar.bzl", version = "0.10.8")
+bazel_dep(name = "rules_python", version = "2.3.3")
+bazel_dep(name = "tar.bzl", version = "0.10.9")
 
 single_version_override(
     module_name = "envoy_api",
@@ -24,14 +24,65 @@ single_version_override(
 )
 
 single_version_override(
-    module_name = "grpc",
-    patch_strip = 0,
-    patches = ["//patches:grpc_remove_py_libs.patch"],
+    module_name = "rules_kustomize",
+    patch_strip = 1,
+    patches = ["//patches:rules_kustomize_toolchain.patch"],
+)
+
+single_version_override(
+    module_name = "riegeli",
+    patch_strip = 1,
+    patches = ["//patches:riegeli_record_reader_protobuf_runtime.patch"],
 )
 
 single_version_override(
     module_name = "highwayhash",
     version = "0.0.0-20240305-5ad3bf8.bcr.1",
+)
+
+single_version_override(
+    module_name = "re2",
+    version = "2025-11-05.bcr.1",
+)
+
+single_version_override(
+    module_name = "brotli",
+    version = "1.2.0.bcr.3",
+)
+
+single_version_override(
+    module_name = "snappy",
+    version = "1.2.2.bcr.3",
+)
+
+single_version_override(
+    module_name = "lz4",
+    version = "1.10.0.bcr.1",
+)
+
+single_version_override(
+    module_name = "bzip2",
+    version = "1.0.8.bcr.4",
+)
+
+single_version_override(
+    module_name = "zstd",
+    version = "1.5.7.bcr.1",
+)
+
+single_version_override(
+    module_name = "xz",
+    version = "5.4.5.bcr.8",
+)
+
+single_version_override(
+    module_name = "zlib",
+    version = "1.3.2",
+)
+
+single_version_override(
+    module_name = "boringssl",
+    version = "0.20260204.0",
 )
 
 http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
@@ -138,7 +189,7 @@ helm_import_repository = use_repo_rule(
 
 helm_import_repository(
     name = "envoy_gateway_chart",
-    url = "oci://registry-1.docker.io/envoyproxy/gateway-helm:v1.9.0",
+    url = "oci://registry-1.docker.io/envoyproxy/gateway-helm:v1.9.1",
 )
 
 ################
@@ -148,5 +199,10 @@ helm_import_repository(
 register_toolchains(
     "@llvm//toolchain:all",
     "@python_interpreters//:all",
-    "//client/toolchains:all",
+    "//toolchains:all",
+)
+
+register_execution_platforms(
+    "//platform:linux_amd64",
+    "//platform:linux_arm64",
 )

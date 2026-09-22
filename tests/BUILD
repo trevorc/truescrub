@@ -195,7 +195,7 @@ py_test(
     name = "test_teameval",
     srcs = ["test_teameval.py"],
     deps = [
-        "//truescrub/tools:teameval",
+        "//truescrub/tools:teameval_lib",
         "@pypi//pytest",
         "@pypi//trueskill",
     ],
@@ -294,35 +294,6 @@ py_test(
         ":db_test_utils",
         "//truescrub:db",
         "@pypi//pytest",
-    ],
-)
-
-test_suite(
-    name = "tests",
-    tests = [
-        "test_accolades",
-        "test_config_service",
-        "test_gsi_http_service",
-        "test_highlights",
-        "test_highlights_service",
-        "test_integration",
-        "test_integration_real_data",
-        "test_leaderboard_service",
-        "test_log_translator",
-        "test_match_days",
-        "test_matchmaking",
-        "test_matchmaking_service",
-        "test_models",
-        "test_profile_service",
-        "test_recalculate",
-        "test_riegeli_loader",
-        "test_rpc",
-        "test_seasoncfg",
-        "test_segmented_log",
-        "test_segmented_log_dir",
-        "test_state_parser",
-        "test_state_serialization",
-        "test_teameval",
     ],
 )
 

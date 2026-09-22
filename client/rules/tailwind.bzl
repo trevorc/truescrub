@@ -1,6 +1,6 @@
 load("@aspect_rules_js//js:providers.bzl", "JsInfo")
 
-_TAILWINDCSS_TOOLCHAIN = "//client/toolchains:tailwindcss_toolchain_type"
+_TAILWINDCSS_TOOLCHAIN = "//toolchains:tailwindcss_toolchain_type"
 
 def _tailwind_css_impl(ctx):
     tailwind_bin = ctx.toolchains[_TAILWINDCSS_TOOLCHAIN].info.executable

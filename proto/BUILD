@@ -1,6 +1,7 @@
 load("@aspect_rules_ts//ts:proto.bzl", "ts_proto_library")
+load("@grpc//bazel:python_rules.bzl", "py_grpc_library")
 load("@protobuf//bazel:proto_library.bzl", "proto_library")
-load("@rules_proto_grpc_python//:defs.bzl", "python_grpc_library", "python_proto_library")
+load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -9,9 +10,9 @@ proto_library(
     srcs = ["common.proto"],
 )
 
-python_proto_library(
+py_proto_library(
     name = "common_py_pb2",
-    protos = [":common_proto"],
+    deps = [":common_proto"],
 )
 
 proto_library(
@@ -24,9 +25,16 @@ proto_library(
     ],
 )
 
-python_grpc_library(
+py_proto_library(
+    name = "highlights_service_py_pb2",
+    deps = [":highlights_service_proto"],
+)
+
+py_grpc_library(
     name = "highlights_service_py_pb2_grpc",
-    protos = [":highlights_service_proto"],
+    srcs = [":highlights_service_proto"],
+    grpc_library = "//toolchains:pypi_grpcio",
+    deps = [":highlights_service_py_pb2"],
 )
 
 proto_library(
@@ -35,9 +43,16 @@ proto_library(
     deps = [":common_proto"],
 )
 
-python_grpc_library(
+py_proto_library(
+    name = "matchmaking_service_py_pb2",
+    deps = [":matchmaking_service_proto"],
+)
+
+py_grpc_library(
     name = "matchmaking_service_py_pb2_grpc",
-    protos = [":matchmaking_service_proto"],
+    srcs = [":matchmaking_service_proto"],
+    grpc_library = "//toolchains:pypi_grpcio",
+    deps = [":matchmaking_service_py_pb2"],
 )
 
 proto_library(
@@ -45,9 +60,16 @@ proto_library(
     srcs = ["season_service.proto"],
 )
 
-python_grpc_library(
+py_proto_library(
+    name = "season_service_py_pb2",
+    deps = [":season_service_proto"],
+)
+
+py_grpc_library(
     name = "season_service_py_pb2_grpc",
-    protos = [":season_service_proto"],
+    srcs = [":season_service_proto"],
+    grpc_library = "//toolchains:pypi_grpcio",
+    deps = [":season_service_py_pb2"],
 )
 
 proto_library(
@@ -56,9 +78,16 @@ proto_library(
     deps = [":common_proto"],
 )
 
-python_grpc_library(
+py_proto_library(
+    name = "leaderboard_service_py_pb2",
+    deps = [":leaderboard_service_proto"],
+)
+
+py_grpc_library(
     name = "leaderboard_service_py_pb2_grpc",
-    protos = [":leaderboard_service_proto"],
+    srcs = [":leaderboard_service_proto"],
+    grpc_library = "//toolchains:pypi_grpcio",
+    deps = [":leaderboard_service_py_pb2"],
 )
 
 ts_proto_library(
@@ -136,9 +165,16 @@ proto_library(
     deps = [":common_proto"],
 )
 
-python_grpc_library(
+py_proto_library(
+    name = "profile_service_py_pb2",
+    deps = [":profile_service_proto"],
+)
+
+py_grpc_library(
     name = "profile_service_py_pb2_grpc",
-    protos = [":profile_service_proto"],
+    srcs = [":profile_service_proto"],
+    grpc_library = "//toolchains:pypi_grpcio",
+    deps = [":profile_service_py_pb2"],
 )
 
 ts_proto_library(
@@ -161,9 +197,16 @@ proto_library(
     srcs = ["config_service.proto"],
 )
 
-python_grpc_library(
+py_proto_library(
+    name = "config_service_py_pb2",
+    deps = [":config_service_proto"],
+)
+
+py_grpc_library(
     name = "config_service_py_pb2_grpc",
-    protos = [":config_service_proto"],
+    srcs = [":config_service_proto"],
+    grpc_library = "//toolchains:pypi_grpcio",
+    deps = [":config_service_py_pb2"],
 )
 
 ts_proto_library(

@@ -6,6 +6,10 @@ platform(
         "@platforms//os:linux",
         "@platforms//cpu:x86_64",
     ],
+    exec_properties = {
+        "ISA": "x86_64",
+        "OSFamily": "linux",
+    },
 )
 
 platform(
@@ -14,9 +18,19 @@ platform(
         "@platforms//os:linux",
         "@platforms//cpu:aarch64",
     ],
+    exec_properties = {
+        "ISA": "aarch64",
+        "OSFamily": "linux",
+    },
 )
 
 platform(
     name = "generic",
     constraint_values = [],
+)
+
+platform(
+    name = "linux_generic",
+    constraint_values = ["@platforms//os:linux"],
+    exec_properties = {"OSFamily": "linux"},
 )
