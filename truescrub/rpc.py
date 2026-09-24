@@ -20,6 +20,7 @@ from proto import season_service_pb2_grpc
 from proto import config_service_pb2
 from proto import config_service_pb2_grpc
 from truescrub import achievements, db, envconfig, highlights, models
+from truescrub.errors import InvalidArgument, NotFound
 from truescrub.interceptors import grpc_db_conn
 from truescrub.matchmaking import compute_matches, estimated_skill_range, \
   MAX_PLAYERS_PER_TEAM
@@ -58,23 +59,22 @@ class SeasonServiceServicer(season_service_pb2_grpc.SeasonServiceServicer):
     )
 
 
-def _get_timezone(request, context: grpc.ServicerContext) -> datetime.timezone:
+def _get_timezone(request) -> datetime.timezone:
   timezone = request.timezone or "-05:00"
   try:
     return parse_timezone(timezone)
-  except ValueError:
-    return context.abort(grpc.StatusCode.INVALID_ARGUMENT,
-                         f"Invalid timezone {request.timezone}")
+  except ValueError as e:
+    raise InvalidArgument(f"Invalid timezone {request.timezone}") from e
 
 
-def _get_day(request, context: grpc.ServicerContext) -> datetime.datetime:
+def _get_day(request) -> datetime.datetime:
+  tz = _get_timezone(request)
   try:
     return datetime.datetime(
-      request.date.year, request.date.month, request.date.day,
-      tzinfo=_get_timezone(request, context)
+      request.date.year, request.date.month, request.date.day, tzinfo=tz
     )
-  except ValueError:
-    return context.abort(grpc.StatusCode.INVALID_ARGUMENT, "Invalid date")
+  except ValueError as e:
+    raise InvalidArgument("Invalid date") from e
 
 
 def _make_date(year: int, month: int, day: int) -> common_pb2.Date:
@@ -92,15 +92,15 @@ class HighlightsServiceServicer(
     return highlights_service_pb2.ListMatchDaysResponse(
       match_days=[
         _date_to_pb2(day) for day in db.get_match_days(
-          grpc_db_conn.get(), _get_timezone(request, context))
+          grpc_db_conn.get(), _get_timezone(request))
       ])
 
   def GetDailyHighlights(self, request, context: grpc.ServicerContext):
     try:
       return highlights.get_highlights(
-        grpc_db_conn.get(), _get_day(request, context), request.read_mask)
-    except StopIteration:
-      context.abort(grpc.StatusCode.NOT_FOUND, "No rounds on this date")
+        grpc_db_conn.get(), _get_day(request), request.read_mask)
+    except StopIteration as e:
+      raise NotFound("No rounds on this date") from e
 
 
 def compute_matchmaking(conn, season_id, selected_players) \
@@ -151,7 +151,7 @@ class MatchmakingServiceServicer(
       players, matches = compute_matchmaking(
         conn, season_id, selected_players)
     except ValueError as e:
-      return context.abort(grpc.StatusCode.INVALID_ARGUMENT, str(e))
+      raise InvalidArgument(str(e)) from e
 
     available_players = [p.to_message() for p in players]
     proposed_matches = [
@@ -197,8 +197,8 @@ class ProfileServiceServicer(profile_service_pb2_grpc.ProfileServiceServicer):
 
     try:
       player, overall_record = db.get_player_profile(conn, request.player_id)
-    except StopIteration:
-      return context.abort(grpc.StatusCode.NOT_FOUND, "No such player")
+    except StopIteration as e:
+      raise NotFound("No such player") from e
 
     skills_by_season = db.get_player_skills_by_season(conn, request.player_id)
     season_skills = {}
@@ -258,7 +258,7 @@ class ProfileServiceServicer(profile_service_pb2_grpc.ProfileServiceServicer):
 
   def GetSkillHistory(self, request, context: grpc.ServicerContext):
     conn = grpc_db_conn.get()
-    timezone = _get_timezone(request, context)
+    timezone = _get_timezone(request)
     season_id = request.season_id if request.HasField(
       'season_id') and request.season_id > 0 else None
 

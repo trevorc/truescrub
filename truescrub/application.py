@@ -2,29 +2,37 @@ import abc
 import argparse
 import concurrent.futures
 import functools
+import grpc
 import json
 import logging
 import os
 import threading
 from concurrent.futures import Future
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from typing import Dict, List, Callable, Tuple
-
+from dataclasses import dataclass
 from grpc_health.v1 import health
 from grpc_health.v1 import health_pb2
 from grpc_health.v1 import health_pb2_grpc
 from grpc_reflection.v1alpha import reflection
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from types import ModuleType
+from typing import Dict, List, Callable, Tuple
 
-import grpc
-from proto import highlights_service_pb2_grpc
-from proto import leaderboard_service_pb2_grpc
-from proto import matchmaking_service_pb2_grpc
-from proto import profile_service_pb2_grpc
-from proto import season_service_pb2_grpc
+from proto import config_service_pb2
 from proto import config_service_pb2_grpc
+from proto import highlights_service_pb2
+from proto import highlights_service_pb2_grpc
+from proto import leaderboard_service_pb2
+from proto import leaderboard_service_pb2_grpc
+from proto import matchmaking_service_pb2
+from proto import matchmaking_service_pb2_grpc
+from proto import profile_service_pb2
+from proto import profile_service_pb2_grpc
+from proto import season_service_pb2
+from proto import season_service_pb2_grpc
 from truescrub import db
 from truescrub.envconfig import LOG_LEVEL, SHARED_KEY
-from truescrub.interceptors import TimerInterceptor, DatabaseInterceptor
+from truescrub.interceptors import (
+  DatabaseInterceptor, ErrorInterceptor, TimerInterceptor)
 from truescrub.queue_consumer import QueueConsumer
 from truescrub.rpc import (
   SeasonServiceServicer,
@@ -158,24 +166,82 @@ class GsiHttpService(Service):
       self.server.server_close()
 
 
-def create_grpc_server(host, port):
+@dataclass(frozen=True, slots=True)
+class ServiceRegistration:
+  """One application service: how to register it, and where its name lives.
+
+  Keeping the two together means registration and reflection cannot drift.
+  """
+
+  pb2: ModuleType
+  service_name: str
+  add_to_server: Callable[[object, grpc.Server], None]
+  servicer: type
+
+  @property
+  def full_name(self) -> str:
+    return self.pb2.DESCRIPTOR.services_by_name[self.service_name].full_name
+
+
+SERVICES: Tuple[ServiceRegistration, ...] = (
+  ServiceRegistration(
+    config_service_pb2, 'ConfigService',
+    config_service_pb2_grpc.add_ConfigServiceServicer_to_server,
+    ConfigServiceServicer),
+  ServiceRegistration(
+    highlights_service_pb2, 'HighlightsService',
+    highlights_service_pb2_grpc.add_HighlightsServiceServicer_to_server,
+    HighlightsServiceServicer),
+  ServiceRegistration(
+    leaderboard_service_pb2, 'LeaderboardService',
+    leaderboard_service_pb2_grpc.add_LeaderboardServiceServicer_to_server,
+    LeaderboardServiceServicer),
+  ServiceRegistration(
+    matchmaking_service_pb2, 'MatchmakingService',
+    matchmaking_service_pb2_grpc.add_MatchmakingServiceServicer_to_server,
+    MatchmakingServiceServicer),
+  ServiceRegistration(
+    profile_service_pb2, 'ProfileService',
+    profile_service_pb2_grpc.add_ProfileServiceServicer_to_server,
+    ProfileServiceServicer),
+  ServiceRegistration(
+    season_service_pb2, 'SeasonService',
+    season_service_pb2_grpc.add_SeasonServiceServicer_to_server,
+    SeasonServiceServicer),
+)
+
+
+def register_services(server) -> Tuple[str, ...]:
+  """Registers every servicer, returning their full service names."""
+  for service in SERVICES:
+    service.add_to_server(service.servicer(), server)
+  return tuple(service.full_name for service in SERVICES)
+
+
+def create_grpc_server():
+  """Builds a server with all services registered. The caller binds a port."""
   server = grpc.server(
     concurrent.futures.ThreadPoolExecutor(max_workers=10),
-    interceptors=[TimerInterceptor(), DatabaseInterceptor()]
+    # ErrorInterceptor sits outside DatabaseInterceptor so the transaction is
+    # resolved before a failure becomes a status. See truescrub.interceptors.
+    interceptors=[
+      TimerInterceptor(), ErrorInterceptor(), DatabaseInterceptor(),
+    ],
   )
   health_servicer = health.HealthServicer()
   health_pb2_grpc.add_HealthServicer_to_server(health_servicer, server)
   health_servicer.set('', health_pb2.HealthCheckResponse.SERVING)
+  service_names = register_services(server)
   reflection.enable_server_reflection(
-    (health.SERVICE_NAME, reflection.SERVICE_NAME), server)
-  server.add_insecure_port(f'{host}:{port}')
+    service_names + (health.SERVICE_NAME, reflection.SERVICE_NAME), server)
   return server
 
 
 class GrpcService(Service):
   def __init__(self, host, port):
-    self.server = create_grpc_server(host, port)
-    logger.info('gRPC listening on %s:%s', host, port)
+    self.server = create_grpc_server()
+    self.port = self.server.add_insecure_port(f'{host}:{port}')
+    logger.info('gRPC listening on %s:%s', host, self.port)
 
   def __call__(self):
     logger.info('running %s', self)
@@ -251,19 +317,6 @@ def main(args: List[str]):
           as gsi_service, \
       QueueConsumerService(state_writer) as state_writer_service, \
       GrpcService(host=args.addr, port=args.grpc_port) as grpc_service:
-
-    highlights_service_pb2_grpc.add_HighlightsServiceServicer_to_server(
-      HighlightsServiceServicer(), grpc_service.server)
-    matchmaking_service_pb2_grpc.add_MatchmakingServiceServicer_to_server(
-      MatchmakingServiceServicer(), grpc_service.server)
-    season_service_pb2_grpc.add_SeasonServiceServicer_to_server(
-      SeasonServiceServicer(), grpc_service.server)
-    leaderboard_service_pb2_grpc.add_LeaderboardServiceServicer_to_server(
-      LeaderboardServiceServicer(), grpc_service.server)
-    profile_service_pb2_grpc.add_ProfileServiceServicer_to_server(
-      ProfileServiceServicer(), grpc_service.server)
-    config_service_pb2_grpc.add_ConfigServiceServicer_to_server(
-      ConfigServiceServicer(), grpc_service.server)
 
     futures[executor.submit(updater_service)] = updater_service
     futures[executor.submit(state_writer_service)] = state_writer_service

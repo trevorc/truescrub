@@ -37,6 +37,16 @@ py_library(
 )
 
 py_library(
+    name = "errors",
+    srcs = ["errors.py"],
+    visibility = [
+        "//tests:__pkg__",
+        "//truescrub:__subpackages__",
+    ],
+    deps = ["@pypi//grpcio"],
+)
+
+py_library(
     name = "models",
     srcs = ["models.py"],
     data = ["//truescrub/proto:skill_groups.json"],
@@ -116,6 +126,7 @@ py_library(
     deps = [
         ":achievements",
         ":db",
+        ":errors",
         ":highlights",
         ":interceptors",
         ":matchmaking",
@@ -170,6 +181,7 @@ py_library(
     srcs = ["interceptors.py"],
     deps = [
         ":db",
+        ":errors",
         "@pypi//grpcio",
     ],
 )

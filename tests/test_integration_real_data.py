@@ -11,14 +11,22 @@ import pathlib
 import sqlite3
 from unittest.mock import MagicMock
 
+import grpc
 import pytest
 
 from google.protobuf.field_mask_pb2 import FieldMask
+from grpc_reflection.v1alpha import reflection_pb2
+from grpc_reflection.v1alpha import reflection_pb2_grpc
 from proto import common_pb2
 from proto import highlights_service_pb2
+from proto import highlights_service_pb2_grpc
 from proto import leaderboard_service_pb2
+from proto import profile_service_pb2
+from proto import profile_service_pb2_grpc
+from proto import season_service_pb2
+from proto import season_service_pb2_grpc
 from truescrub import db, seasoncfg
-from truescrub.application import GsiHttpService
+from truescrub.application import SERVICES, GrpcService, GsiHttpService
 from truescrub.envconfig import SHARED_KEY
 from truescrub.interceptors import grpc_db_conn
 from truescrub.rpc import HighlightsServiceServicer, LeaderboardServiceServicer
@@ -278,6 +286,106 @@ class TestRealDataPipeline:
     assert 'Wallflower' in accolade_names
 
 
+
+
+@pytest.fixture()
+def grpc_channel(tmp_path, monkeypatch):
+  """A real gRPC server over an empty skill database.
+
+  Backed by a file rather than ':memory:' so DatabaseInterceptor can open and
+  close a genuine connection per RPC, on the worker thread that serves it,
+  exactly as it does in production. Sharing one in-memory connection instead
+  would need close() neutered and SQLite's thread check disabled.
+  """
+  skill_db_path = tmp_path / 'skill.db'
+  setup_conn = sqlite3.connect(skill_db_path)
+  db.initialize_skill_db(setup_conn)
+  monkeypatch.setattr(seasoncfg, 'SEASONS_TOML', SEASONS_TOML)
+  load_seasons(setup_conn)
+  setup_conn.commit()
+  setup_conn.close()
+
+  monkeypatch.setattr('truescrub.db.get_skill_db',
+                      lambda name=None: sqlite3.connect(skill_db_path))
+
+  service = GrpcService('127.0.0.1', 0)
+  service.server.start()
+  try:
+    with grpc.insecure_channel(f'127.0.0.1:{service.port}') as channel:
+      yield channel
+  finally:
+    service.server.stop(grace=None)
+
+
+class TestGrpcStatusCodes:
+  """Statuses have to survive the interceptor stack.
+
+  Driving a servicer directly, or through a MagicMock context, cannot show
+  this: a mock's abort() returns instead of raising, so an interceptor that
+  re-aborts with INTERNAL still looks correct.
+  """
+
+  def test_invalid_argument_survives(self, grpc_channel):
+    stub = highlights_service_pb2_grpc.HighlightsServiceStub(grpc_channel)
+
+    with pytest.raises(grpc.RpcError) as excinfo:
+      stub.ListMatchDays(
+        highlights_service_pb2.ListMatchDaysRequest(timezone='nonsense'))
+
+    assert excinfo.value.code() == grpc.StatusCode.INVALID_ARGUMENT
+    assert 'Invalid timezone nonsense' in excinfo.value.details()
+
+  def test_not_found_survives(self, grpc_channel):
+    stub = profile_service_pb2_grpc.ProfileServiceStub(grpc_channel)
+
+    with pytest.raises(grpc.RpcError) as excinfo:
+      stub.GetProfile(profile_service_pb2.GetProfileRequest(player_id=99999))
+
+    assert excinfo.value.code() == grpc.StatusCode.NOT_FOUND
+    assert 'No such player' in excinfo.value.details()
+
+  def test_unexpected_error_is_internal(self, grpc_channel, monkeypatch):
+    """A bug is INTERNAL, and its message stays on the server."""
+
+    def explode(*args, **kwargs):
+      raise RuntimeError('connection string with a secret')
+
+    monkeypatch.setattr(db, 'get_season_range', explode)
+    stub = season_service_pb2_grpc.SeasonServiceStub(grpc_channel)
+
+    with pytest.raises(grpc.RpcError) as excinfo:
+      stub.GetAvailableSeasons(
+        season_service_pb2.GetAvailableSeasonsRequest())
+
+    assert excinfo.value.code() == grpc.StatusCode.INTERNAL
+    assert 'secret' not in excinfo.value.details()
+
+  def test_successful_rpc_reports_processing_time(self, grpc_channel):
+    stub = season_service_pb2_grpc.SeasonServiceStub(grpc_channel)
+
+    _, call = stub.GetAvailableSeasons.with_call(
+      season_service_pb2.GetAvailableSeasonsRequest())
+
+    trailers = {m.key: m.value for m in call.trailing_metadata()}
+    assert trailers['x-processing-time'].endswith('ms')
+
+
+class TestGrpcReflection:
+  def test_reflection_lists_application_services(self, grpc_channel):
+    """grpcurl list must show the application services, not just health."""
+    stub = reflection_pb2_grpc.ServerReflectionStub(grpc_channel)
+
+    responses = stub.ServerReflectionInfo(iter([
+      reflection_pb2.ServerReflectionRequest(list_services=''),
+    ]))
+    listed = {
+      service.name
+      for response in responses
+      for service in response.list_services_response.service
+    }
+
+    expected = {service.full_name for service in SERVICES}
+    assert expected <= listed
 
 
 if __name__ == '__main__':

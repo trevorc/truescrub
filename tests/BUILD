@@ -188,6 +188,7 @@ py_test(
         ":db_test_utils",
         "//proto:highlights_service_py_pb2_grpc",
         "//proto:leaderboard_service_py_pb2_grpc",
+        "//proto:profile_service_py_pb2_grpc",
         "//proto:season_service_py_pb2_grpc",
         "//truescrub:application",
         "//truescrub:db",
@@ -198,6 +199,8 @@ py_test(
         "//truescrub/updater",
         "//truescrub/updater:recalculate",
         "//truescrub/updater:state_loader",
+        "@pypi//grpcio",
+        "@pypi//grpcio_reflection",
         "@pypi//pytest",
     ],
 )
@@ -241,8 +244,8 @@ py_test(
         "//proto:common_py_pb2",
         "//proto:highlights_service_py_pb2_grpc",
         "//proto:season_service_py_pb2_grpc",
+        "//truescrub:errors",
         "//truescrub:rpc",
-        "@pypi//grpcio",
         "@pypi//pytest",
     ],
 )

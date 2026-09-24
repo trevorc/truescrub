@@ -3,10 +3,10 @@ from unittest.mock import MagicMock
 
 import pytest
 
-import grpc
 from proto import common_pb2
 from proto import highlights_service_pb2
 from tests.db_test_utils import TestDBManager, create_game_state_for_round, set_context_var
+from truescrub.errors import InvalidArgument
 from truescrub.rpc import HighlightsServiceServicer
 from truescrub.interceptors import grpc_db_conn
 
@@ -102,11 +102,15 @@ def test_list_match_days_offset_timezone(servicer):
 
 
 def test_list_match_days_invalid_timezone(servicer):
+  """Servicers raise; ErrorInterceptor turns this into INVALID_ARGUMENT.
+
+  tests/test_integration_real_data.py covers the status code a client sees.
+  """
   request = highlights_service_pb2.ListMatchDaysRequest(timezone="invalid")
-  context = MagicMock()
 
-  servicer.ListMatchDays(request, context)
+  with pytest.raises(InvalidArgument, match="Invalid timezone invalid"):
+    servicer.ListMatchDays(request, MagicMock())
 
-  context.abort.assert_called_once_with(
-    grpc.StatusCode.INVALID_ARGUMENT, "Invalid timezone invalid"
-  )
+
+if __name__ == '__main__':
+  raise SystemExit(pytest.main(["-xv", __file__]))
