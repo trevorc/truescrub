@@ -57,7 +57,7 @@ class SegmentWriter:
   """Owns a single open segment file and its riegeli writer."""
 
   def __init__(self, path: pathlib.Path, first_id: int,
-               message_type: type[Message], mode: str = 'wb'):
+               message_type: type[Message], mode: str = 'xb'):
     self.path = path
     self.first_id = first_id
     self._fp = open(path, mode)
@@ -85,8 +85,16 @@ class SegmentWriter:
                default_first_id, message_type)
 
   @property
-  def pos(self) -> int:
-    return self._fp.tell()
+  def estimated_size(self) -> int:
+    """Projected file size, including records riegeli has not flushed yet.
+
+    self._fp.tell() only advances when riegeli writes a chunk through, so it
+    reports 0 for everything still buffered and rotation happens late or, for
+    a writer that never flushes before close, not at all. riegeli seeds its
+    own position from the destination's tell(), so this stays correct for a
+    segment opened in append mode.
+    """
+    return self._writer.estimated_size()
 
   def write_message(self, record: Message):
     self._writer.write_message(record)
@@ -115,6 +123,7 @@ class StateLogWriter:
     self._in_context = False
     self._segment: Optional[SegmentWriter] = None
     self._lock_file = None
+    self._last_id: Optional[int] = None
 
   def __enter__(self):
     self._log_dir.mkdir(parents=True, exist_ok=True)
@@ -128,6 +137,7 @@ class StateLogWriter:
       acquired_fcntl = True
 
       self._in_context = True
+      self._last_id = self._read_last_id()
       self._segment = SegmentWriter.open_latest(
         self._log_dir, self._message_type)
       return self
@@ -175,18 +185,34 @@ class StateLogWriter:
       self._lock_file.close()
       self._lock_file = None
 
+  def _read_last_id(self) -> Optional[int]:
+    """The id of the last record already in the log, or None if it is empty."""
+    reader = StateLogReader(
+      self._log_dir, self._message_type, self._id_getter)
+    with reader:
+      try:
+        return self._id_getter(reader.fetch_last())
+      except NoSuchRecordException:
+        return None
+
   def append(self, record: Message):
     if not self._in_context:
       raise RuntimeError('append() called outside of context manager')
 
-    if self._segment.pos > self._max_bytes:
-      record_id = self._id_getter(record)
+    record_id = self._id_getter(record)
+    if self._last_id is not None and record_id <= self._last_id:
+      raise NonIncreasingRecordIdError(
+        f'record id {record_id} does not exceed previous id {self._last_id}')
+
+    if (self._segment.estimated_size > self._max_bytes
+        and record_id > self._segment.first_id):
       self._segment.close()
       self._segment = SegmentWriter(
         self._log_dir / segment_name(record_id),
         record_id, self._message_type)
 
     self._segment.write_message(record)
+    self._last_id = record_id
 
   def flush(self):
     if not self._in_context:
@@ -207,6 +233,16 @@ def _make_id_comparator(target_id: int,
 
 class NoSuchRecordException(LookupError):
   pass
+
+
+class NonIncreasingRecordIdError(ValueError):
+  """Raised when an appended record's id does not exceed its predecessor's.
+
+  Segments are named for the id of their first record, and both
+  _find_start_idx and fetch() binary-search on that ordering, so strictly
+  increasing ids are a read-path invariant. A duplicate id also names a
+  segment that already exists.
+  """
 
 
 class StateLogReader:
