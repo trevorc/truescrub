@@ -269,8 +269,9 @@ py_test(
         "//proto:common_py_pb2",
         "//proto:matchmaking_service_py_pb2_grpc",
         "//proto:season_service_py_pb2_grpc",
+        "//truescrub:errors",
+        "//truescrub:models",
         "//truescrub:rpc",
-        "@pypi//grpcio",
         "@pypi//pytest",
     ],
 )

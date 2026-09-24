@@ -508,6 +508,22 @@ def get_player_profile(skill_db, player_id: int):
     return player, overall_record
 
 
+def get_last_round_season(skill_db) -> Optional[int]:
+    """The season of the most recent round, or None when there are no rounds.
+
+    Pairs with get_players_in_last_round so the player pool and the season
+    are taken from the same round instead of being resolved independently.
+    """
+    try:
+        return execute_one(skill_db, '''
+        SELECT season_id
+        FROM rounds
+        WHERE round_id = (SELECT MAX(round_id) FROM rounds)
+        ''')[0]
+    except StopIteration:
+        return None
+
+
 def get_players_in_last_round(skill_db) -> Set[int]:
     player_ids = execute(skill_db, '''
     SELECT player_id

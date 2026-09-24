@@ -3,12 +3,13 @@ from unittest.mock import MagicMock
 
 import pytest
 
-import grpc
 from proto import common_pb2
 from proto import matchmaking_service_pb2
 from tests.db_test_utils import TestDBManager, create_game_state_for_round, \
   set_context_var
+from truescrub.errors import InvalidArgument
 from truescrub.interceptors import grpc_db_conn
+from truescrub.models import find_skill_group
 from truescrub.rpc import MatchmakingServiceServicer
 
 
@@ -66,7 +67,7 @@ class TestRoundSelectionWithSeason:
 
     player_1 = next(
       p for p in response.available_players if p.player_id == 1)
-    assert player_1.skill.skill_group != ''
+    assert find_skill_group(player_1.skill.mmr) >= 0
 
 
 class TestRoundSelectionDefaultsToLatestSeason:
@@ -265,13 +266,13 @@ class TestInvalidInput:
         player_ids=list(range(1, 21))
       )
     )
-    context = MagicMock()
 
-    servicer.ComputeMatchmaking(request, context)
+    with pytest.raises(InvalidArgument,
+                       match="Cannot compute matches for more than"):
+      servicer.ComputeMatchmaking(request, MagicMock())
 
-    assert context.abort.called
-    args, _ = context.abort.call_args
-    assert args[0] == grpc.StatusCode.INVALID_ARGUMENT
-    assert "Cannot compute matches for more than" in args[1]
+
+if __name__ == '__main__':
+  raise SystemExit(pytest.main(["-xv", __file__]))
 
 

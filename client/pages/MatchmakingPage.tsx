@@ -314,13 +314,12 @@ export const matchmakingLatestRoute = createRoute({
   },
   loaderDeps: ({ search }) => search,
   loader: async ({context: {queryClient, transport}, deps: search}) => {
-    const seasons = await queryClient.ensureQueryData(availableSeasonsQueryOptions(transport));
-    const resolvedSeasonId = getLatestSeasonId(seasons.availableSeasons);
+    await queryClient.ensureQueryData(availableSeasonsQueryOptions(transport));
     const selection: ComputeMatchmakingRequest["selection"] = {
       case: 'roundSelection',
       value: create(RoundSelectionSchema, {})
     };
-    queryClient.prefetchQuery(computeMatchmakingQueryOptions(resolvedSeasonId, selection, transport));
+    queryClient.prefetchQuery(computeMatchmakingQueryOptions(undefined, selection, transport));
   }
 });
 

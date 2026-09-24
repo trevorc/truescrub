@@ -141,9 +141,9 @@ class MatchmakingServiceServicer(
       case 'round_selection':
         selected_players = db.get_players_in_last_round(conn)
         if season_id is None:
-          seasons = db.get_season_range(conn)
-          if seasons:
-            season_id = seasons[-1]
+          season_id = db.get_last_round_season(conn)
+          if season_id is None:
+            return matchmaking_service_pb2.ComputeMatchmakingResponse()
       case 'player_selection':
         selected_players = set(request.player_selection.player_ids)
 
