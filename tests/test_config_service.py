@@ -15,3 +15,7 @@ def test_get_brand_config(monkeypatch):
 
   response = servicer.GetBrandConfig(request, None)
   assert response.site_name == "TestScrub"
+
+
+if __name__ == '__main__':
+  raise SystemExit(pytest.main(["-xv", __file__]))

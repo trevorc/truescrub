@@ -20,3 +20,7 @@ def test_get_available_seasons(monkeypatch):
   with set_context_var(grpc_db_conn, MagicMock()):
     response = servicer.GetAvailableSeasons(request, None)
     assert list(response.available_seasons) == [1, 2, 3]
+
+
+if __name__ == '__main__':
+  raise SystemExit(pytest.main(["-xv", __file__]))

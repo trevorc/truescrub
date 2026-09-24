@@ -26,3 +26,7 @@ class TestParseTimezone:
     """strptime %z handles partial offsets correctly."""
     tz = parse_timezone('+05:30')
     assert tz.utcoffset(None) == datetime.timedelta(hours=5, minutes=30)
+
+
+if __name__ == '__main__':
+  raise SystemExit(pytest.main(["-xv", __file__]))

@@ -125,3 +125,7 @@ class TestProfileEndpoints:
     last_round_players = get_players_in_last_round(skill_db)
 
     assert last_round_players == {76561198000000001, 2, 3, 4}
+
+
+if __name__ == '__main__':
+  raise SystemExit(pytest.main(["-xv", __file__]))

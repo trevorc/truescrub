@@ -69,3 +69,7 @@ def test_accepts_valid_token(gsi_server, mock_state_writer):
   mock_state_writer.send_message.assert_called_once_with(
     game_state=json.dumps({'map': {'name': 'de_dust2'}})
   )
+
+
+if __name__ == '__main__':
+  raise SystemExit(pytest.main(["-xv", __file__]))
