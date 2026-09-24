@@ -7,6 +7,7 @@ from proto import leaderboard_service_pb2
 from tests.db_test_utils import TestDBManager, create_game_state_for_round, \
   set_context_var
 from truescrub.interceptors import grpc_db_conn
+from truescrub.models import find_skill_group
 from truescrub.rpc import LeaderboardServiceServicer
 
 
@@ -74,7 +75,7 @@ class TestGetLeaderboardAllSeasons:
     response = servicer.GetLeaderboard(request, context)
 
     for player in response.leaderboard:
-      assert player.skill.skill_group != ''
+      assert find_skill_group(player.skill.mmr) >= 0
       assert player.skill.mu > 0
       assert player.skill.sigma > 0
       assert player.steam_name != ''
@@ -116,3 +117,7 @@ class TestGetLeaderboardSeasonIdZero:
     assert not context.abort.called
     player_ids = {p.player_id for p in response.leaderboard}
     assert player_ids == {1, 2, 3}
+
+
+if __name__ == '__main__':
+  raise SystemExit(pytest.main(["-xv", __file__]))

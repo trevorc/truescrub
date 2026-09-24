@@ -279,6 +279,7 @@ py_test(
         ":db_test_utils",
         "//proto:common_py_pb2",
         "//proto:leaderboard_service_py_pb2_grpc",
+        "//truescrub:models",
         "//truescrub:rpc",
         "@pypi//grpcio",
         "@pypi//pytest",
