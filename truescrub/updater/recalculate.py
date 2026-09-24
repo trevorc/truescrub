@@ -2,7 +2,7 @@ import itertools
 import logging
 import operator
 import time
-from concurrent.futures import as_completed, ProcessPoolExecutor
+
 from typing import Iterator, List, Dict, Tuple
 
 import trueskill
@@ -11,6 +11,7 @@ from truescrub import db
 from truescrub.models import (
   RoundRow, SkillHistory, setup_trueskill, EvaluatedRound, PlayerRoundStats
 )
+from truescrub.rating import SkillTracker
 from truescrub.seasoncfg import get_all_seasons
 from truescrub.updater.remapper import remap_rounds, apply_player_configurations
 from truescrub.updater.state_loader import StateLoader
@@ -149,48 +150,34 @@ def compute_player_skills(
     rounds: List[RoundRow], teams: List[dict],
     current_ratings: Dict[int, trueskill.Rating] | None = None) \
     -> Tuple[Dict[int, trueskill.Rating], List[SkillHistory]]:
-  ratings = {}
-  if current_ratings is not None:
-    ratings.update(current_ratings)
+  tracker = SkillTracker(initial=current_ratings)
   skill_history = []
 
   for round in rounds:
-    rating_groups = (
-      {player_id: ratings.get(player_id, trueskill.Rating())
-       for player_id in teams[round.winner]},
-      {player_id: ratings.get(player_id, trueskill.Rating())
-       for player_id in teams[round.loser]},
-    )
-    new_ratings = trueskill.rate(rating_groups)
-    for rating in new_ratings:
-      ratings.update(rating)
-      for player_id, skill in rating.items():
-        skill_history.append(SkillHistory(
-          round_id=round.round_id,
-          player_id=player_id,
-          skill=skill))
+    winners = teams[round.winner]
+    losers = teams[round.loser]
+    tracker.rate_match(winners, losers)
+    for player_id in itertools.chain(winners, losers):
+      skill_history.append(SkillHistory(
+        round_id=round.round_id,
+        player_id=player_id,
+        skill=tracker.rating(player_id)))
 
-  return ratings, skill_history
+  return tracker.ratings(), skill_history
 
 
 def rate_players_by_season(
     rounds_by_season: Dict[int, List[RoundRow]], teams: List[dict],
     skills_by_season: Dict[int, Dict[int, trueskill.Rating]] | None = None) \
     -> Tuple[Dict[Tuple[int, int], trueskill.Rating], Dict[int, SkillHistory]]:
-  skills = {}
   if skills_by_season is None:
     skills_by_season = {}
-  history_by_season = {}
-  with ProcessPoolExecutor() as executor:
-    player_skill_futures = {}
-    for season, rounds in rounds_by_season.items():
-      future = executor.submit(compute_player_skills, rounds, teams,
-                               skills_by_season.get(season))
-      player_skill_futures[future] = season
 
-  for future in as_completed(player_skill_futures):
-    new_skills, skill_history = future.result()
-    season = player_skill_futures[future]
+  skills = {}
+  history_by_season = {}
+  for season, rounds in rounds_by_season.items():
+    new_skills, skill_history = compute_player_skills(
+      rounds, teams, skills_by_season.get(season))
     for player_id, rating in new_skills.items():
       skills[(player_id, season)] = rating
     history_by_season[season] = skill_history
@@ -222,7 +209,7 @@ def recalculate_season_ratings(skill_db, all_rounds, teams):
 
 
 def recalculate_ratings(skill_db, new_rounds: (int, int)):
-  start = time.process_time()
+  start = time.perf_counter()
   logger.debug('recalculating for rounds between %d and %d', *new_rounds)
 
   all_rounds = db.get_all_rounds(skill_db, new_rounds)
@@ -232,7 +219,7 @@ def recalculate_ratings(skill_db, new_rounds: (int, int)):
   recalculate_overall_ratings(skill_db, all_rounds, teams)
   recalculate_season_ratings(skill_db, all_rounds, teams)
 
-  end = time.process_time()
+  end = time.perf_counter()
   logger.debug('recalculation for %d-%d completed in %d ms',
                new_rounds[0], new_rounds[1], (1000 * (end - start)))
 

@@ -108,6 +108,17 @@ py_test(
 )
 
 py_test(
+    name = "test_rating",
+    srcs = ["test_rating.py"],
+    deps = [
+        "//truescrub:models",
+        "//truescrub:rating",
+        "@pypi//pytest",
+        "@pypi//trueskill",
+    ],
+)
+
+py_test(
     name = "test_recalculate",
     srcs = ["test_recalculate.py"],
     deps = [

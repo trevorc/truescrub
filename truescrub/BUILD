@@ -27,6 +27,16 @@ py_library(
 )
 
 py_library(
+    name = "rating",
+    srcs = ["rating.py"],
+    visibility = [
+        "//tests:__pkg__",
+        "//truescrub:__subpackages__",
+    ],
+    deps = ["@pypi//trueskill"],
+)
+
+py_library(
     name = "models",
     srcs = ["models.py"],
     data = ["//truescrub/proto:skill_groups.json"],
