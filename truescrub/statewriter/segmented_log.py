@@ -5,7 +5,7 @@ import logging
 import operator
 import pathlib
 import re
-import threading
+import time
 from collections.abc import Callable, Iterator
 from typing import Optional
 
@@ -108,14 +108,15 @@ class SegmentWriter:
 
 
 class StateLogWriter:
+  """Holds exclusive write access to a log directory for its context."""
+
   def __init__(self, log_dir: pathlib.Path, max_bytes: int,
-               write_lock: threading.Lock, lock_path: pathlib.Path,
+               lock_path: pathlib.Path,
                timeout: Optional[float],
                message_type: type[Message],
                id_getter: Callable[[Message], int]):
     self._log_dir = log_dir
     self._max_bytes = max_bytes
-    self._write_lock = write_lock
     self._lock_path = lock_path
     self._timeout = timeout
     self._message_type = message_type
@@ -127,24 +128,15 @@ class StateLogWriter:
 
   def __enter__(self):
     self._log_dir.mkdir(parents=True, exist_ok=True)
-    lock_timeout = -1 if self._timeout is None else self._timeout
-    if not self._write_lock.acquire(timeout=lock_timeout):
-      raise TimeoutError("Timeout acquiring in-process write lock")
-
-    acquired_fcntl = False
+    self._acquire_fcntl()
     try:
-      self._acquire_fcntl()
-      acquired_fcntl = True
-
       self._in_context = True
       self._last_id = self._read_last_id()
       self._segment = SegmentWriter.open_latest(
         self._log_dir, self._message_type)
       return self
     except Exception:
-      if acquired_fcntl:
-        self._release_fcntl()
-      self._write_lock.release()
+      self._release_fcntl()
       raise
 
   def __exit__(self, exc_type, exc_val, exc_tb):
@@ -155,10 +147,8 @@ class StateLogWriter:
       self._in_context = False
     finally:
       self._release_fcntl()
-      self._write_lock.release()
 
   def _acquire_fcntl(self):
-    import time
     self._lock_file = open(self._lock_path, 'a')
 
     if self._timeout is None or self._timeout < 0:
@@ -351,14 +341,13 @@ class SegmentedLog:
     self.max_bytes = max_bytes
     self._message_type = message_type
     self._id_getter = id_getter
-    self._write_lock = threading.Lock()
     self._lock_path = self.log_dir / '.lock'
     self.log_dir.mkdir(parents=True, exist_ok=True)
     logger.debug('Initializing SegmentedLog in %s', log_dir)
 
   def writer(self, timeout: Optional[float] = None) -> 'StateLogWriter':
     return StateLogWriter(
-      self.log_dir, self.max_bytes, self._write_lock, self._lock_path,
+      self.log_dir, self.max_bytes, self._lock_path,
       timeout, self._message_type, self._id_getter)
 
   def reader(self) -> 'StateLogReader':

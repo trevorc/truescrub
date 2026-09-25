@@ -5,19 +5,13 @@ load("@tar.bzl", "tar")
 package(
     default_visibility = [
         "//tests:__pkg__",
-        "//truescrub/statewriter:__pkg__",
-        "//truescrub/tools:__pkg__",
-        "//truescrub/updater:__pkg__",
+        "//truescrub:__subpackages__",
     ],
 )
 
 py_library(
     name = "envconfig",
     srcs = ["envconfig.py"],
-    visibility = [
-        "//tests:__pkg__",
-        "//truescrub:__subpackages__",
-    ],
 )
 
 py_library(
@@ -29,20 +23,12 @@ py_library(
 py_library(
     name = "rating",
     srcs = ["rating.py"],
-    visibility = [
-        "//tests:__pkg__",
-        "//truescrub:__subpackages__",
-    ],
     deps = ["@pypi//trueskill"],
 )
 
 py_library(
     name = "errors",
     srcs = ["errors.py"],
-    visibility = [
-        "//tests:__pkg__",
-        "//truescrub:__subpackages__",
-    ],
     deps = ["@pypi//grpcio"],
 )
 

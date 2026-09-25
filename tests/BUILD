@@ -166,6 +166,16 @@ py_test(
 )
 
 py_test(
+    name = "test_segmented_log_locking",
+    srcs = ["test_segmented_log_locking.py"],
+    deps = [
+        "//truescrub/proto:game_state_py_pb2",
+        "//truescrub/statewriter",
+        "@pypi//pytest",
+    ],
+)
+
+py_test(
     name = "test_segmented_log_dir",
     srcs = ["test_segmented_log_dir.py"],
     deps = [
