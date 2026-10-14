@@ -14,10 +14,12 @@ def get_brand_config():
 def test_get_brand_config(monkeypatch):
   monkeypatch.setattr(envconfig, "SITE_NAME", "TestScrub")
   monkeypatch.setattr(envconfig, "STYLESHEET", None)
+  monkeypatch.setattr(envconfig, "TAGLINE", "Scrubbier than ever.")
 
   response = get_brand_config()
   assert response.site_name == "TestScrub"
   assert response.stylesheet == ''
+  assert response.tagline == "Scrubbier than ever."
 
 
 def test_stylesheet(monkeypatch, tmp_path):

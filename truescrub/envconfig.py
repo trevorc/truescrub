@@ -13,3 +13,8 @@ SEGMENT_MAX_BYTES = int(
   os.environ.get('TRUESCRUB_SEGMENT_MAX_BYTES', str(16 * 1024 * 1024)))
 SITE_NAME = os.environ.get('TRUESCRUB_SITE_NAME', 'TrueScrub')
 STYLESHEET = os.environ.get('TRUESCRUB_STYLESHEET')
+TAGLINE = os.environ.get(
+  'TRUESCRUB_TAGLINE',
+  'The ultimate competitive matchmaking and rating engine. Analyze '
+  'performance, discover your true skill, and find perfectly balanced '
+  'matches.')

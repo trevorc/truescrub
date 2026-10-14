@@ -24,6 +24,7 @@ helm_template(
 kustomization(
     name = "dev",
     srcs = [
+        "brand.css",
         "gateway.yaml",
         "gatewayclass.yaml",
         "kustomization.yaml",

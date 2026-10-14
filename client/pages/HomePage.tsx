@@ -18,7 +18,7 @@ export const indexRoute = createRoute({
 export function HomePage() {
   const transport = useTransport();
   const {data: {availableSeasons}} = useSuspenseQuery(availableSeasonsQueryOptions(transport));
-  const {data: {siteName}} = useSuspenseQuery(brandQueryOptions(transport));
+  const {data: {siteName, tagline}} = useSuspenseQuery(brandQueryOptions(transport));
   const seasonPath = getLatestSeasonPath(availableSeasons);
 
   return (
@@ -35,8 +35,7 @@ export function HomePage() {
             <span className="heading-gradient">{siteName}™</span>
           </h1>
           <p className="text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed">
-            The ultimate competitive matchmaking and rating engine. Analyze performance, discover
-            your true skill, and find perfectly balanced matches.
+            {tagline}
           </p>
         </div>
 

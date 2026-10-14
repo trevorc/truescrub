@@ -1,0 +1,66 @@
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=Bowlby+One&display=swap');
+
+:root {
+  --font-sans: 'Archivo', sans-serif;
+
+  --color-brand-100: #fdf3cf;
+  --color-brand-500: #f2b705;
+  --color-brand-600: #c99604;
+  --color-brand-900: #5a4302;
+
+  --color-purple-400: #fb923c;
+  --color-purple-500: #f97316;
+  --color-purple-600: #ea580c;
+  --color-purple-900: #7c2d12;
+
+  --color-slate-200: #e5e5e5;
+  --color-slate-300: #d4d4d4;
+  --color-slate-400: #a3a3a3;
+  --color-slate-500: #737373;
+  --color-slate-600: #525252;
+  --color-slate-700: #404040;
+  --color-slate-800: #262626;
+  --color-slate-900: #171717;
+
+  --color-dark-bg: #121212;
+  --color-dark-card: #1b1b1b;
+  --color-dark-border: #2e2e2e;
+
+  --radius-xl: 4px;
+  --radius-2xl: 4px;
+
+  --shadow-mascot: 6px 6px 0 #000;
+}
+
+body {
+  background-image: radial-gradient(rgb(255 255 255 / 0.035) 1px, transparent 1.2px);
+  background-size: 14px 14px;
+}
+
+.glass-panel {
+  backdrop-filter: none;
+  background: var(--color-dark-card);
+  border: 2px solid var(--color-dark-border);
+  box-shadow: 5px 5px 0 #000;
+}
+
+.interactive-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 7px 7px 0 #000;
+}
+
+.heading-gradient {
+  background: none;
+  color: var(--color-brand-500);
+}
+
+h1, .heading-gradient {
+  font-family: 'Bowlby One', sans-serif;
+  font-weight: 400;
+  text-transform: uppercase;
+}
+
+nav a, h2 {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}

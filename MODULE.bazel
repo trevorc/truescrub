@@ -1,21 +1,21 @@
 bazel_dep(name = "aspect_rules_esbuild", version = "0.27.1")
-bazel_dep(name = "aspect_rules_js", version = "3.4.1")
+bazel_dep(name = "aspect_rules_js", version = "3.5.1")
 bazel_dep(name = "aspect_rules_jest", version = "0.26.0")
 bazel_dep(name = "aspect_rules_py", version = "2.0.0-alpha.6")
 bazel_dep(name = "aspect_rules_ts", version = "3.10.1")
 bazel_dep(name = "bazel_lib", version = "3.7.2")
 bazel_dep(name = "bazel_skylib", version = "1.9.2")
 bazel_dep(name = "grpc", version = "1.84.0")
-bazel_dep(name = "jq.bzl", version = "0.6.2")
-bazel_dep(name = "llvm", version = "0.8.21")
+bazel_dep(name = "jq.bzl", version = "0.7.1")
+bazel_dep(name = "llvm", version = "0.8.24")
 bazel_dep(name = "openssl", version = "4.0.1.bcr.0")
 bazel_dep(name = "platforms", version = "1.1.0")
 bazel_dep(name = "protobuf", version = "36.2")
 bazel_dep(name = "riegeli", version = "0.0.0-20250822-9f2744d")
-bazel_dep(name = "rules_helm", version = "0.32.0")
+bazel_dep(name = "rules_helm", version = "0.34.0")
 bazel_dep(name = "rules_kustomize", version = "0.5.3")
 bazel_dep(name = "rules_oci", version = "2.3.0")
-bazel_dep(name = "rules_python", version = "2.3.3")
+bazel_dep(name = "rules_python", version = "2.4.2")
 bazel_dep(name = "tar.bzl", version = "0.10.9")
 
 single_version_override(
@@ -92,17 +92,17 @@ http_file = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_
 http_archive(
     name = "sws_linux_amd64",
     build_file_content = 'exports_files(["static-web-server"])',
-    sha256 = "804bc0c31c78385ac04e9a36f3c2aa3d3170eb77d66807c2a1660c56b2026bb1",
-    strip_prefix = "static-web-server-v2.44.0-x86_64-unknown-linux-musl",
-    urls = ["https://github.com/static-web-server/static-web-server/releases/download/v2.44.0/static-web-server-v2.44.0-x86_64-unknown-linux-musl.tar.gz"],
+    sha256 = "8f94abd9bc9c6d11240301d7271b95f9ec05b1b3e8509087c86ca8fd0b56fb4e",
+    strip_prefix = "static-web-server-v2.44.1-x86_64-unknown-linux-musl",
+    urls = ["https://github.com/static-web-server/static-web-server/releases/download/v2.44.1/static-web-server-v2.44.1-x86_64-unknown-linux-musl.tar.gz"],
 )
 
 http_archive(
     name = "sws_linux_arm64",
     build_file_content = 'exports_files(["static-web-server"])',
-    sha256 = "e9d6bd0b05dea441028eb4e690249ab585d711b311646bf9f420fcea01449670",
-    strip_prefix = "static-web-server-v2.44.0-aarch64-unknown-linux-musl",
-    urls = ["https://github.com/static-web-server/static-web-server/releases/download/v2.44.0/static-web-server-v2.44.0-aarch64-unknown-linux-musl.tar.gz"],
+    sha256 = "28e53e5979735309ec3de685330719a11a0ef339aa06d0f0cd8eff5d973b9dfc",
+    strip_prefix = "static-web-server-v2.44.1-aarch64-unknown-linux-musl",
+    urls = ["https://github.com/static-web-server/static-web-server/releases/download/v2.44.1/static-web-server-v2.44.1-aarch64-unknown-linux-musl.tar.gz"],
 )
 
 http_file(
@@ -189,7 +189,7 @@ helm_import_repository = use_repo_rule(
 
 helm_import_repository(
     name = "envoy_gateway_chart",
-    url = "oci://registry-1.docker.io/envoyproxy/gateway-helm:v1.9.1",
+    url = "oci://registry-1.docker.io/envoyproxy/gateway-helm:1.9.2",
 )
 
 ################

@@ -51,6 +51,7 @@ class ConfigServiceServicer(config_service_pb2_grpc.ConfigServiceServicer):
       site_name=envconfig.SITE_NAME,
       stylesheet=pathlib.Path(stylesheet).read_text()
       if stylesheet is not None else '',
+      tagline=envconfig.TAGLINE,
     )
 
   def GetBrandConfig(self, request, context: grpc.ServicerContext):

@@ -22,3 +22,37 @@ secretGenerator:
     namespace: truescrub
     literals:
       - shared-key=dev-secret-key
+
+configMapGenerator:
+  - name: truescrub-brand
+    namespace: truescrub
+    files:
+      - brand.css
+
+patches:
+  - patch: |-
+      apiVersion: apps/v1
+      kind: StatefulSet
+      metadata:
+        name: truescrub
+        namespace: truescrub
+      spec:
+        template:
+          spec:
+            containers:
+              - name: truescrub
+                env:
+                  - name: TRUESCRUB_SITE_NAME
+                    value: TrueSlop
+                  - name: TRUESCRUB_STYLESHEET
+                    value: /brand/brand.css
+                  - name: TRUESCRUB_TAGLINE
+                    value: Where the MMR is made up and the chickens don't matter.
+                volumeMounts:
+                  - name: brand
+                    mountPath: /brand
+                    readOnly: true
+            volumes:
+              - name: brand
+                configMap:
+                  name: truescrub-brand

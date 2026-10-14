@@ -55,6 +55,16 @@ py_test(
 )
 
 py_test(
+    name = "test_riegeli_facts",
+    srcs = ["test_riegeli_facts.py"],
+    deps = [
+        "//truescrub/proto:game_state_py_pb2",
+        "@pypi//pytest",
+        "@riegeli//python/riegeli",
+    ],
+)
+
+py_test(
     name = "test_segmented_log",
     srcs = ["test_segmented_log.py"],
     deps = [
