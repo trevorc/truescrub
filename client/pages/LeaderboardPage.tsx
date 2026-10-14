@@ -84,7 +84,7 @@ function PercentileEstimate({mu, sigma, zScore}: {
            className="relative h-4 bg-slate-900/80 rounded-full overflow-hidden border border-slate-700 shadow-inner group">
         <div
             style={{width: `${ratingWidth * 12}em`, marginLeft: `${leftOffset * 12}em`}}
-            className="absolute top-0 bottom-0 bg-gradient-to-r from-brand-500 to-purple-500 rounded-full shadow-[0_0_12px_rgba(14,165,233,0.8)] transition-all duration-300"></div>
+            className="absolute top-0 bottom-0 bg-gradient-to-r from-brand-500 to-purple-500 rounded-full shadow-[0_0_12px_color-mix(in_oklab,var(--color-brand-500)_80%,transparent)] transition-all duration-300"></div>
       </div>
   );
 }

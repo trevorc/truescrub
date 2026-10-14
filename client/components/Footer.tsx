@@ -3,7 +3,7 @@ import {useSuspenseQuery} from "@tanstack/react-query";
 import {brandQueryOptions} from "client/api/brand.js";
 import {useTransport} from "@connectrpc/connect-query";
 
-const QUIPS = [
+const quips = (siteName: string) => [
   "No chickens were harmed in the making of this leaderboard.",
   "The chickens believe in you. Probably.",
   "Chickens spectate every round. They've seen things.",
@@ -17,7 +17,7 @@ const QUIPS = [
   "The chicken has 400 hours and a better K/D than you.",
   "Chickens don't peek mid. Be more like chickens.",
   "The chicken would have held that angle.",
-  "TrueScrub: where the MMR is made up and the chickens don't matter.",
+  `${siteName}: where the MMR is made up and the chickens don't matter.`,
   "Your spray pattern looks like a chicken drew it.",
   "Chickens don't bait. Take notes.",
   "That flash was so bad, even the chickens looked away in time.",
@@ -33,8 +33,9 @@ export function Footer() {
   const {data: {siteName}} = useSuspenseQuery(brandQueryOptions(transport));
 
   useEffect(() => {
-    setQuip(QUIPS[Math.floor(Math.random() * QUIPS.length)]);
-  }, []);
+    const choices = quips(siteName);
+    setQuip(choices[Math.floor(Math.random() * choices.length)]);
+  }, [siteName]);
 
   return (
       <footer className="max-w-7xl mx-auto mt-auto pt-16 pb-4 text-center text-slate-500 text-sm">

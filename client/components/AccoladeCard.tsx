@@ -78,7 +78,7 @@ export function AccoladeCard({accolade, playerName}: { accolade: Accolade, playe
                 src={imgSrc}
                 alt={accolade.name}
                 onError={() => setImgError(true)}
-                className="w-full h-full object-contain relative z-10 drop-shadow-[0_20px_30px_rgba(0,0,0,0.9)] filter group-hover:drop-shadow-[0_0_40px_rgba(14,165,233,0.9)] transition-all duration-500"
+                className="w-full h-full object-contain relative z-10 drop-shadow-[0_20px_30px_rgba(0,0,0,0.9)] filter group-hover:drop-shadow-[0_0_40px_color-mix(in_oklab,var(--color-brand-500)_90%,transparent)] transition-all duration-500"
             />
           </div>
 

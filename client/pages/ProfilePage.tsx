@@ -303,20 +303,20 @@ export function ProfilePage({routePlayerId}: { routePlayerId?: string }) {
           {/* Tab Navigation */}
           <div className="flex items-center gap-4 mb-4 pb-2 overflow-x-auto relative z-10">
             <Link to="/profiles/$playerId" params={{playerId: routePlayerId!}}
-                  activeProps={{className: 'bg-brand-500 text-white shadow-[0_0_15px_rgba(14,165,233,0.5)]'}}
+                  activeProps={{className: 'bg-brand-500 text-white shadow-[0_0_15px_color-mix(in_oklab,var(--color-brand-500)_50%,transparent)]'}}
                   inactiveProps={{className: 'text-slate-400 hover:text-white hover:bg-white/5'}}
                   className="px-6 py-2.5 rounded-full font-bold uppercase tracking-widest text-sm transition-all"
                   activeOptions={{exact: true}}>
               Overview
             </Link>
             <Link to="/profiles/$playerId/matches" params={{playerId: routePlayerId!}}
-                  activeProps={{className: 'bg-brand-500 text-white shadow-[0_0_15px_rgba(14,165,233,0.5)]'}}
+                  activeProps={{className: 'bg-brand-500 text-white shadow-[0_0_15px_color-mix(in_oklab,var(--color-brand-500)_50%,transparent)]'}}
                   inactiveProps={{className: 'text-slate-400 hover:text-white hover:bg-white/5'}}
                   className="px-6 py-2.5 rounded-full font-bold uppercase tracking-widest text-sm transition-all">
               Matches
             </Link>
             <Link to="/profiles/$playerId/team_records" params={{playerId: routePlayerId!}}
-                  activeProps={{className: 'bg-brand-500 text-white shadow-[0_0_15px_rgba(14,165,233,0.5)]'}}
+                  activeProps={{className: 'bg-brand-500 text-white shadow-[0_0_15px_color-mix(in_oklab,var(--color-brand-500)_50%,transparent)]'}}
                   inactiveProps={{className: 'text-slate-400 hover:text-white hover:bg-white/5'}}
                   className="px-6 py-2.5 rounded-full font-bold uppercase tracking-widest text-sm transition-all">
               Team Records
@@ -471,7 +471,7 @@ export function OverviewTab({routePlayerId}: { routePlayerId?: string }) {
                             <div
                                 className="h-2 w-24 bg-slate-900/80 rounded-full shadow-inner border border-white/5 relative overflow-hidden flex items-center">
                               <div
-                                  className="absolute h-full rounded-full bg-gradient-to-r from-brand-600 via-brand-400 to-brand-300 shadow-[0_0_10px_rgba(56,189,248,0.4)]"
+                                  className="absolute h-full rounded-full bg-gradient-to-r from-brand-600 via-brand-400 to-brand-300 shadow-[0_0_10px_color-mix(in_oklab,var(--color-brand-500)_40%,transparent)]"
                                   style={{
                                     left: `${leftOffset * 100}%`,
                                     width: `${width * 100}%`

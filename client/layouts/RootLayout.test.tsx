@@ -18,7 +18,10 @@ describe('RootLayout', () => {
   it('renders the layout with Navbar, Footer, and Outlet content', async () => {
     const testTransport = createRouterTransport(({service}) => {
       service(ConfigService, {
-        getBrandConfig: () => ({siteName: "MockedScrub"}),
+        getBrandConfig: () => ({
+          siteName: "MockedScrub",
+          stylesheet: ":root { --font-sans: serif; }",
+        }),
       });
       service(SeasonService, {
         getAvailableSeasons: () => ({availableSeasons: []}),
@@ -59,5 +62,7 @@ describe('RootLayout', () => {
     const titles = await screen.findAllByText(/MockedScrub/i);
     expect(titles.length).toBeGreaterThan(0);
     expect(screen.getByTestId('content').textContent).toBe('Page Content');
+    const styles = Array.from(document.querySelectorAll('style'), style => style.textContent);
+    expect(styles).toContain(':root { --font-sans: serif; }');
   });
 });

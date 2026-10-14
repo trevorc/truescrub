@@ -14,6 +14,7 @@ export function RootLayout() {
   return (
       <div className="flex flex-col min-h-screen w-full pt-6 pb-12 px-4 sm:px-6 lg:px-8">
         <title>{data.siteName}</title>
+        <style>{data.stylesheet}</style>
         <Navbar/>
         <main className="max-w-7xl mx-auto w-full animate-fade-in flex-grow">
           <Suspense fallback={<LoadingState/>}>

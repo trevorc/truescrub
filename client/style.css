@@ -13,7 +13,9 @@
   --color-dark-bg: #0f172a;
   --color-dark-card: #1e293b;
   --color-dark-border: #334155;
-  
+
+  --shadow-mascot: 0 0 60px rgb(236 72 153 / 0.4);
+
   --animate-fade-in: fadeIn 0.5s ease-out;
   --animate-slide-up: slideUp 0.5s ease-out;
 }
@@ -55,16 +57,16 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #0f172a;
+  background: var(--color-dark-bg);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: var(--color-dark-border);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: var(--color-slate-600);
 }
 
 @keyframes chickenBounce {
@@ -77,7 +79,7 @@
 
 body {
   @apply bg-dark-bg text-slate-300 antialiased min-h-screen flex flex-col;
-  background-image: radial-gradient(circle at top right, rgba(14, 165, 233, 0.1) 0%, transparent 40%),
-  radial-gradient(circle at bottom left, rgba(168, 85, 247, 0.05) 0%, transparent 40%);
+  background-image: radial-gradient(circle at top right, color-mix(in oklab, var(--color-brand-500) 10%, transparent) 0%, transparent 40%),
+  radial-gradient(circle at bottom left, color-mix(in oklab, var(--color-purple-500) 5%, transparent) 0%, transparent 40%);
   background-attachment: fixed;
 }

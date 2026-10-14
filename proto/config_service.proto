@@ -6,6 +6,7 @@ message GetBrandConfigRequest {}
 
 message BrandConfig {
     string site_name = 1;
+    string stylesheet = 2;
 }
 
 service ConfigService {

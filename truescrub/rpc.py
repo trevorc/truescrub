@@ -1,6 +1,7 @@
 import datetime
 import itertools
 import operator
+import pathlib
 import time
 import re
 from typing import Tuple, List, Iterable, Set
@@ -44,10 +45,16 @@ def parse_timezone(tz: str) -> datetime.timezone:
 
 
 class ConfigServiceServicer(config_service_pb2_grpc.ConfigServiceServicer):
-  def GetBrandConfig(self, request, context: grpc.ServicerContext):
-    return config_service_pb2.BrandConfig(
-      site_name=envconfig.SITE_NAME
+  def __init__(self):
+    stylesheet = envconfig.STYLESHEET
+    self.brand_config = config_service_pb2.BrandConfig(
+      site_name=envconfig.SITE_NAME,
+      stylesheet=pathlib.Path(stylesheet).read_text()
+      if stylesheet is not None else '',
     )
+
+  def GetBrandConfig(self, request, context: grpc.ServicerContext):
+    return self.brand_config
 
 
 class SeasonServiceServicer(season_service_pb2_grpc.SeasonServiceServicer):

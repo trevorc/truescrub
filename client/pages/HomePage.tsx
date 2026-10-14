@@ -26,7 +26,7 @@ export function HomePage() {
           className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-12">
         <div className="space-y-4 animate-slide-up">
           <div
-              className="h-48 w-48 md:h-64 md:w-64 mx-auto bg-dark-bg border-4 border-dark-border rounded-full shadow-[0_0_60px_rgba(236,72,153,0.4)] flex items-center justify-center mb-6 transform hover:scale-105 transition-transform p-3 group overflow-hidden">
+              className="h-48 w-48 md:h-64 md:w-64 mx-auto bg-dark-bg border-4 border-dark-border rounded-full shadow-(--shadow-mascot) flex items-center justify-center mb-6 transform hover:scale-105 transition-transform p-3 group overflow-hidden">
             <img src={chicken_png} alt="Mascot"
                  className="w-full h-full object-cover rounded-full group-hover:brightness-110 transition-all"/>
           </div>
@@ -51,7 +51,7 @@ export function HomePage() {
                 <div
                     className="absolute inset-0 bg-brand-500 rounded-full opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-300"></div>
                 <img src={karambit_png} alt="Leaderboard Icon"
-                     className="w-full h-full object-contain relative z-10 transition-all drop-shadow-[0_10px_15px_rgba(0,0,0,0.8)] filter group-hover:drop-shadow-[0_0_25px_rgba(14,165,233,0.8)]"/>
+                     className="w-full h-full object-contain relative z-10 transition-all drop-shadow-[0_10px_15px_rgba(0,0,0,0.8)] filter group-hover:drop-shadow-[0_0_25px_color-mix(in_oklab,var(--color-brand-500)_80%,transparent)]"/>
               </div>
               <h2 className="text-2xl font-bold text-white mb-2 group-hover:text-brand-400 transition-colors">Leaderboard</h2>
               <p className="text-slate-400">View rankings, seasonal MMR performance, and detailed
@@ -69,7 +69,7 @@ export function HomePage() {
                 <div
                     className="absolute inset-0 bg-purple-500 rounded-full opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-300"></div>
                 <img src={c4_png} alt="Matchmaking Icon"
-                     className="w-full h-full object-contain relative z-10 transition-all drop-shadow-[0_10px_15px_rgba(0,0,0,0.8)] filter group-hover:drop-shadow-[0_0_25px_rgba(168,85,247,0.8)]"/>
+                     className="w-full h-full object-contain relative z-10 transition-all drop-shadow-[0_10px_15px_rgba(0,0,0,0.8)] filter group-hover:drop-shadow-[0_0_25px_color-mix(in_oklab,var(--color-purple-500)_80%,transparent)]"/>
               </div>
               <h2 className="text-2xl font-bold text-white mb-2 group-hover:text-purple-400 transition-colors">Matchmaking</h2>
               <p className="text-slate-400">Generate perfectly balanced, fair team compositions
@@ -87,7 +87,7 @@ export function HomePage() {
                 <div
                     className="absolute inset-0 bg-amber-500 rounded-full opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-300"></div>
                 <img src={accolades_icon_png} alt="Accolades Icon"
-                     className="w-full h-full object-contain relative z-10 transition-all drop-shadow-[0_10px_15px_rgba(0,0,0,0.8)] filter group-hover:drop-shadow-[0_0_25px_rgba(245,158,11,0.8)]"/>
+                     className="w-full h-full object-contain relative z-10 transition-all drop-shadow-[0_10px_15px_rgba(0,0,0,0.8)] filter group-hover:drop-shadow-[0_0_25px_color-mix(in_oklab,var(--color-amber-500)_80%,transparent)]"/>
               </div>
               <h2 className="text-2xl font-bold text-white mb-2 group-hover:text-amber-400 transition-colors">Accolades</h2>
               <p className="text-slate-400">View daily match highlights, funniest moments, and
