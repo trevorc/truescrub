@@ -6,7 +6,7 @@ dependencies = [
     "trueskill==0.4.5",
     "pytest==9.1.1",
     "build==1.5.0",
-    "setuptools==84.0.0",
+    "setuptools==84.1.0",
     "numpy==2.5.2",
     "deap==1.4.4",
     "optuna==4.9.0",
